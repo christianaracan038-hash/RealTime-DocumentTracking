@@ -1,0 +1,7 @@
+Ito ang irerekomenda kong implementation order
+✅ Palitan ang email field ng login (Username / Email).
+✅ I-customize ang Breeze authentication para mag-check muna sa users, tapos sa employees_acc.
+✅ Kapag employee ang nag-login, gamitin ang section_id para mag-redirect sa tamang dashboard.
+✅ Gumawa ng middleware para hindi makapasok ang employee sa dashboard ng ibang section.
+
+Sa ganitong setup, iisa lang ang login page, pero parehong admin at employee ang makakapag-login, at awtomatikong dadalhin ang employee sa dashboard ng kanyang section. Ito ang pinakamalinis at madaling i-maintain na approach para sa system mo.
