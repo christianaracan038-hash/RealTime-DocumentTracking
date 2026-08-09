@@ -1,0 +1,13 @@
+Huwag muna natin idagdag ang QR Code
+
+Mas gusto kong ang sequence natin ay:
+
+✅ DocumentService
+✅ StoreDocumentRequest
+✅ DocumentController
+✅ Test save sa database
+✅ Generate QR Code
+✅ Save QR path
+✅ Create Tracking History
+
+Ganito ang ginagawa sa production systems dahil mas madaling hanapin at ayusin ang problema kapag may lumabas na error.

@@ -1,26 +1,26 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import EmployeeLayout from "@/Layouts/EmployeeLayout";
+
+import EmployeeCard from "@/Components/Employee/EmployeeCard";
+import EmployeeButton from "@/Components/Employee/EmployeeButton";
+import EmployeePageHeader from "@/Components/Employee/EmployeePageHeader";
 
 export default function Dashboard() {
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Dashboard
-                </h2>
-            }
-        >
-            <Head title="Dashboard" />
+        <EmployeeLayout>
+            <EmployeePageHeader
+                title="RDO Dashboard"
+                subtitle="Real-Time Document Tracking System"
+                action={<EmployeeButton>Register Document</EmployeeButton>}
+            />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            You're logged in!
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </AuthenticatedLayout>
+            <EmployeeCard>
+                <h2 className="text-xl font-semibold">Welcome to RDO</h2>
+
+                <p className="mt-2 text-gray-600">
+                    This reusable card will be used across all employee
+                    sections.
+                </p>
+            </EmployeeCard>
+        </EmployeeLayout>
     );
 }

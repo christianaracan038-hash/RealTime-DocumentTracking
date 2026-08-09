@@ -8,6 +8,9 @@ use App\Http\Controllers\Admin\Sections\SectionController;
 use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\RDO\DashboardController;
 use App\Http\Controllers\Assessment\DashboardController as AssessmentDashboardController;
+use App\Http\Controllers\Employee\Documents\DocumentController;
+
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -50,5 +53,19 @@ Route::middleware(['auth:employee', 'section:ASSESSMENT'])->group(function () {
         ->name('assessment.dashboard');
 
 });
+
+Route::middleware(['auth:employee'])->group(function () {
+
+    Route::get('/documents', [DocumentController::class, 'index'])
+        ->name('documents.index');
+
+    Route::get('/documents/create', [DocumentController::class, 'create'])
+        ->name('documents.create');
+
+     Route::post('/documents', [DocumentController::class, 'store'])
+        ->name('documents.store');
+
+});
+
 
 require __DIR__.'/auth.php';
