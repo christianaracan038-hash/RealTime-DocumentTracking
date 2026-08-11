@@ -5,3 +5,281 @@ Ito ang irerekomenda kong implementation order
 ✅ Gumawa ng middleware para hindi makapasok ang employee sa dashboard ng ibang section.
 
 Sa ganitong setup, iisa lang ang login page, pero parehong admin at employee ang makakapag-login, at awtomatikong dadalhin ang employee sa dashboard ng kanyang section. Ito ang pinakamalinis at madaling i-maintain na approach para sa system mo.
+
+
+rq traking 
+
+                 ┌──────────────┐
+                 │  QR Scanner  │
+                 └──────┬───────┘
+                        │
+                        ▼
+                ┌───────────────┐
+                │ Laravel API   │
+                └───────┬───────┘
+                        │
+          ┌─────────────┼──────────────┐
+          ▼             ▼              ▼
+     QR Valid?     Employee Auth?   Section Match?
+          │             │              │
+          └─────────────┼──────────────┘
+                        ▼
+                  State Valid?
+                        │
+                 ┌──────┴──────┐
+                 │             │
+                YES            NO
+                 │             │
+                 ▼             ▼
+            DB Transaction    Reject
+                 │
+          lockForUpdate()
+                 │
+                 ▼
+          Update Document
+                 │
+                 ▼
+        Tracking History
+                 │
+                 ▼
+             Response
+
+
+
+
+
+REGISTER DOCUMENT
+      │
+      ▼
+Laravel DocumentService
+      │
+      ├── Save document
+      └── Generate QR
+              │
+              ▼
+       DOC-20260807-000003
+              │
+              │ scan
+              ▼
+       Scanner Frontend
+              │
+              │ HTTP/API request
+              ▼
+      Laravel API Endpoint
+              │
+              ├── Authenticate employee
+              ├── Find document
+              ├── Check destination section
+              ├── Check document status
+              └── Check authorization
+                      │
+                      ▼
+                  RECEIVE
+
+
+
+
+
+
+RDO Employee
+    │
+    │ Register Document
+    │
+    ├── description
+    ├── reference number
+    └── destination = ASSESSMENT
+             │
+             ▼
+      Document created
+      status = PENDING
+      current_section = RDO
+      destination_section = ASSESSMENT
+             │
+             ▼
+      ASSESSMENT DASHBOARD
+      makikita lang ng ASSESSMENT
+             │
+             │ Scan QR
+             ▼
+        RECEIVE DOCUMENT
+             │
+             ▼
+      ASSESSMENT employee
+      ang may hawak ngayon
+             │
+             │ Scan QR
+             ▼
+          FORWARD
+             │
+             └── select next destination
+                    │
+                    ▼
+                 FINANCE
+
+
+
+
+
+
+RDO
+ │
+ │ Register Document
+ │ Select Destination = ASSESSMENT
+ ▼
+Document
+ status = Pending
+ current_section = RDO
+ destination_section = ASSESSMENT
+ │
+ │ QR generated
+ ▼
+Print QR
+ │
+ │ Physical document travels
+ ▼
+ASSESSMENT
+ │
+ │ Upcoming document appears
+ ▼
+Employee clicks document
+ │
+ │ Receive button
+ ▼
+Camera opens
+ │
+ │ Scan physical QR
+ ▼
+POST /api/documents/scan
+ │
+ ├── QR valid?
+ ├── Document exists?
+ ├── Destination = current employee section?
+ └── Status = Pending?
+        │
+        ▼
+POST /api/documents/{id}/receive
+        │
+        ├── lockForUpdate()
+        ├── current_section = destination
+        ├── current_employee = scanner
+        ├── status = Received
+        ├── received_at = now()
+        │
+        ▼
+TrackingHistory
+        │
+        ├── from_section = RDO
+        ├── to_section = ASSESSMENT
+        ├── employee = receiver
+        ├── action = RECEIVED
+        └── tracked_at = now()
+
+
+
+
+Assessment Dashboard
+        │
+        ▼
+Upcoming Document
+        │
+        ▼
+Click Document
+        │
+        ▼
+Document Details Modal
+        │
+        ▼
+Click "Receive"
+        │
+        ▼
+Camera opens
+        │
+        ▼
+Scan physical QR
+        │
+        ▼
+POST /api/documents/scan
+        │
+        ├── QR invalid → ERROR
+        │
+        ├── wrong destination section → ERROR
+        │
+        ├── already received → ERROR
+        │
+        ▼
+QR valid
+        │
+        ▼
+POST /api/documents/{id}/receive
+        │
+        ▼
+Database transaction
+        │
+        ├── status = Received
+        ├── current_section_id = destination
+        ├── current_employee_id = scanner
+        ├── received_at = now()
+        │
+        ▼
+TrackingHistory
+        │
+        ├── action = RECEIVED
+        ├── from_section_id
+        ├── to_section_id
+        ├── employee_id
+        ├── status_id = Received
+        └── tracked_at
+        │
+        ▼
+"Document Received"
+
+
+
+RDO Employee
+    │
+    │ Register Document
+    │ destination_section_id = ASSESSMENT
+    ▼
+┌─────────────────────┐
+│ Document             │
+│ status = Pending     │
+│ current_section = RDO│
+│ destination = ASSESS │
+│ current_employee = RDO employee
+└──────────┬──────────┘
+           │
+           │ QR attached to hard copy
+           ▼
+     ASSESSMENT scans QR
+           │
+           ▼
+    POST /api/documents/scan
+           │
+           ├── QR valid?
+           ├── Employee authenticated?
+           ├── Employee section == destination?
+           └── Status == Pending?
+                  │
+                 YES
+                  │
+                  ▼
+    POST /api/documents/{id}/receive
+                  │
+                  ▼
+          Database Transaction
+                  │
+        ┌─────────┴─────────┐
+        ▼                   ▼
+ current_section       current_employee
+ = ASSESSMENT          = logged-in employee
+ status = Received
+ received_at = now()
+        │
+        ▼
+ tracking_histories
+        │
+        ├── from_section = RDO
+        ├── to_section = ASSESSMENT
+        ├── employee = actual scanner
+        ├── status = Received
+        └── action = RECEIVED

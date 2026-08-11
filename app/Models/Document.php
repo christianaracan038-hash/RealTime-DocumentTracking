@@ -8,14 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Document extends Model
 {
-    /**
-     * Primary Key
-     */
     protected $primaryKey = 'document_id';
 
-    /**
-     * Mass Assignable
-     */
     protected $fillable = [
         'tracking_number',
         'document_date',
@@ -38,9 +32,6 @@ class Document extends Model
         'qr_generated_at',
     ];
 
-    /**
-     * Casts
-     */
     protected $casts = [
         'document_date' => 'date',
         'received_at' => 'datetime',
@@ -48,32 +39,25 @@ class Document extends Model
         'qr_generated_at' => 'datetime',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Current Status
-     */
     public function status(): BelongsTo
     {
-        return $this->belongsTo(DocumentStatus::class, 'status_id', 'status_id');
+        return $this->belongsTo(
+            DocumentStatus::class,
+            'status_id',
+            'status_id'
+        );
     }
 
-    /**
-     * Current Section
-     */
     public function currentSection(): BelongsTo
     {
-        return $this->belongsTo(Section::class, 'current_section_id', 'section_id');
+        return $this->belongsTo(
+            Section::class,
+            'current_section_id',
+            'section_id'
+        );
     }
 
-    /**
-     * Destination Section
-     */
-    public function destinationSection()
+    public function destinationSection(): BelongsTo
     {
         return $this->belongsTo(
             Section::class,
@@ -82,25 +66,24 @@ class Document extends Model
         );
     }
 
-    /**
-     * Current Employee Holding the Document
-     */
     public function currentEmployee(): BelongsTo
     {
-        return $this->belongsTo(EmployeeAcc::class, 'current_employee_id', 'employee_id');
+        return $this->belongsTo(
+            EmployeeAcc::class,
+            'current_employee_id',
+            'employee_id'
+        );
     }
 
-    /**
-     * Employee Who Registered the Document
-     */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(EmployeeAcc::class, 'created_by', 'employee_id');
+        return $this->belongsTo(
+            EmployeeAcc::class,
+            'created_by',
+            'employee_id'
+        );
     }
 
-    /**
-     * Tracking History
-     */
     public function trackingHistories(): HasMany
     {
         return $this->hasMany(
@@ -108,5 +91,14 @@ class Document extends Model
             'document_id',
             'document_id'
         );
+    }
+
+    public function latestTrackingHistory()
+    {
+        return $this->hasOne(
+            TrackingHistory::class,
+            'document_id',
+            'document_id'
+        )->latestOfMany('tracked_at');
     }
 }

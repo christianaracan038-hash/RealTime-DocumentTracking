@@ -1,16 +1,21 @@
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
+import IncomingDocuments from "@/pages/Employees/Documents/IncomingDocuments";
 
-export default function Dashboard() {
+export default function Dashboard({ incomingDocuments = [] }) {
     return (
-        <EmployeeLayout title="Assessment Dashboard">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-2xl font-semibold text-slate-900">
-                    Welcome to Assessment Dashboard
-                </h2>
+        <EmployeeLayout>
+            <div className="p-6">
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-slate-800">
+                        Assessment Dashboard
+                    </h1>
 
-                <p className="mt-2 text-slate-500">
-                    Manage Assessment Section documents.
-                </p>
+                    <p className="mt-2 text-slate-500">
+                        Manage Assessment Section documents.
+                    </p>
+                </div>
+
+                <IncomingDocuments documents={incomingDocuments} />
             </div>
         </EmployeeLayout>
     );
