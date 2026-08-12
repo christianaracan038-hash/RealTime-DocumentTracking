@@ -1,5 +1,5 @@
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
-import IncomingDocuments from "@/pages/Employees/Documents/IncomingDocuments";
+import IncomingDocuments from "@/Pages/Employees/Documents/IncomingDocuments";
 
 export default function Dashboard({ incomingDocuments = [] }) {
     return (

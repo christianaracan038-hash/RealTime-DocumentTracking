@@ -1,4 +1,4 @@
-import EmployeeLayout from "@/Layouts/EmployeeLayout";
+import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
