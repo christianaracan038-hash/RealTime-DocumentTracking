@@ -95,13 +95,20 @@ export default function ReceiveDocumentScanner({
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content");
 
+            // ==========================================
             // STEP 1: Validate scanned QR
+            // ==========================================
             const scanResponse = await fetch("/api/documents/scan", {
                 method: "POST",
+                credentials: "same-origin",
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
-                    "X-CSRF-TOKEN": csrfToken,
+                    ...(csrfToken
+                        ? {
+                              "X-CSRF-TOKEN": csrfToken,
+                          }
+                        : {}),
                 },
                 body: JSON.stringify({
                     qr_value: qrValue,
@@ -126,7 +133,9 @@ export default function ReceiveDocumentScanner({
                 );
             }
 
-            // STEP 2: Make sure scanned QR belongs to opened document
+            // ==========================================
+            // STEP 2: Make sure QR belongs to opened document
+            // ==========================================
             if (
                 String(scannedDocument.document_id) !==
                 String(documentRecord.document_id)
@@ -136,15 +145,22 @@ export default function ReceiveDocumentScanner({
                 );
             }
 
+            // ==========================================
             // STEP 3: Actually receive the document
+            // ==========================================
             const receiveResponse = await fetch(
                 `/api/documents/${scannedDocument.document_id}/receive`,
                 {
                     method: "POST",
+                    credentials: "same-origin",
                     headers: {
                         "Content-Type": "application/json",
                         Accept: "application/json",
-                        "X-CSRF-TOKEN": csrfToken,
+                        ...(csrfToken
+                            ? {
+                                  "X-CSRF-TOKEN": csrfToken,
+                              }
+                            : {}),
                     },
                 },
             );
@@ -159,7 +175,9 @@ export default function ReceiveDocumentScanner({
                 );
             }
 
+            // ==========================================
             // STEP 4: Success
+            // ==========================================
             setSuccess(true);
             setProcessing(false);
 
@@ -167,7 +185,9 @@ export default function ReceiveDocumentScanner({
                 onReceived(receiveData.document);
             }
 
+            // ==========================================
             // STEP 5: Close after success
+            // ==========================================
             setTimeout(() => {
                 onClose();
             }, 1500);

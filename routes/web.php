@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\RDO\DashboardController;
 use App\Http\Controllers\Assessment\DashboardController as AssessmentDashboardController;
 use App\Http\Controllers\Employee\Documents\DocumentController;
+use Illuminate\Support\Facades\Auth;
 
 
 
@@ -21,9 +22,20 @@ Route::get('/', function () {
     ]);
 });
 
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+
+Route::get('/test-web-auth', function () {
+    return response()->json([
+        'check' => Auth::guard('employee')->check(),
+        'employee' => Auth::guard('employee')->user(),
+        'session_id' => session()->getId(),
+        'session_data' => session()->all(),
+    ]);
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -66,6 +78,8 @@ Route::middleware(['auth:employee'])->group(function () {
         ->name('documents.store');
 
 });
+
+
 
 
 require __DIR__.'/auth.php';
