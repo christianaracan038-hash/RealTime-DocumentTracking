@@ -69,5 +69,44 @@ class DocumentController extends Controller
 
     }
 
+    public function history()
+    {
+        $employee = Auth::guard('employee')->user();
+
+        $documents = Document::query()
+            ->with([
+                'status',
+                'currentSection',
+                'destinationSection',
+                'trackingHistories' => function ($query) {
+                    $query
+                        ->with([
+                            'fromSection',
+                            'toSection',
+                            'employee',
+                            'status',
+                        ])
+                        ->orderBy('tracked_at', 'asc');
+                },
+            ])
+            ->where(function ($query) use ($employee) {
+                $query
+                    ->where(
+                        'current_section_id',
+                        $employee->section_id
+                    )
+                    ->orWhere(
+                        'destination_section_id',
+                        $employee->section_id
+                    );
+            })
+            ->latest('created_at')
+            ->get();
+
+        return Inertia::render('Employees/Documents/History', [
+            'documents' => $documents,
+        ]);
+    }
+
 
 }

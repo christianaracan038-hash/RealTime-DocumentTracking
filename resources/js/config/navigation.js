@@ -20,13 +20,18 @@ const navigation = {
             route: "assessment.dashboard",
         },
         {
-            label: "Documents",
-            route: "documents.index",
+            label: "History",
+            route: "documents.history",
         },
         {
             label: "Register Document",
             route: "documents.create",
         },
+
+        // {
+        //     label: "Track Document",
+        //     route: "",
+        // },
     ],
 
     FINANCE: [

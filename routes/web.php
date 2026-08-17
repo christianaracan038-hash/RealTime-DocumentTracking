@@ -77,6 +77,9 @@ Route::middleware(['auth:employee'])->group(function () {
      Route::post('/documents', [DocumentController::class, 'store'])
         ->name('documents.store');
 
+    Route::get('/documents/history', [DocumentController::class, 'history'])
+        ->name('documents.history');
+
 });
 
 
