@@ -48,8 +48,8 @@ class DocumentController extends Controller
             ])
             ->where('created_by', $employee->employee_id)
             ->latest('document_id')
-            ->take(10)
-            ->get(),
+            ->paginate(5)
+            ->withQueryString(),
 
 
         ]);
@@ -101,9 +101,33 @@ class DocumentController extends Controller
                     );
             })
             ->latest('created_at')
-            ->get();
+            ->paginate(5)
+            ->withQueryString();    
 
         return Inertia::render('Employees/Documents/History', [
+            'documents' => $documents,
+        ]);
+    }
+
+    public function documents(): Response
+    {
+        $employee = Auth::guard('employee')->user();
+
+        $documents = Document::query()
+            ->with([
+                'status',
+                'currentSection',
+                'destinationSection',
+                'currentEmployee',
+            ])
+            ->where('current_employee_id', $employee->employee_id)
+            ->whereHas('status', function ($query) {
+                $query->where('status_name', 'Received');
+            })
+            ->latest('updated_at')
+            ->get();
+
+        return Inertia::render('Employees/Documents/Documents', [
             'documents' => $documents,
         ]);
     }

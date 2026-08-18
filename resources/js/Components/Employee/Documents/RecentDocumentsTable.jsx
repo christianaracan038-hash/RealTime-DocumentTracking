@@ -1,13 +1,31 @@
 import { useState } from "react";
+import { router } from "@inertiajs/react";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import DocumentQrModal from "@/Components/Employee/Documents/DocumentQrModal";
 
-export default function RecentDocumentsTable({ documents = [] }) {
+export default function RecentDocumentsTable({ documents }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [search, setSearch] = useState("");
 
-    const filteredDocuments = documents.filter((document) => {
-        const keyword = search.toLowerCase();
+    const documentData = documents?.data ?? [];
+
+    const formatPhilippineDate = (date) => {
+        if (!date) return "-";
+
+        return new Intl.DateTimeFormat("en-PH", {
+            timeZone: "Asia/Manila",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        }).format(new Date(date));
+    };
+
+    const filteredDocuments = documentData.filter((document) => {
+        const keyword = search.toLowerCase().trim();
+
+        if (!keyword) {
+            return true;
+        }
 
         return (
             document.tracking_number?.toLowerCase().includes(keyword) ||
@@ -18,6 +36,15 @@ export default function RecentDocumentsTable({ documents = [] }) {
             document.status?.status_name?.toLowerCase().includes(keyword)
         );
     });
+
+    const goToPage = (url) => {
+        if (!url) return;
+
+        router.visit(url, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
     return (
         <>
@@ -126,7 +153,9 @@ export default function RecentDocumentsTable({ documents = [] }) {
                                         </td>
 
                                         <td className="px-4 py-3 text-center">
-                                            {document.created_at}
+                                            {formatPhilippineDate(
+                                                document.created_at,
+                                            )}
                                         </td>
 
                                         <td className="px-4 py-3 text-center">
@@ -157,6 +186,48 @@ export default function RecentDocumentsTable({ documents = [] }) {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination */}
+                {documents?.links?.length > 0 && (
+                    <div className="mt-5 flex items-center justify-between border-t pt-4">
+                        <p className="text-sm text-slate-500">
+                            Showing{" "}
+                            <span className="font-medium">
+                                {documents.from ?? 0}
+                            </span>{" "}
+                            to{" "}
+                            <span className="font-medium">
+                                {documents.to ?? 0}
+                            </span>{" "}
+                            of{" "}
+                            <span className="font-medium">
+                                {documents.total ?? 0}
+                            </span>{" "}
+                            documents
+                        </p>
+
+                        <div className="flex items-center gap-1">
+                            {documents.links.map((link, index) => (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    disabled={!link.url}
+                                    onClick={() => goToPage(link.url)}
+                                    className={`rounded-lg px-3 py-2 text-sm transition ${
+                                        link.active
+                                            ? "bg-blue-600 text-white"
+                                            : link.url
+                                              ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                                              : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                                    }`}
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </EmployeeCard>
 
             {selectedDocument && (

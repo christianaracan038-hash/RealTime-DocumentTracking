@@ -1,12 +1,19 @@
 import { useState } from "react";
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
+// import ForwardDocumentModal from "./ForwardDocumentModal";
 
 export default function DocumentDetailsModal({ document, onClose }) {
     const [showScanner, setShowScanner] = useState(false);
+    const [showForwardModal, setShowForwardModal] = useState(false);
 
     if (!document) {
         return null;
     }
+
+    const status = document.status?.status_name;
+
+    const isReceived = status === "Received";
+    const isPending = status === "Pending";
 
     return (
         <>
@@ -66,7 +73,8 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                 </p>
 
                                 <p className="text-slate-700">
-                                    {document.current_section?.section_name}
+                                    {document.current_section?.section_name ??
+                                        "—"}
                                 </p>
                             </div>
 
@@ -76,7 +84,8 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                 </p>
 
                                 <p className="text-slate-700">
-                                    {document.destination_section?.section_name}
+                                    {document.destination_section
+                                        ?.section_name ?? "—"}
                                 </p>
                             </div>
                         </div>
@@ -86,8 +95,16 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                 Status
                             </p>
 
-                            <span className="mt-1 inline-block rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
-                                {document.status?.status_name ?? "Pending"}
+                            <span
+                                className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                                    isReceived
+                                        ? "bg-green-100 text-green-700"
+                                        : isPending
+                                          ? "bg-yellow-100 text-yellow-700"
+                                          : "bg-slate-100 text-slate-700"
+                                }`}
+                            >
+                                {status ?? "Unknown"}
                             </span>
                         </div>
                     </div>
@@ -99,24 +116,47 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             onClick={onClose}
                             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                         >
-                            Close
+                            Cancel
                         </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setShowScanner(true)}
-                            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                        >
-                            Receive Document
-                        </button>
+                        {/* Pending document */}
+                        {isPending && (
+                            <button
+                                type="button"
+                                onClick={() => setShowScanner(true)}
+                                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                            >
+                                Receive Document
+                            </button>
+                        )}
+
+                        {/* Received document */}
+                        {isReceived && (
+                            <button
+                                type="button"
+                                onClick={() => setShowForwardModal(true)}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                            >
+                                Forward Document
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
 
+            {/* Receive Scanner */}
             {showScanner && (
                 <ReceiveDocumentScanner
                     document={document}
                     onClose={() => setShowScanner(false)}
+                />
+            )}
+
+            {/* Forward Modal */}
+            {showForwardModal && (
+                <ForwardDocumentModal
+                    document={document}
+                    onClose={() => setShowForwardModal(false)}
                 />
             )}
         </>

@@ -68,9 +68,6 @@ Route::middleware(['auth:employee', 'section:ASSESSMENT'])->group(function () {
 
 Route::middleware(['auth:employee'])->group(function () {
 
-    Route::get('/documents', [DocumentController::class, 'index'])
-        ->name('documents.index');
-
     Route::get('/documents/create', [DocumentController::class, 'create'])
         ->name('documents.create');
 
@@ -79,6 +76,9 @@ Route::middleware(['auth:employee'])->group(function () {
 
     Route::get('/documents/history', [DocumentController::class, 'history'])
         ->name('documents.history');
+
+    Route::get('/employee/documents', [DocumentController::class, 'documents'])
+    ->name('documents.index');
 
 });
 
