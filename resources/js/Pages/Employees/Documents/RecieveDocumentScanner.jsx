@@ -5,9 +5,13 @@ export default function ReceiveDocumentScanner({
     document: documentRecord,
     onClose,
     onReceived,
+    onForwarded,
+    mode = "receive",
 }) {
     const scannerRef = useRef(null);
     const isProcessingRef = useRef(false);
+
+    const isForward = mode === "forward";
 
     const [cameraError, setCameraError] = useState(null);
     const [success, setSuccess] = useState(false);
@@ -32,7 +36,6 @@ export default function ReceiveDocumentScanner({
                     throw new Error("No camera found.");
                 }
 
-                // Sa laptop, gamitin muna ang first available camera.
                 const cameraId = cameras[0].id;
 
                 console.log("Using camera:", cameras[0]);
@@ -56,12 +59,9 @@ export default function ReceiveDocumentScanner({
 
                         isProcessingRef.current = true;
 
-                        await handleReceive(decodedText);
+                        await handleScan(decodedText);
                     },
-                    (scanErrorMessage) => {
-                        // Normal habang naghahanap ng QR.
-                        // Huwag muna i-console.log dahil sobrang dami nito.
-                    },
+                    () => {},
                 );
             } catch (err) {
                 console.error("QR scanner error:", err);
@@ -72,6 +72,7 @@ export default function ReceiveDocumentScanner({
                 );
             }
         };
+
         startScanner();
 
         return () => {
@@ -86,7 +87,7 @@ export default function ReceiveDocumentScanner({
         };
     }, []);
 
-    const handleReceive = async (qrValue) => {
+    const handleScan = async (qrValue) => {
         try {
             setProcessing(true);
             setError(null);
@@ -95,15 +96,19 @@ export default function ReceiveDocumentScanner({
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content");
 
-            // ==========================================
-            // STEP 1: Validate scanned QR
-            // ==========================================
+            /*
+            |--------------------------------------------------------------------------
+            | STEP 1: Validate QR
+            |--------------------------------------------------------------------------
+            */
+
             const scanResponse = await fetch("/api/documents/scan", {
                 method: "POST",
                 credentials: "same-origin",
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
+
                     ...(csrfToken
                         ? {
                               "X-CSRF-TOKEN": csrfToken,
@@ -112,6 +117,7 @@ export default function ReceiveDocumentScanner({
                 },
                 body: JSON.stringify({
                     qr_value: qrValue,
+                    mode: isForward ? "forward" : "receive",
                 }),
             });
 
@@ -133,9 +139,12 @@ export default function ReceiveDocumentScanner({
                 );
             }
 
-            // ==========================================
-            // STEP 2: Make sure QR belongs to opened document
-            // ==========================================
+            /*
+            |--------------------------------------------------------------------------
+            | STEP 2: Make sure QR belongs to opened document
+            |--------------------------------------------------------------------------
+            */
+
             if (
                 String(scannedDocument.document_id) !==
                 String(documentRecord.document_id)
@@ -145,10 +154,36 @@ export default function ReceiveDocumentScanner({
                 );
             }
 
-            // ==========================================
-            // STEP 3: Actually receive the document
-            // ==========================================
-            const receiveResponse = await fetch(
+            /*
+            |--------------------------------------------------------------------------
+            | STEP 3: FORWARD MODE
+            |--------------------------------------------------------------------------
+            */
+
+            if (isForward) {
+                console.log("QR verified for forwarding:", scannedDocument);
+
+                console.log(
+                    "Available destination sections:",
+                    scanData.sections,
+                );
+
+                setProcessing(false);
+
+                if (onForwarded) {
+                    onForwarded(scannedDocument, scanData.sections || []);
+                }
+
+                return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | STEP 4: RECEIVE MODE
+            |--------------------------------------------------------------------------
+            */
+
+            const actionResponse = await fetch(
                 `/api/documents/${scannedDocument.document_id}/receive`,
                 {
                     method: "POST",
@@ -156,6 +191,7 @@ export default function ReceiveDocumentScanner({
                     headers: {
                         "Content-Type": "application/json",
                         Accept: "application/json",
+
                         ...(csrfToken
                             ? {
                                   "X-CSRF-TOKEN": csrfToken,
@@ -165,38 +201,40 @@ export default function ReceiveDocumentScanner({
                 },
             );
 
-            const receiveData = await receiveResponse.json();
+            const actionData = await actionResponse.json();
 
-            console.log("RECEIVE RESPONSE:", receiveData);
+            console.log("RECEIVE RESPONSE:", actionData);
 
-            if (!receiveResponse.ok) {
+            if (!actionResponse.ok) {
                 throw new Error(
-                    receiveData.message || "Unable to receive the document.",
+                    actionData.message || "Unable to receive the document.",
                 );
             }
 
-            // ==========================================
-            // STEP 4: Success
-            // ==========================================
+            /*
+            |--------------------------------------------------------------------------
+            | STEP 5: RECEIVE SUCCESS
+            |--------------------------------------------------------------------------
+            */
+
             setSuccess(true);
             setProcessing(false);
 
             if (onReceived) {
-                onReceived(receiveData.document);
+                onReceived(actionData.document);
             }
 
-            // ==========================================
-            // STEP 5: Close after success
-            // ==========================================
             setTimeout(() => {
                 onClose();
             }, 1500);
         } catch (err) {
-            console.error("RECEIVE ERROR:", err);
+            console.error(`${isForward ? "FORWARD" : "RECEIVE"} ERROR:`, err);
 
             setError(
                 err.message ||
-                    "Something went wrong while receiving the document.",
+                    `Something went wrong while ${
+                        isForward ? "validating" : "receiving"
+                    } the document.`,
             );
 
             setProcessing(false);
@@ -204,14 +242,20 @@ export default function ReceiveDocumentScanner({
         }
     };
 
+    if (!documentRecord) {
+        return null;
+    }
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
             <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b px-5 py-4">
                     <div>
                         <h2 className="text-lg font-semibold text-slate-800">
-                            Scan Document QR
+                            {isForward
+                                ? "Verify Document for Forwarding"
+                                : "Scan Document QR"}
                         </h2>
 
                         <p className="text-xs text-slate-500">
@@ -241,7 +285,9 @@ export default function ReceiveDocumentScanner({
                                     <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
 
                                     <p className="text-sm font-medium">
-                                        Verifying document...
+                                        {isForward
+                                            ? "Verifying document..."
+                                            : "Verifying document..."}
                                     </p>
                                 </div>
                             </div>
@@ -264,7 +310,7 @@ export default function ReceiveDocumentScanner({
                             </div>
                         )}
 
-                        {/* Camera error */}
+                        {/* Camera Error */}
                         {cameraError && (
                             <div className="absolute inset-0 flex items-center justify-center bg-slate-900 p-6 text-center">
                                 <p className="text-sm text-red-300">
@@ -275,10 +321,11 @@ export default function ReceiveDocumentScanner({
                     </div>
 
                     {/* Instruction */}
-                    {!success && !cameraError && !processing && (
+                    {!success && !cameraError && !processing && !error && (
                         <p className="mt-4 text-center text-sm text-slate-500">
-                            Position the QR code attached to the physical
-                            document inside the scanner.
+                            {isForward
+                                ? "Scan the QR code attached to the physical document to verify it before forwarding."
+                                : "Position the QR code attached to the physical document inside the scanner."}
                         </p>
                     )}
 

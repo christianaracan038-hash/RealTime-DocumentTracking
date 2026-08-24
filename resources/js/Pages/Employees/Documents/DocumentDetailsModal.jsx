@@ -1,6 +1,7 @@
 import { useState } from "react";
+
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
-// import ForwardDocumentModal from "./ForwardDocumentModal";
+import ForwardDocumentModal from "./ForwardDocumentModal";
 
 export default function DocumentDetailsModal({ document, onClose }) {
     const [showScanner, setShowScanner] = useState(false);
@@ -119,7 +120,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             Cancel
                         </button>
 
-                        {/* Pending document */}
+                        {/* Pending */}
                         {isPending && (
                             <button
                                 type="button"
@@ -130,7 +131,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             </button>
                         )}
 
-                        {/* Received document */}
+                        {/* Received */}
                         {isReceived && (
                             <button
                                 type="button"
@@ -148,7 +149,12 @@ export default function DocumentDetailsModal({ document, onClose }) {
             {showScanner && (
                 <ReceiveDocumentScanner
                     document={document}
+                    mode="receive"
                     onClose={() => setShowScanner(false)}
+                    onReceived={() => {
+                        setShowScanner(false);
+                        onClose();
+                    }}
                 />
             )}
 

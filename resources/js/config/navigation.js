@@ -5,19 +5,8 @@ const navigation = {
             route: "rdo.dashboard",
         },
         {
-            label: "Register Document",
-            route: "documents.create",
-        },
-        {
             label: "Documents",
             route: "documents.index",
-        },
-    ],
-
-    ASSESSMENT: [
-        {
-            label: "Dashboard",
-            route: "assessment.dashboard",
         },
         {
             label: "Register Document",
@@ -27,9 +16,24 @@ const navigation = {
             label: "History",
             route: "documents.history",
         },
+    ],
+
+    ASSESSMENT: [
+        {
+            label: "Dashboard",
+            route: "assessment.dashboard",
+        },
         {
             label: "Documents",
             route: "documents.index",
+        },
+        {
+            label: "Register Document",
+            route: "documents.create",
+        },
+        {
+            label: "History",
+            route: "documents.history",
         },
     ],
 
