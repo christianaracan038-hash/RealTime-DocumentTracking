@@ -34,11 +34,102 @@ const getStatusClasses = (color) => {
     }
 };
 
-export default function History({ documents, filters }) {
+export default function History({ documents }) {
+    const [search, setSearch] = useState("");
+
     const documentData = documents?.data ?? [];
 
-    const [search, setSearch] = useState(filters?.search ?? "");
+    /*
+     * ==========================================================
+     * LOCAL / INSTANT SEARCH
+     * Same behavior as RecentDocumentsTable
+     * ==========================================================
+     */
+    const filteredDocuments = documentData.filter((document) => {
+        const keyword = search.toLowerCase().trim();
 
+        if (!keyword) {
+            return true;
+        }
+
+        /*
+         * Search current document information
+         */
+        const basicMatch =
+            document.tracking_number?.toLowerCase().includes(keyword) ||
+            document.description?.toLowerCase().includes(keyword) ||
+            document.reference_number?.toLowerCase().includes(keyword) ||
+            document.status?.status_name?.toLowerCase().includes(keyword) ||
+            document.current_section?.section_name
+                ?.toLowerCase()
+                .includes(keyword) ||
+            document.destination_section?.section_name
+                ?.toLowerCase()
+                .includes(keyword) ||
+            document.current_employee?.username
+                ?.toLowerCase()
+                .includes(keyword) ||
+            document.current_employee?.employee_name
+                ?.toLowerCase()
+                .includes(keyword) ||
+            document.creator?.username?.toLowerCase().includes(keyword) ||
+            document.creator?.employee_name?.toLowerCase().includes(keyword);
+
+        /*
+         * ======================================================
+         * Search COMPLETE MOVEMENT HISTORY
+         * ======================================================
+         *
+         * Example:
+         *
+         * Records
+         *   ↓
+         * Accounting
+         *   ↓
+         * HR
+         *   ↓
+         * Legal
+         *
+         * Searching "Accounting" will find the document
+         * even if the current location is already Legal.
+         */
+        const historyMatch =
+            document.tracking_histories?.some((history) => {
+                const fromSection =
+                    history.from_section?.section_name?.toLowerCase() ?? "";
+
+                const toSection =
+                    history.to_section?.section_name?.toLowerCase() ?? "";
+
+                const employeeUsername =
+                    history.employee?.username?.toLowerCase() ?? "";
+
+                const employeeName =
+                    history.employee?.employee_name?.toLowerCase() ?? "";
+
+                const action = history.action?.toLowerCase() ?? "";
+
+                const remarks = history.remarks?.toLowerCase() ?? "";
+
+                const status = history.status?.status_name?.toLowerCase() ?? "";
+
+                return (
+                    fromSection.includes(keyword) ||
+                    toSection.includes(keyword) ||
+                    employeeUsername.includes(keyword) ||
+                    employeeName.includes(keyword) ||
+                    action.includes(keyword) ||
+                    remarks.includes(keyword) ||
+                    status.includes(keyword)
+                );
+            }) ?? false;
+
+        return basicMatch || historyMatch;
+    });
+
+    /*
+     * Pagination
+     */
     const goToPage = (url) => {
         if (!url) return;
 
@@ -46,36 +137,6 @@ export default function History({ documents, filters }) {
             preserveState: true,
             preserveScroll: true,
         });
-    };
-
-    const handleSearch = (event) => {
-        event.preventDefault();
-
-        router.get(
-            route("documents.history"),
-            {
-                search: search,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    };
-
-    const clearSearch = () => {
-        setSearch("");
-
-        router.get(
-            route("documents.history"),
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
     };
 
     return (
@@ -94,42 +155,20 @@ export default function History({ documents, filters }) {
                 </div>
 
                 {/* Search */}
-                <form
-                    onSubmit={handleSearch}
-                    className="mt-6 flex flex-col gap-3 sm:flex-row"
-                >
-                    <div className="relative flex-1">
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
-                            placeholder="Search tracking number, description, or reference number..."
-                            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-                    >
-                        Search
-                    </button>
-
-                    {search && (
-                        <button
-                            type="button"
-                            onClick={clearSearch}
-                            className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                        >
-                            Clear
-                        </button>
-                    )}
-                </form>
+                <div className="mt-6 flex justify-end">
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search..."
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:w-80"
+                    />
+                </div>
 
                 {/* Documents */}
                 <div className="mt-6">
-                    {documentData.length > 0 ? (
-                        documentData.map((document) => (
+                    {filteredDocuments.length > 0 ? (
+                        filteredDocuments.map((document) => (
                             <div
                                 key={document.document_id}
                                 className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
@@ -184,7 +223,7 @@ export default function History({ documents, filters }) {
                                         </p>
                                     </div>
 
-                                    {/* Current Employee */}
+                                    {/* Current Holder */}
                                     <div>
                                         <p className="text-xs font-medium text-slate-400">
                                             Current Holder
@@ -212,7 +251,7 @@ export default function History({ documents, filters }) {
                                     </div>
                                 </div>
 
-                                {/* Reference */}
+                                {/* Reference Number */}
                                 {document.reference_number && (
                                     <div className="mt-4 rounded-lg bg-slate-50 p-3">
                                         <p className="text-xs font-medium text-slate-400">
@@ -225,7 +264,7 @@ export default function History({ documents, filters }) {
                                     </div>
                                 )}
 
-                                {/* Tracking History */}
+                                {/* Document Movement */}
                                 <div className="mt-5 border-t pt-4">
                                     <h3 className="mb-4 text-sm font-semibold text-slate-700">
                                         Document Movement
@@ -241,6 +280,7 @@ export default function History({ documents, filters }) {
                                                         }
                                                         className="rounded-lg border border-slate-200 bg-slate-50 p-4"
                                                     >
+                                                        {/* Movement Header */}
                                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
@@ -295,7 +335,7 @@ export default function History({ documents, filters }) {
                                                             </div>
                                                         </div>
 
-                                                        {/* Employee */}
+                                                        {/* Processed By */}
                                                         <div className="mt-3">
                                                             <p className="text-xs text-slate-400">
                                                                 Processed By
@@ -364,8 +404,8 @@ export default function History({ documents, filters }) {
 
                             {search && (
                                 <p className="mt-1 text-xs text-slate-400">
-                                    Try another tracking number, description, or
-                                    reference number.
+                                    Try another tracking number, description,
+                                    section, or employee.
                                 </p>
                             )}
                         </div>

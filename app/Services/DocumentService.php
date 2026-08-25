@@ -88,4 +88,139 @@ class DocumentService
         ]);
 
     }
+
+    public function getHistoryDocuments($employee)
+    {
+        return Document::query()
+            ->with([
+                /*
+                * Current document information
+                */
+                'status',
+                'currentSection',
+                'destinationSection',
+                'currentEmployee',
+
+                /*
+                * Original creator
+                */
+                'creator',
+
+                /*
+                * Complete movement history
+                */
+                'trackingHistories' => function ($query) {
+                    $query
+                        ->with([
+                            'fromSection',
+                            'toSection',
+                            'employee',
+                            'status',
+                        ])
+                        ->orderBy('tracked_at', 'asc');
+                },
+            ])
+
+            /*
+            * ==========================================================
+            * DOCUMENT VISIBILITY
+            * ==========================================================
+            */
+            ->where(function ($query) use ($employee) {
+
+                /*
+                * 1. Created by this employee
+                */
+                $query->where(
+                    'created_by',
+                    $employee->employee_id
+                )
+
+                /*
+                * 2. Currently held by this employee
+                */
+                ->orWhere(
+                    'current_employee_id',
+                    $employee->employee_id
+                )
+
+                /*
+                * 3. Currently inside employee's section
+                */
+                ->orWhere(
+                    'current_section_id',
+                    $employee->section_id
+                )
+
+                /*
+                * 4. Currently destined for employee's section
+                */
+                ->orWhere(
+                    'destination_section_id',
+                    $employee->section_id
+                )
+
+                /*
+                * 5. Employee's section appeared
+                *    anywhere in document history.
+                *
+                * Example:
+                *
+                * Records -> Accounting
+                * Accounting -> HR
+                * HR -> Legal
+                *
+                * Accounting can still see the document.
+                */
+                ->orWhereHas(
+                    'trackingHistories',
+                    function ($historyQuery) use ($employee) {
+
+                        $historyQuery->where(function ($query) use ($employee) {
+
+                            $query
+                                ->where(
+                                    'from_section_id',
+                                    $employee->section_id
+                                )
+                                ->orWhere(
+                                    'to_section_id',
+                                    $employee->section_id
+                                );
+                        });
+                    }
+                )
+
+                /*
+                * 6. Employee personally performed
+                *    a tracking action.
+                */
+                ->orWhereHas(
+                    'trackingHistories',
+                    function ($historyQuery) use ($employee) {
+
+                        $historyQuery->where(
+                            'employee_id',
+                            $employee->employee_id
+                        );
+                    }
+                );
+            })
+
+            /*
+            * Newest registered documents first
+            */
+            ->latest('created_at')
+
+            /*
+            * Same pagination style as
+            * RecentDocumentsTable.
+            */
+            ->paginate(10)
+
+            /*
+            * Preserve pagination query parameters.
+            */
+            ->withQueryString();
+    }
 }

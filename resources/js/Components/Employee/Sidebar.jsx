@@ -1,4 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
+
 import UserInfo from "./UserInfo";
 import navigation from "@/config/navigation";
 
@@ -10,9 +11,9 @@ export default function Sidebar() {
     const menuItems = navigation[sectionName] ?? [];
 
     return (
-        <aside className="flex min-h-screen w-64 flex-col border-r bg-white">
+        <aside className="fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
             {/* Header */}
-            <div className="border-b p-6">
+            <div className="shrink-0 border-b p-6">
                 <h1 className="text-lg font-bold text-slate-800">
                     Real-Time Document Tracking
                 </h1>
@@ -28,7 +29,7 @@ export default function Sidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 space-y-2 p-4">
+            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
                 {menuItems.map((item) => (
                     <Link
                         key={item.route}
@@ -40,8 +41,10 @@ export default function Sidebar() {
                 ))}
             </nav>
 
-            {/* User */}
-            <UserInfo />
+            {/* User / Logout */}
+            <div className="shrink-0 border-t border-slate-200">
+                <UserInfo />
+            </div>
         </aside>
     );
 }

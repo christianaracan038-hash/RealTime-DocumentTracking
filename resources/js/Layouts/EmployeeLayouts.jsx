@@ -3,12 +3,16 @@ import Header from "@/Components/Employee/Header";
 
 export default function EmployeeLayout({ title, children }) {
     return (
-        <div className="flex min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50">
+            {/* Fixed Sidebar */}
             <Sidebar />
 
-            <div className="flex flex-1 flex-col">
+            {/* Main Area */}
+            <div className="ml-64 flex min-h-screen flex-col">
+                {/* Header */}
                 <Header title={title} />
 
+                {/* Scrollable Content */}
                 <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
                     {children}
                 </main>
