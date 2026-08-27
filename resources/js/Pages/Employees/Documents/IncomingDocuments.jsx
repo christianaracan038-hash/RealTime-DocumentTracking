@@ -1,8 +1,19 @@
 import { useState } from "react";
+import { router } from "@inertiajs/react";
 import DocumentDetailsModal from "./DocumentDetailsModal";
 
 export default function IncomingDocuments({ documents = [] }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
+
+    const handleReceived = () => {
+        setSelectedDocument(null);
+
+        router.reload({
+            only: ["documents"],
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
     return (
         <>
@@ -87,6 +98,7 @@ export default function IncomingDocuments({ documents = [] }) {
                 <DocumentDetailsModal
                     document={selectedDocument}
                     onClose={() => setSelectedDocument(null)}
+                    onReceived={handleReceived}
                 />
             )}
         </>

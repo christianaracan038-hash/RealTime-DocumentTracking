@@ -1,17 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 import ForwardDocumentModal from "./ForwardDocumentModal";
 
-export default function DocumentDetailsModal({ document, onClose }) {
+export default function DocumentDetailsModal({
+    document,
+    onClose,
+    onReceived,
+}) {
     const [showScanner, setShowScanner] = useState(false);
     const [showForwardModal, setShowForwardModal] = useState(false);
+    const [updatedDocument, setUpdatedDocument] = useState(document);
+
+    useEffect(() => {
+        setUpdatedDocument(document);
+    }, [document]);
 
     if (!document) {
         return null;
     }
 
-    const status = document.status?.status_name;
+    const status = updatedDocument?.status?.status_name;
 
     const isReceived = status === "Received";
     const isPending = status === "Pending";
@@ -148,13 +157,10 @@ export default function DocumentDetailsModal({ document, onClose }) {
             {/* Receive Scanner */}
             {showScanner && (
                 <ReceiveDocumentScanner
-                    document={document}
+                    document={updatedDocument}
                     mode="receive"
                     onClose={() => setShowScanner(false)}
-                    onReceived={() => {
-                        setShowScanner(false);
-                        onClose();
-                    }}
+                    onReceived={onReceived}
                 />
             )}
 

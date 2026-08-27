@@ -10,6 +10,7 @@ export default function ReceiveDocumentScanner({
 }) {
     const scannerRef = useRef(null);
     const isProcessingRef = useRef(false);
+    const isScannerRunningRef = useRef(false);
 
     const isForward = mode === "forward";
 
@@ -17,12 +18,36 @@ export default function ReceiveDocumentScanner({
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(null);
     const [processing, setProcessing] = useState(false);
+    const [receivedDocument, setReceivedDocument] = useState(null);
+    const [receiveResponse, setReceiveResponse] = useState(null);
 
     useEffect(() => {
         const scannerId = "document-qr-reader";
         const scanner = new Html5Qrcode(scannerId);
 
         scannerRef.current = scanner;
+
+        const stopScanner = async () => {
+            const currentScanner = scannerRef.current;
+
+            if (!currentScanner || !isScannerRunningRef.current) {
+                return;
+            }
+
+            try {
+                await currentScanner.stop();
+            } catch (error) {
+                console.warn("Scanner already stopped:", error);
+            } finally {
+                isScannerRunningRef.current = false;
+
+                try {
+                    currentScanner.clear();
+                } catch (error) {
+                    console.warn("Scanner already cleared:", error);
+                }
+            }
+        };
 
         const startScanner = async () => {
             try {
@@ -63,6 +88,8 @@ export default function ReceiveDocumentScanner({
                     },
                     () => {},
                 );
+
+                isScannerRunningRef.current = true;
             } catch (err) {
                 console.error("QR scanner error:", err);
 
@@ -76,14 +103,7 @@ export default function ReceiveDocumentScanner({
         startScanner();
 
         return () => {
-            if (scannerRef.current) {
-                scannerRef.current
-                    .stop()
-                    .catch(() => {})
-                    .finally(() => {
-                        scannerRef.current?.clear();
-                    });
-            }
+            stopScanner();
         };
     }, []);
 
@@ -217,16 +237,23 @@ export default function ReceiveDocumentScanner({
             |--------------------------------------------------------------------------
             */
 
-            setSuccess(true);
-            setProcessing(false);
+            setReceivedDocument(scannedDocument);
+            setReceiveResponse(actionData);
 
-            if (onReceived) {
-                onReceived(actionData.document);
+            if (scannerRef.current && isScannerRunningRef.current) {
+                try {
+                    await scannerRef.current.stop();
+                } catch (error) {
+                    console.warn("Scanner already stopped:", error);
+                } finally {
+                    isScannerRunningRef.current = false;
+                }
             }
 
-            setTimeout(() => {
-                onClose();
-            }, 1500);
+            setSuccess(true);
+            setProcessing(false);
+            isProcessingRef.current = false;
+            return;
         } catch (err) {
             console.error(`${isForward ? "FORWARD" : "RECEIVE"} ERROR:`, err);
 
@@ -275,52 +302,90 @@ export default function ReceiveDocumentScanner({
 
                 {/* Scanner */}
                 <div className="p-5">
-                    <div className="relative overflow-hidden rounded-xl bg-slate-900">
-                        <div id="document-qr-reader" className="w-full" />
+                    {!success && (
+                        <div className="relative overflow-hidden rounded-xl bg-slate-900">
+                            <div id="document-qr-reader" className="w-full" />
 
-                        {/* Processing */}
-                        {processing && !success && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                                <div className="text-center text-white">
-                                    <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+                            {processing && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                                    <div className="text-center text-white">
+                                        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
 
-                                    <p className="text-sm font-medium">
-                                        {isForward
-                                            ? "Verifying document..."
-                                            : "Verifying document..."}
+                                        <p className="text-sm font-medium">
+                                            Verifying document...
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {cameraError && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-slate-900 p-6 text-center">
+                                    <p className="text-sm text-red-300">
+                                        {cameraError}
                                     </p>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
+                    )}
 
-                        {/* Success */}
-                        {success && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-green-600/90">
-                                <div className="text-center text-white">
-                                    <div className="text-5xl">✓</div>
+                    {success && (
+                        <div className="rounded-xl border border-green-200 bg-white p-5">
+                            <div className="text-center">
+                                <div className="text-5xl text-green-600">✓</div>
 
-                                    <p className="mt-2 text-lg font-semibold">
-                                        Document Received
-                                    </p>
+                                <p className="mt-2 text-lg font-semibold text-slate-800">
+                                    Document Received
+                                </p>
 
-                                    <p className="mt-1 text-sm text-green-100">
-                                        Tracking history recorded.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Camera Error */}
-                        {cameraError && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-slate-900 p-6 text-center">
-                                <p className="text-sm text-red-300">
-                                    {cameraError}
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Tracking history recorded successfully.
                                 </p>
                             </div>
-                        )}
-                    </div>
 
-                    {/* Instruction */}
+                            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <p className="mb-3 text-sm font-semibold text-slate-700">
+                                    Receive Details
+                                </p>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-xs text-slate-500">
+                                            Tracking Number
+                                        </p>
+
+                                        <p className="font-medium text-slate-800">
+                                            {receivedDocument?.tracking_number ??
+                                                documentRecord.tracking_number}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-slate-500">
+                                            Document ID
+                                        </p>
+
+                                        <p className="font-medium text-slate-800">
+                                            {receivedDocument?.document_id ??
+                                                "-"}
+                                        </p>
+                                    </div>
+
+                                    {receiveResponse?.message && (
+                                        <div>
+                                            <p className="text-xs text-slate-500">
+                                                Status
+                                            </p>
+
+                                            <p className="font-medium text-green-600">
+                                                {receiveResponse.message}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {!success && !cameraError && !processing && !error && (
                         <p className="mt-4 text-center text-sm text-slate-500">
                             {isForward
@@ -329,7 +394,6 @@ export default function ReceiveDocumentScanner({
                         </p>
                     )}
 
-                    {/* Error */}
                     {error && (
                         <div className="mt-4 rounded-lg bg-red-50 p-3 text-center text-sm text-red-700">
                             {error}
@@ -341,11 +405,21 @@ export default function ReceiveDocumentScanner({
                 <div className="border-t px-5 py-4">
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={() => {
+                            if (success) {
+                                onReceived?.();
+                            } else {
+                                onClose();
+                            }
+                        }}
                         disabled={processing}
-                        className="w-full rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={`w-full rounded-lg px-4 py-2 font-medium ${
+                            success
+                                ? "bg-green-600 text-white hover:bg-green-700"
+                                : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
                     >
-                        Cancel
+                        {success ? "Done" : "Cancel"}
                     </button>
                 </div>
             </div>
