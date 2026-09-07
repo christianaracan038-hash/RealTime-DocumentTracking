@@ -1,6 +1,5 @@
 import { router } from "@inertiajs/react";
 import { useState } from "react";
-
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 
 const formatPhilippineDateTime = (date) => {
@@ -22,114 +21,49 @@ const getStatusClasses = (color) => {
     switch (color) {
         case "green":
             return "bg-green-100 text-green-700";
-
         case "blue":
             return "bg-blue-100 text-blue-700";
-
         case "red":
             return "bg-red-100 text-red-700";
-
         default:
             return "bg-yellow-100 text-yellow-700";
     }
 };
 
-export default function History({ documents }) {
-    const [search, setSearch] = useState("");
+export default function History({ documents, search: initialSearch = "" }) {
+    const [search, setSearch] = useState(initialSearch);
 
-    const documentData = documents?.data ?? [];
+    const handleSearch = () => {
+        router.get(
+            route("documents.history"),
+            {
+                search: search.trim(),
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
 
-    /*
-     * ==========================================================
-     * LOCAL / INSTANT SEARCH
-     * Same behavior as RecentDocumentsTable
-     * ==========================================================
-     */
-    const filteredDocuments = documentData.filter((document) => {
-        const keyword = search.toLowerCase().trim();
+    const handleClearSearch = () => {
+        setSearch("");
 
-        if (!keyword) {
-            return true;
-        }
+        router.get(
+            route("documents.history"),
+            {
+                page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
 
-        /*
-         * Search current document information
-         */
-        const basicMatch =
-            document.tracking_number?.toLowerCase().includes(keyword) ||
-            document.description?.toLowerCase().includes(keyword) ||
-            document.reference_number?.toLowerCase().includes(keyword) ||
-            document.status?.status_name?.toLowerCase().includes(keyword) ||
-            document.current_section?.section_name
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.destination_section?.section_name
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.current_employee?.username
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.current_employee?.employee_name
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.creator?.username?.toLowerCase().includes(keyword) ||
-            document.creator?.employee_name?.toLowerCase().includes(keyword);
-
-        /*
-         * ======================================================
-         * Search COMPLETE MOVEMENT HISTORY
-         * ======================================================
-         *
-         * Example:
-         *
-         * Records
-         *   ↓
-         * Accounting
-         *   ↓
-         * HR
-         *   ↓
-         * Legal
-         *
-         * Searching "Accounting" will find the document
-         * even if the current location is already Legal.
-         */
-        const historyMatch =
-            document.tracking_histories?.some((history) => {
-                const fromSection =
-                    history.from_section?.section_name?.toLowerCase() ?? "";
-
-                const toSection =
-                    history.to_section?.section_name?.toLowerCase() ?? "";
-
-                const employeeUsername =
-                    history.employee?.username?.toLowerCase() ?? "";
-
-                const employeeName =
-                    history.employee?.employee_name?.toLowerCase() ?? "";
-
-                const action = history.action?.toLowerCase() ?? "";
-
-                const remarks = history.remarks?.toLowerCase() ?? "";
-
-                const status = history.status?.status_name?.toLowerCase() ?? "";
-
-                return (
-                    fromSection.includes(keyword) ||
-                    toSection.includes(keyword) ||
-                    employeeUsername.includes(keyword) ||
-                    employeeName.includes(keyword) ||
-                    action.includes(keyword) ||
-                    remarks.includes(keyword) ||
-                    status.includes(keyword)
-                );
-            }) ?? false;
-
-        return basicMatch || historyMatch;
-    });
-
-    /*
-     * Pagination
-     */
     const goToPage = (url) => {
         if (!url) return;
 
@@ -142,7 +76,6 @@ export default function History({ documents }) {
     return (
         <EmployeeLayout title="Document History">
             <div className="p-6">
-                {/* Header */}
                 <div>
                     <h1 className="text-2xl font-semibold text-slate-900">
                         Document History
@@ -154,26 +87,46 @@ export default function History({ documents }) {
                     </p>
                 </div>
 
-                {/* Search */}
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search..."
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleSearch();
+                            }
+                        }}
+                        placeholder="Search tracking number, reference, description..."
                         className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:w-80"
                     />
+
+                    <button
+                        type="button"
+                        onClick={handleSearch}
+                        className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                        Search
+                    </button>
+
+                    {search && (
+                        <button
+                            type="button"
+                            onClick={handleClearSearch}
+                            className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            Clear
+                        </button>
+                    )}
                 </div>
 
-                {/* Documents */}
                 <div className="mt-6">
-                    {filteredDocuments.length > 0 ? (
-                        filteredDocuments.map((document) => (
+                    {documents?.data?.length > 0 ? (
+                        documents.data.map((document) => (
                             <div
                                 key={document.document_id}
                                 className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                             >
-                                {/* Header */}
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
                                         <h2 className="font-semibold text-slate-800">
@@ -195,9 +148,7 @@ export default function History({ documents }) {
                                     </span>
                                 </div>
 
-                                {/* Basic Information */}
                                 <div className="mt-5 grid gap-4 border-t pt-4 text-sm md:grid-cols-2 lg:grid-cols-4">
-                                    {/* Creator */}
                                     <div>
                                         <p className="text-xs font-medium text-slate-400">
                                             Created By
@@ -211,7 +162,6 @@ export default function History({ documents }) {
                                         </p>
                                     </div>
 
-                                    {/* Current Section */}
                                     <div>
                                         <p className="text-xs font-medium text-slate-400">
                                             Current Section
@@ -223,7 +173,6 @@ export default function History({ documents }) {
                                         </p>
                                     </div>
 
-                                    {/* Current Holder */}
                                     <div>
                                         <p className="text-xs font-medium text-slate-400">
                                             Current Holder
@@ -238,7 +187,6 @@ export default function History({ documents }) {
                                         </p>
                                     </div>
 
-                                    {/* Destination */}
                                     <div>
                                         <p className="text-xs font-medium text-slate-400">
                                             Current Destination
@@ -251,7 +199,6 @@ export default function History({ documents }) {
                                     </div>
                                 </div>
 
-                                {/* Reference Number */}
                                 {document.reference_number && (
                                     <div className="mt-4 rounded-lg bg-slate-50 p-3">
                                         <p className="text-xs font-medium text-slate-400">
@@ -264,7 +211,6 @@ export default function History({ documents }) {
                                     </div>
                                 )}
 
-                                {/* Document Movement */}
                                 <div className="mt-5 border-t pt-4">
                                     <h3 className="mb-4 text-sm font-semibold text-slate-700">
                                         Document Movement
@@ -280,7 +226,6 @@ export default function History({ documents }) {
                                                         }
                                                         className="rounded-lg border border-slate-200 bg-slate-50 p-4"
                                                     >
-                                                        {/* Movement Header */}
                                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
@@ -300,7 +245,6 @@ export default function History({ documents }) {
                                                             </span>
                                                         </div>
 
-                                                        {/* From → To */}
                                                         <div className="mt-3 rounded-lg bg-white p-3">
                                                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                                                 <div className="flex-1">
@@ -335,7 +279,6 @@ export default function History({ documents }) {
                                                             </div>
                                                         </div>
 
-                                                        {/* Processed By */}
                                                         <div className="mt-3">
                                                             <p className="text-xs text-slate-400">
                                                                 Processed By
@@ -352,7 +295,6 @@ export default function History({ documents }) {
                                                             </p>
                                                         </div>
 
-                                                        {/* Status */}
                                                         {history.status
                                                             ?.status_name && (
                                                             <div className="mt-2">
@@ -370,7 +312,6 @@ export default function History({ documents }) {
                                                             </div>
                                                         )}
 
-                                                        {/* Remarks */}
                                                         {history.remarks && (
                                                             <div className="mt-2">
                                                                 <p className="text-xs text-slate-400">
@@ -412,7 +353,6 @@ export default function History({ documents }) {
                     )}
                 </div>
 
-                {/* Pagination */}
                 {documents?.links?.length > 0 && (
                     <div className="mt-6 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-sm text-slate-500">

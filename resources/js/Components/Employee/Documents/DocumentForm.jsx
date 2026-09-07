@@ -1,12 +1,28 @@
 import { useForm } from "@inertiajs/react";
-
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
+
+const transactionTypes = [
+    "Registration / New Business Registration",
+    "Update Registration Information",
+    "Taxpayer Registration Update",
+    "Certificate of Registration (COR)",
+    "Tax Clearance",
+    "Tax Return / Filing",
+    "Payment / Tax Payment",
+    "Assessment",
+    "Letter / Notice",
+    "Request for Certification",
+    "Protest / Appeal",
+    "Compliance / Verification",
+    "Others",
+];
 
 export default function DocumentForm({ sections = [] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         document_date: "",
-        description: "",
+        taxpayer_name: "",
+        transaction_type: "",
         reference_number: "",
         destination_section_id: "",
     });
@@ -19,7 +35,8 @@ export default function DocumentForm({ sections = [] }) {
             onSuccess: () => {
                 reset(
                     "document_date",
-                    "description",
+                    "taxpayer_name",
+                    "transaction_type",
                     "reference_number",
                     "destination_section_id",
                 );
@@ -34,7 +51,6 @@ export default function DocumentForm({ sections = [] }) {
             </h2>
 
             <form onSubmit={submit} className="space-y-5">
-                {/* Tracking Number */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
                         Tracking Number
@@ -48,7 +64,6 @@ export default function DocumentForm({ sections = [] }) {
                     />
                 </div>
 
-                {/* Date */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
                         Date
@@ -70,28 +85,58 @@ export default function DocumentForm({ sections = [] }) {
                     )}
                 </div>
 
-                {/* Description */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
-                        Description
+                        Taxpayer Name
                     </label>
 
-                    <textarea
-                        rows="5"
-                        value={data.description}
-                        onChange={(e) => setData("description", e.target.value)}
-                        placeholder="Enter document description..."
-                        className="w-full resize-none rounded-lg border border-slate-300 px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
+                    <input
+                        type="text"
+                        value={data.taxpayer_name}
+                        onChange={(e) =>
+                            setData("taxpayer_name", e.target.value)
+                        }
+                        placeholder="Enter taxpayer name"
+                        className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
                     />
 
-                    {errors.description && (
+                    {errors.taxpayer_name && (
                         <p className="mt-1 text-sm text-red-500">
-                            {errors.description}
+                            {errors.taxpayer_name}
                         </p>
                     )}
                 </div>
 
-                {/* Reference Number (Optional) */}
+                <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                        Transaction / Document Type
+                    </label>
+
+                    <select
+                        value={data.transaction_type}
+                        onChange={(e) =>
+                            setData("transaction_type", e.target.value)
+                        }
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                        <option value="">
+                            Select Transaction / Document Type
+                        </option>
+
+                        {transactionTypes.map((type) => (
+                            <option key={type} value={type}>
+                                {type}
+                            </option>
+                        ))}
+                    </select>
+
+                    {errors.transaction_type && (
+                        <p className="mt-1 text-sm text-red-500">
+                            {errors.transaction_type}
+                        </p>
+                    )}
+                </div>
+
                 <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
                         Reference Number
@@ -103,11 +148,11 @@ export default function DocumentForm({ sections = [] }) {
                         onChange={(e) =>
                             setData("reference_number", e.target.value)
                         }
+                        placeholder="Optional"
                         className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
                     />
                 </div>
 
-                {/* Destination */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
                         Destination Section
@@ -118,7 +163,7 @@ export default function DocumentForm({ sections = [] }) {
                         onChange={(e) =>
                             setData("destination_section_id", e.target.value)
                         }
-                        className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
                     >
                         <option value="">Select Destination</option>
 

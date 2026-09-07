@@ -12,6 +12,7 @@ class Document extends Model
 
     protected $fillable = [
         'tracking_number',
+        'taxpayer_name',
         'document_date',
         'description',
         'reference_number',

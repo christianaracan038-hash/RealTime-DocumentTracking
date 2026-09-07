@@ -80,6 +80,9 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::get('/employee/documents', [DocumentController::class, 'documents'])
     ->name('documents.index');
 
+    Route::get('/documents/history', [DocumentController::class, 'history'])
+    ->name('documents.history');
+
 });
 
 

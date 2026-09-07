@@ -58,6 +58,15 @@ export default function DocumentDetailsModal({
 
                         <div>
                             <p className="text-xs font-medium text-slate-400">
+                                Taxpayer Name
+                            </p>
+                            <p className="mt-1 font-medium text-slate-700">
+                                {document.taxpayer_name ?? "-"}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-xs font-medium text-slate-400">
                                 Description
                             </p>
 

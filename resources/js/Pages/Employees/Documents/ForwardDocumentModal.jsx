@@ -87,7 +87,7 @@ export default function ForwardDocumentModal({ document, onClose }) {
     return (
         <>
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-                <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+                <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b px-6 py-4">
                         <div>
@@ -112,7 +112,7 @@ export default function ForwardDocumentModal({ document, onClose }) {
                     </div>
 
                     {/* Document Info */}
-                    <div className="space-y-4 px-6 py-5">
+                    <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
                         <div>
                             <p className="text-xs font-medium text-slate-400">
                                 Tracking Number

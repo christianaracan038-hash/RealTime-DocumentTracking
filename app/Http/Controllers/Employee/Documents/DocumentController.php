@@ -12,6 +12,7 @@ use App\Services\DocumentService;
 use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
 use App\Models\Section;
 use App\Models\Document;
+use Illuminate\Http\Request;
 
 class DocumentController extends Controller
 {
@@ -74,21 +75,21 @@ class DocumentController extends Controller
      * Search is handled on the frontend,
      * similar to RecentDocumentsTable.
      */
-    public function history(
-        DocumentService $documentService
-    ): Response {
+    public function history(DocumentService $documentService): Response
+    {
         $employee = Auth::guard('employee')->user();
 
+        $search = request()->input('search');
+
         $documents = $documentService->getHistoryDocuments(
-            $employee
+            $employee,
+            $search
         );
 
-        return Inertia::render(
-            'Employees/Documents/History',
-            [
-                'documents' => $documents,
-            ]
-        );
+        return Inertia::render('Employees/Documents/History', [
+            'documents' => $documents,
+            'search' => $search ?? '',
+        ]);
     }
 
     /**

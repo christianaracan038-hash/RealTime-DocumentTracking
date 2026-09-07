@@ -23,6 +23,8 @@ class DocumentService
 
                 'tracking_number' => $this->generateTrackingNumber(),
 
+                'taxpayer_name' => $data['taxpayer_name'],
+
                 'document_date' => $data['document_date'],
 
                 'description' => $data['description'],
@@ -89,138 +91,127 @@ class DocumentService
 
     }
 
-    public function getHistoryDocuments($employee)
+
+    public function getHistoryDocuments($employee, $search = null)
     {
         return Document::query()
             ->with([
-                /*
-                * Current document information
-                */
                 'status',
                 'currentSection',
                 'destinationSection',
                 'currentEmployee',
-
-                /*
-                * Original creator
-                */
                 'creator',
-
-                /*
-                * Complete movement history
-                */
                 'trackingHistories' => function ($query) {
-                    $query
-                        ->with([
-                            'fromSection',
-                            'toSection',
-                            'employee',
-                            'status',
-                        ])
-                        ->orderBy('tracked_at', 'asc');
+                    $query->with([
+                        'fromSection',
+                        'toSection',
+                        'employee',
+                        'status',
+                    ])->orderBy('tracked_at', 'asc');
                 },
             ])
-
-            /*
-            * ==========================================================
-            * DOCUMENT VISIBILITY
-            * ==========================================================
-            */
             ->where(function ($query) use ($employee) {
-
-                /*
-                * 1. Created by this employee
-                */
-                $query->where(
-                    'created_by',
-                    $employee->employee_id
-                )
-
-                /*
-                * 2. Currently held by this employee
-                */
-                ->orWhere(
-                    'current_employee_id',
-                    $employee->employee_id
-                )
-
-                /*
-                * 3. Currently inside employee's section
-                */
-                ->orWhere(
-                    'current_section_id',
-                    $employee->section_id
-                )
-
-                /*
-                * 4. Currently destined for employee's section
-                */
-                ->orWhere(
-                    'destination_section_id',
-                    $employee->section_id
-                )
-
-                /*
-                * 5. Employee's section appeared
-                *    anywhere in document history.
-                *
-                * Example:
-                *
-                * Records -> Accounting
-                * Accounting -> HR
-                * HR -> Legal
-                *
-                * Accounting can still see the document.
-                */
-                ->orWhereHas(
-                    'trackingHistories',
-                    function ($historyQuery) use ($employee) {
-
+                $query->where('created_by', $employee->employee_id)
+                    ->orWhere('current_employee_id', $employee->employee_id)
+                    ->orWhere('current_section_id', $employee->section_id)
+                    ->orWhere('destination_section_id', $employee->section_id)
+                    ->orWhereHas('trackingHistories', function ($historyQuery) use ($employee) {
                         $historyQuery->where(function ($query) use ($employee) {
-
-                            $query
-                                ->where(
-                                    'from_section_id',
-                                    $employee->section_id
-                                )
-                                ->orWhere(
-                                    'to_section_id',
-                                    $employee->section_id
-                                );
+                            $query->where('from_section_id', $employee->section_id)
+                                ->orWhere('to_section_id', $employee->section_id);
                         });
-                    }
-                )
-
-                /*
-                * 6. Employee personally performed
-                *    a tracking action.
-                */
-                ->orWhereHas(
-                    'trackingHistories',
-                    function ($historyQuery) use ($employee) {
-
+                    })
+                    ->orWhereHas('trackingHistories', function ($historyQuery) use ($employee) {
                         $historyQuery->where(
                             'employee_id',
                             $employee->employee_id
                         );
-                    }
-                );
+                    });
             })
+            ->when($search, function ($query) use ($search) {
+                $search = trim($search);
 
-            /*
-            * Newest registered documents first
-            */
+                $query->where(function ($query) use ($search) {
+                    $query->where(
+                        'tracking_number',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere('taxpayer_name', 'like', "%{$search}%")
+                    ->orWhere(
+                        'reference_number',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhere(
+                        'description',
+                        'like',
+                        "%{$search}%"
+                    )
+                    ->orWhereHas('creator', function ($creatorQuery) use ($search) {
+                        $creatorQuery->where(
+                            'username',
+                            'like',
+                            "%{$search}%"
+                        );
+                    })
+                    ->orWhereHas('currentSection', function ($sectionQuery) use ($search) {
+                        $sectionQuery->where(
+                            'section_name',
+                            'like',
+                            "%{$search}%"
+                        );
+                    })
+                    ->orWhereHas('destinationSection', function ($sectionQuery) use ($search) {
+                        $sectionQuery->where(
+                            'section_name',
+                            'like',
+                            "%{$search}%"
+                        );
+                    })
+                    ->orWhereHas('currentEmployee', function ($employeeQuery) use ($search) {
+                        $employeeQuery->where(
+                            'username',
+                            'like',
+                            "%{$search}%"
+                        );
+                    })
+                    ->orWhereHas('trackingHistories', function ($historyQuery) use ($search) {
+                        $historyQuery->where('action', 'like', "%{$search}%")
+                            ->orWhere('remarks', 'like', "%{$search}%")
+                            ->orWhereHas('fromSection', function ($sectionQuery) use ($search) {
+                                $sectionQuery->where(
+                                    'section_name',
+                                    'like',
+                                    "%{$search}%"
+                                );
+                            })
+                            ->orWhereHas('toSection', function ($sectionQuery) use ($search) {
+                                $sectionQuery->where(
+                                    'section_name',
+                                    'like',
+                                    "%{$search}%"
+                                );
+                            })
+                            ->orWhereHas('employee', function ($employeeQuery) use ($search) {
+                                $employeeQuery->where(
+                                    'username',
+                                    'like',
+                                    "%{$search}%"
+                                );
+                            })
+                            ->orWhereHas('status', function ($statusQuery) use ($search) {
+                                $statusQuery->where(
+                                    'status_name',
+                                    'like',
+                                    "%{$search}%"
+                                );
+                            });
+                    });
+                });
+            })
             ->latest('created_at')
-
-            /*
-            * Same pagination style as
-            * RecentDocumentsTable.
-            */
-            ->paginate(10)
-
-            /*
-            * Preserve pagination query parameters.
-            */
+            ->paginate(3)
             ->withQueryString();
     }
 }

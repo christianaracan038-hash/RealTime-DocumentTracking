@@ -5,14 +5,19 @@ export default function Dashboard({ documents = [] }) {
     return (
         <EmployeeLayout title="RDO Dashboard">
             <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="text-2xl font-semibold text-slate-900">
-                        Welcome to RDO Dashboard
-                    </h2>
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-l-4 border-[#A6192E] p-6">
+                        <h2 className="mt-1 text-2xl font-bold text-[#003B71]">
+                            RDO Dashboard
+                        </h2>
 
-                    <p className="mt-2 text-slate-500">
-                        Manage documents for the RDO section.
-                    </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                            Manage and monitor incoming documents for the RDO
+                            section.
+                        </p>
+                    </div>
+
+                    <div className="h-1 bg-[#F6C344]" />
                 </div>
 
                 <IncomingDocuments documents={documents} />
