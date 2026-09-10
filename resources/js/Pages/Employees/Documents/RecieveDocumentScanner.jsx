@@ -259,7 +259,11 @@ export default function ReceiveDocumentScanner({
                         </h2>
 
                         <p className="text-xs text-slate-500">
-                            {documentRecord.tracking_number}
+                            {documentRecord.taxpayer_name
+                                ? documentRecord.taxpayer_name +
+                                  " · " +
+                                  documentRecord.tracking_number
+                                : documentRecord.tracking_number}
                         </p>
                     </div>
 

@@ -34,11 +34,24 @@ export default function IncomingDocuments({ documents = [] }) {
                             >
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <p className="font-semibold text-slate-800">
-                                            {document.tracking_number}
+                                        <p className="font-semibold text-slate-900">
+                                            {document.taxpayer_name ??
+                                                "No taxpayer on record"}
                                         </p>
 
-                                        <p className="mt-1 text-sm text-slate-600">
+                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                                                {document.tracking_number}
+                                            </span>
+
+                                            {document.transaction_type && (
+                                                <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                                                    {document.transaction_type}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="mt-2 text-sm text-slate-600">
                                             {document.description}
                                         </p>
 
