@@ -115,12 +115,35 @@ export default function ForwardDocumentModal({ document, onClose }) {
                     <div className="space-y-4 px-6 py-5">
                         <div>
                             <p className="text-xs font-medium text-slate-400">
-                                Tracking Number
+                                Taxpayer
                             </p>
 
-                            <p className="font-semibold text-slate-800">
-                                {document.tracking_number}
+                            <p className="text-lg font-semibold text-slate-900">
+                                {document.taxpayer_name ??
+                                    "No taxpayer on record"}
                             </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs font-medium text-slate-400">
+                                    Tracking Number
+                                </p>
+
+                                <p className="font-semibold text-slate-800">
+                                    {document.tracking_number}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-medium text-slate-400">
+                                    Transaction Type
+                                </p>
+
+                                <p className="text-slate-700">
+                                    {document.transaction_type ?? "—"}
+                                </p>
+                            </div>
                         </div>
 
                         <div>
