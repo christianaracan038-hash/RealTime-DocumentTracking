@@ -8,7 +8,14 @@ export default function Sidebar() {
 
     const sectionName = auth?.employee?.section_name?.toUpperCase();
 
-    const menuItems = navigation[sectionName] ?? [];
+    /*
+     * Some sections in navigation.js point at dashboards that have not
+     * been built yet. Ziggy's route() throws on an unregistered name, so
+     * those entries are dropped rather than crashing the whole sidebar.
+     */
+    const menuItems = (navigation[sectionName] ?? []).filter((item) =>
+        route().has(item.route),
+    );
 
     return (
         <aside className="fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white">

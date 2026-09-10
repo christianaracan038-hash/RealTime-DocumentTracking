@@ -15,7 +15,7 @@ export default function UserInfo() {
                 </h3>
 
                 <p className="text-sm text-slate-500">
-                    {auth?.employee?.section?.section_name}
+                    {auth?.employee?.section_name}
                 </p>
             </div>
 

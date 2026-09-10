@@ -5,7 +5,12 @@ import EmployeePageHeader from "@/Components/Employee/EmployeePageHeader";
 import DocumentForm from "@/Components/Employee/Documents/DocumentForm";
 import RecentDocumentsTable from "@/Components/Employee/Documents/RecentDocumentsTable";
 
-export default function Create({ documents = [], sections = [] }) {
+export default function Create({
+    documents = [],
+    sections = [],
+    transactionTypes = [],
+    filters = {},
+}) {
     return (
         <EmployeeLayout>
             <EmployeePageHeader
@@ -16,12 +21,18 @@ export default function Create({ documents = [], sections = [] }) {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {/* Registration Form */}
                 <div className="xl:col-span-1">
-                    <DocumentForm sections={sections} />
+                    <DocumentForm
+                        sections={sections}
+                        transactionTypes={transactionTypes}
+                    />
                 </div>
 
                 {/* Recent Documents */}
                 <div className="xl:col-span-2">
-                    <RecentDocumentsTable documents={documents} />
+                    <RecentDocumentsTable
+                        documents={documents}
+                        filters={filters}
+                    />
                 </div>
             </div>
         </EmployeeLayout>
