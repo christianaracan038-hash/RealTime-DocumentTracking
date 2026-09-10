@@ -27,6 +27,18 @@ class StoreDocumentRequest extends FormRequest
                 'date',
             ],
 
+            'taxpayer_name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'transaction_type' => [
+                'required',
+                'string',
+                Rule::in(config('transaction_types')),
+            ],
+
             'description' => [
                 'required',
                 'string',
@@ -54,23 +66,25 @@ class StoreDocumentRequest extends FormRequest
     {
         return [
 
-            'document_date.required' =>
-                'Please select the document date.',
+            'document_date.required' => 'Please select the document date.',
 
-            'document_date.date' =>
-                'Invalid document date.',
+            'document_date.date' => 'Invalid document date.',
 
-            'description.required' =>
-                'Please enter the document description.',
+            'taxpayer_name.required' => 'Please enter the taxpayer name.',
 
-            'description.max' =>
-                'Description may not exceed 1000 characters.',
+            'taxpayer_name.max' => 'Taxpayer name may not exceed 255 characters.',
 
-            'destination_section_id.required' =>
-                'Please select the destination section.',
+            'transaction_type.required' => 'Please select the transaction type.',
 
-            'destination_section_id.exists' =>
-                'Selected destination section is invalid.',
+            'transaction_type.in' => 'Selected transaction type is invalid.',
+
+            'description.required' => 'Please enter the document description.',
+
+            'description.max' => 'Description may not exceed 1000 characters.',
+
+            'destination_section_id.required' => 'Please select the destination section.',
+
+            'destination_section_id.exists' => 'Selected destination section is invalid.',
 
         ];
     }

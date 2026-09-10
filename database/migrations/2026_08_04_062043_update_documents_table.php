@@ -10,7 +10,15 @@ return new class extends Migration
     {
         Schema::table('documents', function (Blueprint $table) {
 
-            // Remove old status column
+            /*
+            * Remove old status column.
+            *
+            * The index has to go first. PostgreSQL drops it along with
+            * the column, but SQLite (used by the test suite) rebuilds
+            * the table and fails on the orphaned index.
+            */
+            $table->dropIndex(['document_statuses']);
+
             $table->dropColumn('document_statuses');
 
             // Add new status relationship

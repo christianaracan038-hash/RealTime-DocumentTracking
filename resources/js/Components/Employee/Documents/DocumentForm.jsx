@@ -3,9 +3,11 @@ import { useForm } from "@inertiajs/react";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 
-export default function DocumentForm({ sections = [] }) {
+export default function DocumentForm({ sections = [], transactionTypes = [] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         document_date: "",
+        taxpayer_name: "",
+        transaction_type: "",
         description: "",
         reference_number: "",
         destination_section_id: "",
@@ -19,6 +21,8 @@ export default function DocumentForm({ sections = [] }) {
             onSuccess: () => {
                 reset(
                     "document_date",
+                    "taxpayer_name",
+                    "transaction_type",
                     "description",
                     "reference_number",
                     "destination_section_id",
@@ -66,6 +70,58 @@ export default function DocumentForm({ sections = [] }) {
                     {errors.document_date && (
                         <p className="mt-1 text-sm text-red-500">
                             {errors.document_date}
+                        </p>
+                    )}
+                </div>
+
+                {/* Taxpayer Name */}
+                <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                        Taxpayer Name
+                    </label>
+
+                    <input
+                        type="text"
+                        value={data.taxpayer_name}
+                        onChange={(e) =>
+                            setData("taxpayer_name", e.target.value)
+                        }
+                        placeholder="Enter the taxpayer's name..."
+                        className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+
+                    {errors.taxpayer_name && (
+                        <p className="mt-1 text-sm text-red-500">
+                            {errors.taxpayer_name}
+                        </p>
+                    )}
+                </div>
+
+                {/* Transaction / Document Type */}
+                <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                        Transaction / Document Type
+                    </label>
+
+                    <select
+                        value={data.transaction_type}
+                        onChange={(e) =>
+                            setData("transaction_type", e.target.value)
+                        }
+                        className="w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                        <option value="">Select Transaction Type</option>
+
+                        {transactionTypes.map((type) => (
+                            <option key={type} value={type}>
+                                {type}
+                            </option>
+                        ))}
+                    </select>
+
+                    {errors.transaction_type && (
+                        <p className="mt-1 text-sm text-red-500">
+                            {errors.transaction_type}
                         </p>
                     )}
                 </div>

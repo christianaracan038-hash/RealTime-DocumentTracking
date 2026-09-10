@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Employee\Documents;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
+use App\Models\Document;
+use App\Models\Section;
+use App\Services\DocumentService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
-
-use App\Services\DocumentService;
-use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
-use App\Models\Section;
-use App\Models\Document;
 
 class DocumentController extends Controller
 {
@@ -26,9 +26,13 @@ class DocumentController extends Controller
     /**
      * Show document registration form.
      */
-    public function create(): Response
-    {
+    public function create(
+        Request $request,
+        DocumentService $documentService
+    ): Response {
         $employee = Auth::guard('employee')->user();
+
+        $search = $request->string('search')->toString();
 
         return Inertia::render('Employees/Documents/Create', [
             'sections' => Section::query()
@@ -39,16 +43,23 @@ class DocumentController extends Controller
                     'section_name',
                 ]),
 
-            'documents' => Document::query()
-                ->with([
-                    'status',
-                    'destinationSection',
-                    'currentSection',
-                ])
-                ->where('created_by', $employee->employee_id)
-                ->latest('document_id')
-                ->paginate(5)
-                ->withQueryString(),
+            /*
+            * Selectable transaction / document types.
+            */
+            'transactionTypes' => config('transaction_types'),
+
+            'documents' => $documentService->getRegisteredDocuments(
+                $employee,
+                $search
+            ),
+
+            /*
+            * Echo the keyword back so the input stays filled
+            * after the server round-trip.
+            */
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 
@@ -71,22 +82,35 @@ class DocumentController extends Controller
     /**
      * Display document history visible to the employee.
      *
-     * Search is handled on the frontend,
-     * similar to RecentDocumentsTable.
+     * Search is applied in the database before pagination, so a
+     * matching document is found regardless of which page it
+     * would otherwise appear on.
      */
     public function history(
+        Request $request,
         DocumentService $documentService
     ): Response {
         $employee = Auth::guard('employee')->user();
 
+        $search = $request->string('search')->toString();
+
         $documents = $documentService->getHistoryDocuments(
-            $employee
+            $employee,
+            $search
         );
 
         return Inertia::render(
             'Employees/Documents/History',
             [
                 'documents' => $documents,
+
+                /*
+                * Echo the keyword back so the input stays filled
+                * after the server round-trip.
+                */
+                'filters' => [
+                    'search' => $search,
+                ],
             ]
         );
     }

@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
+import SearchInput from "@/Components/Employee/SearchInput";
 import DocumentQrModal from "@/Components/Employee/Documents/DocumentQrModal";
 
-export default function RecentDocumentsTable({ documents }) {
+export default function RecentDocumentsTable({ documents, filters = {} }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
-    const [search, setSearch] = useState("");
 
+    /*
+     * Already filtered by the database. Filtering again here would
+     * only narrow the current page.
+     */
     const documentData = documents?.data ?? [];
 
     const formatPhilippineDate = (date) => {
@@ -19,23 +23,6 @@ export default function RecentDocumentsTable({ documents }) {
             day: "numeric",
         }).format(new Date(date));
     };
-
-    const filteredDocuments = documentData.filter((document) => {
-        const keyword = search.toLowerCase().trim();
-
-        if (!keyword) {
-            return true;
-        }
-
-        return (
-            document.tracking_number?.toLowerCase().includes(keyword) ||
-            document.description?.toLowerCase().includes(keyword) ||
-            document.destination_section?.section_name
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.status?.status_name?.toLowerCase().includes(keyword)
-        );
-    });
 
     const goToPage = (url) => {
         if (!url) return;
@@ -60,13 +47,12 @@ export default function RecentDocumentsTable({ documents }) {
                         </p>
                     </div>
 
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search..."
-                        className="w-64 rounded-lg border border-slate-300 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                    />
+                    <div className="w-64">
+                        <SearchInput
+                            initialValue={filters.search}
+                            placeholder="Search taxpayer, type, tracking no..."
+                        />
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -75,6 +61,14 @@ export default function RecentDocumentsTable({ documents }) {
                             <tr className="border-b bg-slate-50">
                                 <th className="px-4 py-3 text-left">
                                     Tracking Number
+                                </th>
+
+                                <th className="px-4 py-3 text-left">
+                                    Taxpayer
+                                </th>
+
+                                <th className="px-4 py-3 text-left">
+                                    Transaction Type
                                 </th>
 
                                 <th className="px-4 py-3 text-left">
@@ -102,14 +96,22 @@ export default function RecentDocumentsTable({ documents }) {
                         </thead>
 
                         <tbody>
-                            {filteredDocuments.length > 0 ? (
-                                filteredDocuments.map((document) => (
+                            {documentData.length > 0 ? (
+                                documentData.map((document) => (
                                     <tr
                                         key={document.document_id}
                                         className="border-b hover:bg-slate-50"
                                     >
                                         <td className="px-4 py-3">
                                             {document.tracking_number}
+                                        </td>
+
+                                        <td className="px-4 py-3 font-semibold text-slate-800">
+                                            {document.taxpayer_name ?? "-"}
+                                        </td>
+
+                                        <td className="px-4 py-3">
+                                            {document.transaction_type ?? "-"}
                                         </td>
 
                                         <td className="px-4 py-3">
@@ -176,7 +178,7 @@ export default function RecentDocumentsTable({ documents }) {
                             ) : (
                                 <tr>
                                     <td
-                                        colSpan="7"
+                                        colSpan="9"
                                         className="py-10 text-center text-slate-400"
                                     >
                                         No registered documents found.

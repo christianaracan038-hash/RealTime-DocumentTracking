@@ -1,7 +1,7 @@
 import { router } from "@inertiajs/react";
-import { useState } from "react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
+import SearchInput from "@/Components/Employee/SearchInput";
 
 const formatPhilippineDateTime = (date) => {
     if (!date) return "-";
@@ -34,98 +34,18 @@ const getStatusClasses = (color) => {
     }
 };
 
-export default function History({ documents }) {
-    const [search, setSearch] = useState("");
-
-    const documentData = documents?.data ?? [];
-
+export default function History({ documents, filters = {} }) {
     /*
      * ==========================================================
-     * LOCAL / INSTANT SEARCH
-     * Same behavior as RecentDocumentsTable
+     * SEARCH
+     *
+     * The keyword is sent to the server and applied to the database
+     * query before pagination, so a match is found even when the
+     * document sits on page 3. Filtering here instead would only
+     * ever search the rows already on screen.
      * ==========================================================
      */
-    const filteredDocuments = documentData.filter((document) => {
-        const keyword = search.toLowerCase().trim();
-
-        if (!keyword) {
-            return true;
-        }
-
-        /*
-         * Search current document information
-         */
-        const basicMatch =
-            document.tracking_number?.toLowerCase().includes(keyword) ||
-            document.description?.toLowerCase().includes(keyword) ||
-            document.reference_number?.toLowerCase().includes(keyword) ||
-            document.status?.status_name?.toLowerCase().includes(keyword) ||
-            document.current_section?.section_name
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.destination_section?.section_name
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.current_employee?.username
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.current_employee?.employee_name
-                ?.toLowerCase()
-                .includes(keyword) ||
-            document.creator?.username?.toLowerCase().includes(keyword) ||
-            document.creator?.employee_name?.toLowerCase().includes(keyword);
-
-        /*
-         * ======================================================
-         * Search COMPLETE MOVEMENT HISTORY
-         * ======================================================
-         *
-         * Example:
-         *
-         * Records
-         *   ↓
-         * Accounting
-         *   ↓
-         * HR
-         *   ↓
-         * Legal
-         *
-         * Searching "Accounting" will find the document
-         * even if the current location is already Legal.
-         */
-        const historyMatch =
-            document.tracking_histories?.some((history) => {
-                const fromSection =
-                    history.from_section?.section_name?.toLowerCase() ?? "";
-
-                const toSection =
-                    history.to_section?.section_name?.toLowerCase() ?? "";
-
-                const employeeUsername =
-                    history.employee?.username?.toLowerCase() ?? "";
-
-                const employeeName =
-                    history.employee?.employee_name?.toLowerCase() ?? "";
-
-                const action = history.action?.toLowerCase() ?? "";
-
-                const remarks = history.remarks?.toLowerCase() ?? "";
-
-                const status = history.status?.status_name?.toLowerCase() ?? "";
-
-                return (
-                    fromSection.includes(keyword) ||
-                    toSection.includes(keyword) ||
-                    employeeUsername.includes(keyword) ||
-                    employeeName.includes(keyword) ||
-                    action.includes(keyword) ||
-                    remarks.includes(keyword) ||
-                    status.includes(keyword)
-                );
-            }) ?? false;
-
-        return basicMatch || historyMatch;
-    });
+    const documentData = documents?.data ?? [];
 
     /*
      * Pagination
@@ -156,19 +76,18 @@ export default function History({ documents }) {
 
                 {/* Search */}
                 <div className="mt-6 flex justify-end">
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search..."
-                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:w-80"
-                    />
+                    <div className="w-full sm:w-96">
+                        <SearchInput
+                            initialValue={filters.search}
+                            placeholder="Search taxpayer name, type, tracking no..."
+                        />
+                    </div>
                 </div>
 
                 {/* Documents */}
                 <div className="mt-6">
-                    {filteredDocuments.length > 0 ? (
-                        filteredDocuments.map((document) => (
+                    {documentData.length > 0 ? (
+                        documentData.map((document) => (
                             <div
                                 key={document.document_id}
                                 className="mb-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
@@ -176,11 +95,29 @@ export default function History({ documents }) {
                                 {/* Header */}
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <h2 className="font-semibold text-slate-800">
-                                            {document.tracking_number}
+                                        {/*
+                                         * Taxpayer leads the card: during an
+                                         * inquiry the employee knows the name,
+                                         * not the tracking number.
+                                         */}
+                                        <h2 className="text-lg font-semibold text-slate-900">
+                                            {document.taxpayer_name ??
+                                                "No taxpayer on record"}
                                         </h2>
 
-                                        <p className="mt-1 text-sm text-slate-500">
+                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                                                {document.tracking_number}
+                                            </span>
+
+                                            {document.transaction_type && (
+                                                <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                                                    {document.transaction_type}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="mt-2 text-sm text-slate-500">
                                             {document.description}
                                         </p>
                                     </div>
@@ -204,10 +141,7 @@ export default function History({ documents }) {
                                         </p>
 
                                         <p className="mt-1 font-medium text-slate-700">
-                                            {document.creator?.username ??
-                                                document.creator
-                                                    ?.employee_name ??
-                                                "-"}
+                                            {document.creator?.username ?? "-"}
                                         </p>
                                     </div>
 
@@ -230,11 +164,7 @@ export default function History({ documents }) {
                                         </p>
 
                                         <p className="mt-1 font-medium text-slate-700">
-                                            {document.current_employee
-                                                ?.username ??
-                                                document.current_employee
-                                                    ?.employee_name ??
-                                                "-"}
+                                            {document.current_employee?.username ?? "-"}
                                         </p>
                                     </div>
 
@@ -345,9 +275,6 @@ export default function History({ documents }) {
                                                                 {history
                                                                     .employee
                                                                     ?.username ??
-                                                                    history
-                                                                        .employee
-                                                                        ?.employee_name ??
                                                                     "-"}
                                                             </p>
                                                         </div>
@@ -402,10 +329,11 @@ export default function History({ documents }) {
                                 No documents found.
                             </p>
 
-                            {search && (
+                            {filters.search && (
                                 <p className="mt-1 text-xs text-slate-400">
-                                    Try another tracking number, description,
-                                    section, or employee.
+                                    Try another taxpayer name, transaction
+                                    type, tracking number, section, or
+                                    employee.
                                 </p>
                             )}
                         </div>

@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::table('documents', function (Blueprint $table) {
 
+            /*
+            * Drop the index before its column. PostgreSQL removes it
+            * automatically, SQLite does not and fails the rebuild.
+            */
+            $table->dropIndex(['priority']);
+
             $table->dropColumn([
                 'document_title',
                 'priority',
