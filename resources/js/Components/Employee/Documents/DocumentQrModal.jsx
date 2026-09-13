@@ -3,7 +3,7 @@ export default function DocumentQrModal({ document, onClose }) {
         return null;
     }
 
-    const qrUrl = `/${document.qr_path}`;
+    const qrUrl = route("documents.qr", document.document_id);
 
     const handleDownload = async () => {
         try {

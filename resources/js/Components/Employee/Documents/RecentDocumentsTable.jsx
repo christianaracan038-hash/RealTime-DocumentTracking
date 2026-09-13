@@ -148,7 +148,7 @@ export default function RecentDocumentsTable({ documents, filters = {} }) {
 
                                         <td className="px-4 py-3 text-center">
                                             <img
-                                                src={`/${document.qr_path}`}
+                                                src={route("documents.qr", document.document_id)}
                                                 alt={`QR Code for ${document.tracking_number}`}
                                                 className="mx-auto h-14 w-14 rounded border"
                                             />

@@ -64,10 +64,22 @@ class DocumentService
             str_pad($lastId, 6, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Rebuild a QR image that is missing from this machine's disk.
+     *
+     * The payload is the tracking number, so the rebuilt image is
+     * identical to the original. Repairs documents registered on
+     * another machine, whose files were never on this one.
+     */
+    public function regenerateQrCode(Document $document): void
+    {
+        $this->generateQrCode($document);
+    }
+
     private function generateQrCode(Document $document)
     {
         // QR content
-        $qrValue = $document->tracking_number;
+        $qrValue = $document->qr_value ?: $document->tracking_number;
 
         // File name
         $fileName = $qrValue.'.svg';

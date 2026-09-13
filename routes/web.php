@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\EmployeeAccountController;
 use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\Admin\Sections\SectionController;
 use App\Http\Controllers\Employee\Documents\DocumentController;
+use App\Http\Controllers\Employee\Documents\DocumentQrController;
 use App\Http\Controllers\Employee\SectionDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -78,6 +79,13 @@ Route::middleware(['auth:employee'])->group(function () {
 
     Route::get('/employee/documents', [DocumentController::class, 'documents'])
         ->name('documents.index');
+
+    /*
+    * QR image. Regenerates itself when the file is missing from this
+    * machine, so documents registered elsewhere still display.
+    */
+    Route::get('/documents/{document}/qr', [DocumentQrController::class, 'show'])
+        ->name('documents.qr');
 
 });
 
