@@ -5,13 +5,18 @@ export default function Dashboard({ documents = [] }) {
     return (
         <EmployeeLayout title="Compliance Dashboard">
             <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="text-2xl font-semibold text-slate-900">
+                <div className="rounded-2xl bg-navy-900 p-7">
+                    <p className="text-sm font-semibold tracking-widest text-accent-400 uppercase">
                         Compliance Section
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-bold text-white">
+                        Documents on your desk
                     </h2>
 
-                    <p className="mt-2 text-slate-500">
-                        Documents routed to the Compliance Section.
+                    <p className="mt-2 max-w-2xl text-base text-navy-200">
+                        Anything sent to Compliance waits here until someone
+                        scans it in.
                     </p>
                 </div>
 

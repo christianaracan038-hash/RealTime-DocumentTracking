@@ -18,38 +18,64 @@ export default function Sidebar() {
     );
 
     return (
-        <aside className="fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
-            {/* Header */}
-            <div className="shrink-0 border-b p-6">
-                <h1 className="text-lg font-bold text-slate-800">
-                    Real-Time Document Tracking
-                </h1>
+        <aside className="fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col bg-navy-900">
+            {/* Identity */}
+            <div className="shrink-0 px-6 py-7">
+                <p className="text-sm font-semibold tracking-wide text-accent-400 uppercase">
+                    Document Tracking
+                </p>
 
-                <p className="text-sm text-slate-500">Employee Portal</p>
+                <p className="mt-1 text-sm text-navy-200">Employee Portal</p>
 
-                {/* Current Section */}
-                <div className="mt-4">
-                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                {/* Which section you are working as */}
+                <div className="mt-5 rounded-xl bg-navy-800 px-4 py-3">
+                    <p className="text-xs tracking-wide text-navy-400 uppercase">
+                        Your section
+                    </p>
+
+                    <p className="mt-0.5 text-lg font-bold text-white">
                         {sectionName ?? "Employee"}
-                    </span>
+                    </p>
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
-                {menuItems.map((item) => (
-                    <Link
-                        key={item.route}
-                        href={route(item.route)}
-                        className="block rounded-lg px-4 py-3 text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
-                    >
-                        {item.label}
-                    </Link>
-                ))}
+            <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 pb-4">
+                {menuItems.map((item) => {
+                    const isCurrent = route().current(item.route);
+
+                    return (
+                        <Link
+                            key={item.route}
+                            href={route(item.route)}
+                            aria-current={isCurrent ? "page" : undefined}
+                            className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-base font-medium transition ${
+                                isCurrent
+                                    ? "bg-navy-800 text-white"
+                                    : "text-navy-200 hover:bg-navy-800 hover:text-white"
+                            }`}
+                        >
+                            {/*
+                             * The yellow bar is the only thing on screen
+                             * that says "you are here".
+                             */}
+                            <span
+                                aria-hidden="true"
+                                className={`h-6 w-1 rounded-full transition ${
+                                    isCurrent
+                                        ? "bg-accent-400"
+                                        : "bg-transparent"
+                                }`}
+                            />
+
+                            {item.label}
+                        </Link>
+                    );
+                })}
             </nav>
 
             {/* User / Logout */}
-            <div className="shrink-0 border-t border-slate-200">
+            <div className="shrink-0">
                 <UserInfo />
             </div>
         </aside>

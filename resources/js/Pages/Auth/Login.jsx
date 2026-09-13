@@ -1,12 +1,9 @@
-import Checkbox from "@/Components/Checkbox";
 import InputError from "@/Components/InputError";
-import InputLabel from "@/Components/InputLabel";
-import PrimaryButton from "@/Components/PrimaryButton";
-import TextInput from "@/Components/TextInput";
+import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import GuestLayout from "@/Layouts/GuestLayout";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, useForm } from "@inertiajs/react";
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         login: "",
         password: "",
@@ -21,79 +18,93 @@ export default function Login({ status, canResetPassword }) {
         });
     };
 
+    const field =
+        "min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-navy-900 placeholder:text-muted focus:border-brand-600";
+
     return (
         <GuestLayout>
             <Head title="Log in" />
 
+            <h2 className="text-2xl font-bold text-navy-900">Sign in</h2>
+
+            <p className="mt-1 text-base text-muted">
+                Use the username and password given to you by your
+                administrator.
+            </p>
+
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <p className="mt-6 rounded-xl bg-ok-100 px-4 py-3 text-base font-medium text-ok-600">
                     {status}
-                </div>
+                </p>
             )}
 
-            <form onSubmit={submit}>
+            <form onSubmit={submit} className="mt-8 space-y-5">
                 <div>
-                    <InputLabel htmlFor="login" value="Username / Email" />
+                    <label
+                        htmlFor="login"
+                        className="mb-1.5 block text-base font-semibold text-navy-800"
+                    >
+                        Username
+                    </label>
 
-                    <TextInput
+                    <input
                         id="login"
                         type="text"
                         name="login"
                         value={data.login}
-                        className="mt-1 block w-full"
                         autoComplete="username"
-                        isFocused={true}
+                        autoFocus
+                        placeholder="e.g. rdo.staff"
                         onChange={(e) => setData("login", e.target.value)}
+                        className={field}
                     />
 
                     <InputError message={errors.login} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                <div>
+                    <label
+                        htmlFor="password"
+                        className="mb-1.5 block text-base font-semibold text-navy-800"
+                    >
+                        Password
+                    </label>
 
-                    <TextInput
+                    <input
                         id="password"
                         type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
                         autoComplete="current-password"
                         onChange={(e) => setData("password", e.target.value)}
+                        className={field}
                     />
 
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData("remember", e.target.checked)
-                            }
-                        />
-                        <span className="ms-2 text-sm text-gray-600">
-                            Remember me
-                        </span>
-                    </label>
-                </div>
+                <label className="flex items-center gap-3 py-1">
+                    <input
+                        type="checkbox"
+                        name="remember"
+                        checked={data.remember}
+                        onChange={(e) => setData("remember", e.target.checked)}
+                        className="h-5 w-5 rounded border-line text-brand-600"
+                    />
 
-                <div className="mt-4 flex items-center justify-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route("password.request")}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
-                            Forgot your password?
-                        </Link>
-                    )}
+                    <span className="text-base text-navy-800">
+                        Keep me signed in on this computer
+                    </span>
+                </label>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
-                    </PrimaryButton>
-                </div>
+                <EmployeeButton
+                    type="submit"
+                    size="lg"
+                    disabled={processing}
+                    className="w-full"
+                >
+                    {processing ? "Signing in..." : "Sign in"}
+                </EmployeeButton>
             </form>
         </GuestLayout>
     );
