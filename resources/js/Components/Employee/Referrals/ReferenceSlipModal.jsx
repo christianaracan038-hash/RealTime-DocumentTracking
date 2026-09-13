@@ -128,7 +128,7 @@ export default function ReferenceSlipModal({ document, onClose }) {
 
     return (
         <div
-            className="print-host fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-navy-950/70 p-4 sm:p-8"
+            className="print-host fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center sm:p-8"
             role="dialog"
             aria-modal="true"
             aria-label="Reference slip"
@@ -147,6 +147,9 @@ export default function ReferenceSlipModal({ document, onClose }) {
                         <p className="mt-1 text-base text-muted">
                             Print this and attach it to the document. It prints
                             on a quarter sheet, lengthwise.
+                            <span className="block sm:hidden">
+                                Swipe sideways to see the whole slip.
+                            </span>
                         </p>
                     </div>
 

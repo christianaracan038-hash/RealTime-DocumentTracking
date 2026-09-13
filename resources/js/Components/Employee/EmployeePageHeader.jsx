@@ -11,7 +11,9 @@ export default function EmployeePageHeader({ title, subtitle, action = null }) {
                 )}
             </div>
 
-            {action}
+            {action && (
+                <div className="[&>*]:w-full sm:[&>*]:w-auto">{action}</div>
+            )}
         </div>
     );
 }

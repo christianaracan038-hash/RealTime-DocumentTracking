@@ -30,24 +30,35 @@ export default function ReceiveDocumentScanner({
 
                 const cameras = await Html5Qrcode.getCameras();
 
-                console.log("Available cameras:", cameras);
-
                 if (!cameras || cameras.length === 0) {
                     throw new Error("No camera found.");
                 }
 
-                const cameraId = cameras[0].id;
-
-                console.log("Using camera:", cameras[0]);
+                /*
+                 * Ask for the rear camera. On a phone cameras[0] is
+                 * usually the front one, which cannot be pointed at a
+                 * slip on the desk. Desktops with one webcam still work:
+                 * the browser falls back to whatever it has.
+                 */
+                const cameraId = { facingMode: "environment" };
 
                 await scanner.start(
                     cameraId,
                     {
                         fps: 10,
-                        qrbox: {
-                            width: 250,
-                            height: 250,
+
+                        /*
+                         * Scan box scales with the viewfinder so it fits
+                         * a narrow phone as well as a desktop webcam.
+                         */
+                        qrbox: (viewfinderWidth, viewfinderHeight) => {
+                            const edge =
+                                Math.min(viewfinderWidth, viewfinderHeight) *
+                                0.7;
+
+                            return { width: edge, height: edge };
                         },
+
                         aspectRatio: 1.0,
                     },
                     async (decodedText) => {
@@ -247,7 +258,7 @@ export default function ReceiveDocumentScanner({
     }
 
     return (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-navy-950/80 p-4 sm:items-center">
             <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b px-5 py-4">

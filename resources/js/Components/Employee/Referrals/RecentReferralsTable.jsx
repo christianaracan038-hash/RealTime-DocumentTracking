@@ -54,7 +54,117 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-line">
+                {/*
+                 * Phones and tablets: one card per referral, laid out in the
+                 * same order as the printed slip. Eleven columns cannot be
+                 * read on a narrow screen even with sideways scrolling.
+                 */}
+                <ul className="space-y-3 lg:hidden">
+                    {rows.length > 0 ? (
+                        rows.map((document) => (
+                            <li
+                                key={document.document_id}
+                                className="rounded-xl border border-line p-4"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-lg font-bold text-navy-900">
+                                            {document.taxpayer_name ??
+                                                "No taxpayer on record"}
+                                        </p>
+                                        <p className="mt-0.5 font-mono text-sm text-muted">
+                                            {document.tracking_number}
+                                        </p>
+                                    </div>
+
+                                    <EmployeeBadge
+                                        status={document.status?.status_name}
+                                    />
+                                </div>
+
+                                <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
+                                    <dt className="text-sm font-semibold text-muted">
+                                        Concern
+                                    </dt>
+                                    <dd className="text-navy-800">
+                                        {document.concern ??
+                                            document.transaction_type ??
+                                            "—"}
+                                    </dd>
+
+                                    <dt className="text-sm font-semibold text-muted">
+                                        For
+                                    </dt>
+                                    <dd className="text-navy-800">
+                                        {document.referred_for ?? "—"}
+                                    </dd>
+
+                                    <dt className="text-sm font-semibold text-muted">
+                                        To
+                                    </dt>
+                                    <dd className="text-navy-800">
+                                        {addressedTo(document) || "—"}
+                                    </dd>
+
+                                    <dt className="text-sm font-semibold text-muted">
+                                        From
+                                    </dt>
+                                    <dd className="text-navy-800">
+                                        {sentFrom(document) || "—"}
+                                        <span className="ml-2 font-mono text-sm text-muted">
+                                            {document.office_code ??
+                                                document.creator?.section
+                                                    ?.section_code ??
+                                                ""}
+                                        </span>
+                                    </dd>
+
+                                    <dt className="text-sm font-semibold text-muted">
+                                        Date
+                                    </dt>
+                                    <dd className="text-navy-800">
+                                        {longDate(document.document_date)}
+                                    </dd>
+
+                                    {(document.remarks ??
+                                        document.description) && (
+                                        <>
+                                            <dt className="text-sm font-semibold text-muted">
+                                                Remarks
+                                            </dt>
+                                            <dd className="text-navy-800">
+                                                {document.remarks ??
+                                                    document.description}
+                                            </dd>
+                                        </>
+                                    )}
+                                </dl>
+
+                                <EmployeeButton
+                                    variant="secondary"
+                                    onClick={() => setSlipFor(document)}
+                                    className="mt-4 w-full"
+                                >
+                                    View slip
+                                </EmployeeButton>
+                            </li>
+                        ))
+                    ) : (
+                        <li className="rounded-xl border border-dashed border-line py-12 text-center">
+                            <p className="text-lg font-semibold text-navy-800">
+                                No referrals yet
+                            </p>
+                            <p className="mt-1 text-base text-muted">
+                                {filters.search
+                                    ? "Nothing matches that search."
+                                    : "Referrals you register will appear here."}
+                            </p>
+                        </li>
+                    )}
+                </ul>
+
+                {/* Desktop: the full table */}
+                <div className="hidden overflow-x-auto rounded-xl border border-line lg:block">
                     <table className="min-w-full">
                         <thead className="bg-paper">
                             <tr>
@@ -201,7 +311,7 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                             </span>
                         </p>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
                             {documents.links.map((link, index) => (
                                 <button
                                     key={index}
