@@ -10,6 +10,7 @@ import { router } from "@inertiajs/react";
  */
 export default function SearchInput({
     initialValue = "",
+    label = "Search",
     placeholder = "Search...",
     only = ["documents", "filters"],
 }) {
@@ -41,25 +42,31 @@ export default function SearchInput({
     }, [value]);
 
     return (
-        <div className="relative">
-            <input
-                type="text"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder={placeholder}
-                className="w-full rounded-lg border border-slate-300 px-4 py-2.5 pr-10 focus:border-indigo-500 focus:ring-indigo-500"
-            />
+        <div>
+            <label className="mb-1.5 block text-sm font-semibold text-navy-800">
+                {label}
+            </label>
 
-            {value && (
-                <button
-                    type="button"
-                    onClick={() => setValue("")}
-                    className="absolute inset-y-0 right-0 px-3 text-slate-400 transition hover:text-slate-600"
-                    aria-label="Clear search"
-                >
-                    &times;
-                </button>
-            )}
+            <div className="relative">
+                <input
+                    type="search"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder={placeholder}
+                    className="min-h-11 w-full rounded-xl border border-line bg-white px-4 py-2.5 pr-11 text-base text-navy-900 placeholder:text-muted focus:border-brand-600"
+                />
+
+                {value && (
+                    <button
+                        type="button"
+                        onClick={() => setValue("")}
+                        className="absolute inset-y-0 right-0 px-4 text-xl leading-none text-muted transition hover:text-navy-900"
+                        aria-label="Clear search"
+                    >
+                        &times;
+                    </button>
+                )}
+            </div>
         </div>
     );
 }

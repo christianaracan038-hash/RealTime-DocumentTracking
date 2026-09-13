@@ -1,17 +1,26 @@
-export default function EmployeeBadge({ color = "gray", children }) {
-    const colors = {
-        blue: "bg-blue-100 text-blue-700",
-        green: "bg-green-100 text-green-700",
-        red: "bg-red-100 text-red-700",
-        yellow: "bg-yellow-100 text-yellow-700",
-        gray: "bg-gray-100 text-gray-700",
-    };
+/*
+ * Document status, shown as a pill.
+ *
+ * Pending wears the attention yellow, because a pending document is
+ * work waiting for someone. Received is green and settled. Colour is
+ * never the only signal - the word is always there too.
+ */
+
+const TONES = {
+    Pending: "bg-accent-400 text-navy-900",
+    Received: "bg-ok-100 text-ok-600",
+};
+
+export default function EmployeeBadge({ status, className = "" }) {
+    const label = status ?? "Unknown";
 
     return (
         <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${colors[color]}`}
+            className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap ${
+                TONES[label] ?? "bg-navy-200 text-navy-800"
+            } ${className}`}
         >
-            {children}
+            {label}
         </span>
     );
 }

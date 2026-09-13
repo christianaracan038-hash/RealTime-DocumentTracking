@@ -1,1 +1,109 @@
 @import "tailwindcss";
+
+/*
+|--------------------------------------------------------------------------
+| Design tokens
+|--------------------------------------------------------------------------
+|
+| The office palette. Three colours do the work:
+|
+|   navy    the shell - sidebar, header, headings. Calm to sit in all day.
+|   brand   #1400ff. Actions only: buttons, links, the thing to click.
+|   accent  #eafe01. Attention only: where you are, what needs doing.
+|
+| Yellow is deliberately rare. If it is on screen it means "look here",
+| so it must never become decoration. It is also never used as text on
+| white - it is unreadable there. Yellow always carries navy text on top
+| of it, or sits on navy itself.
+|
+*/
+
+@theme {
+    /* Shell */
+    --color-navy-950: #050a24;
+    --color-navy-900: #0a1140;
+    --color-navy-800: #111a52;
+    --color-navy-700: #1a2569;
+    --color-navy-600: #263284;
+    --color-navy-400: #6b76b8;
+    --color-navy-200: #c3c8e6;
+
+    /* Actions */
+    --color-brand-700: #0f00c2;
+    --color-brand-600: #1400ff;
+    --color-brand-500: #3b28ff;
+    --color-brand-200: #c8c2ff;
+    --color-brand-100: #e4e1ff;
+    --color-brand-50: #f1f0ff;
+
+    /* Attention */
+    --color-accent-600: #b9c900;
+    --color-accent-500: #d4e800;
+    --color-accent-400: #eafe01;
+    --color-accent-100: #f7ffb8;
+
+    /* Neutrals, biased slightly blue so they sit with the navy */
+    --color-paper: #f4f6fc;
+    --color-line: #e0e5f2;
+    --color-muted: #626d8f;
+
+    /* Status. Kept separate from the brand colours on purpose. */
+    --color-ok-600: #0b8a5c;
+    --color-ok-100: #d8f3e7;
+    --color-stop-600: #c62828;
+    --color-stop-100: #fbe2e2;
+
+    --font-sans:
+        "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+        sans-serif;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Base
+|--------------------------------------------------------------------------
+|
+| Staff here are not technical and many work on older monitors, so the
+| defaults are larger and higher contrast than a typical admin panel.
+|
+*/
+
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        background-color: var(--color-paper);
+        color: var(--color-navy-900);
+        font-size: 1rem;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    h1,
+    h2,
+    h3 {
+        color: var(--color-navy-900);
+        text-wrap: balance;
+    }
+
+    /*
+    * A visible focus ring on everything keyboard-reachable. Staff who
+    * tab through forms need to see where they are.
+    */
+    :focus-visible {
+        outline: 3px solid var(--color-brand-600);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}

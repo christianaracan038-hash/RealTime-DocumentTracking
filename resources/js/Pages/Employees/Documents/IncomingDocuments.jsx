@@ -1,87 +1,100 @@
 import { useState } from "react";
 import DocumentDetailsModal from "./DocumentDetailsModal";
+import EmployeeCard from "@/Components/Employee/EmployeeCard";
+import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
 
 export default function IncomingDocuments({ documents = [] }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
 
     return (
         <>
-            <div className="rounded-xl bg-white p-6 shadow-sm">
-                <div className="mb-5 flex items-center justify-between">
+            <EmployeeCard>
+                <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-800">
-                            Incoming Documents
+                        <h2 className="text-xl font-bold text-navy-900">
+                            Waiting for you to receive
                         </h2>
 
-                        <p className="text-sm text-slate-500">
-                            Documents assigned to your section.
+                        <p className="mt-1 text-base text-muted">
+                            Documents sent to your section. Open one, then scan
+                            its QR code to accept it.
                         </p>
                     </div>
 
-                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-semibold text-yellow-700">
-                        {documents.length} Pending
-                    </span>
+                    {documents.length > 0 && (
+                        <span className="rounded-full bg-accent-400 px-4 py-1.5 text-base font-bold text-navy-900">
+                            {documents.length} waiting
+                        </span>
+                    )}
                 </div>
 
                 {documents.length > 0 ? (
-                    <div className="space-y-3">
+                    <ul className="space-y-3">
                         {documents.map((document) => (
-                            <button
-                                key={document.document_id}
-                                type="button"
-                                onClick={() => setSelectedDocument(document)}
-                                className="w-full rounded-lg border border-slate-200 p-4 text-left transition hover:border-indigo-300 hover:bg-slate-50"
-                            >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="font-semibold text-slate-800">
-                                            {document.tracking_number}
-                                        </p>
+                            <li key={document.document_id}>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedDocument(document)
+                                    }
+                                    className="w-full rounded-xl border border-line p-5 text-left transition hover:border-brand-600 hover:bg-brand-50"
+                                >
+                                    <div className="flex flex-wrap items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="text-lg font-bold text-navy-900">
+                                                {document.taxpayer_name ??
+                                                    "No taxpayer on record"}
+                                            </p>
 
-                                        <p className="mt-1 text-sm text-slate-600">
-                                            {document.description}
-                                        </p>
+                                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                <span className="rounded-lg bg-paper px-2.5 py-1 text-sm font-medium text-muted">
+                                                    {document.tracking_number}
+                                                </span>
 
-                                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-500">
-                                            <span>
-                                                From:{" "}
-                                                <strong>
-                                                    {
-                                                        document.current_section
-                                                            ?.section_name
-                                                    }
-                                                </strong>
-                                            </span>
+                                                {document.transaction_type && (
+                                                    <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-sm font-medium text-brand-700">
+                                                        {
+                                                            document.transaction_type
+                                                        }
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                            <span>
-                                                Destination:{" "}
-                                                <strong>
-                                                    {
-                                                        document
-                                                            .destination_section
-                                                            ?.section_name
-                                                    }
-                                                </strong>
-                                            </span>
+                                            <p className="mt-3 text-base text-navy-800">
+                                                {document.description}
+                                            </p>
+
+                                            <p className="mt-2 text-sm text-muted">
+                                                From{" "}
+                                                <span className="font-semibold text-navy-800">
+                                                    {document.current_section
+                                                        ?.section_name ?? "-"}
+                                                </span>
+                                            </p>
                                         </div>
-                                    </div>
 
-                                    <span className="shrink-0 rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
-                                        {document.status?.status_name ??
-                                            "Pending"}
-                                    </span>
-                                </div>
-                            </button>
+                                        <EmployeeBadge
+                                            status={
+                                                document.status?.status_name
+                                            }
+                                        />
+                                    </div>
+                                </button>
+                            </li>
                         ))}
-                    </div>
+                    </ul>
                 ) : (
-                    <div className="py-10 text-center">
-                        <p className="text-sm text-slate-400">
-                            No incoming documents.
+                    <div className="rounded-xl border border-dashed border-line py-14 text-center">
+                        <p className="text-lg font-semibold text-navy-800">
+                            Nothing waiting right now
+                        </p>
+
+                        <p className="mt-1 text-base text-muted">
+                            Documents sent to your section will appear here.
                         </p>
                     </div>
                 )}
-            </div>
+            </EmployeeCard>
 
             {selectedDocument && (
                 <DocumentDetailsModal

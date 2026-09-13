@@ -7,23 +7,39 @@ export default function UserInfo() {
         router.post(route("logout"));
     };
 
-    return (
-        <div className="border-t border-slate-700 p-4">
-            <div className="mb-3">
-                <h3 className="font-semibold text-slate-900">
-                    {auth?.employee?.username}
-                </h3>
+    const username = auth?.employee?.username;
 
-                <p className="text-sm text-slate-500">
-                    {auth?.employee?.section_name}
-                </p>
+    return (
+        <div className="border-t border-navy-800 px-4 py-5">
+            <div className="mb-4 flex items-center gap-3 px-2">
+                {/*
+                 * Initial instead of an avatar image - there are no
+                 * profile photos, and a letter is clearer than a
+                 * generic silhouette.
+                 */}
+                <span
+                    aria-hidden="true"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-400 text-lg font-bold text-navy-900"
+                >
+                    {username?.charAt(0)?.toUpperCase() ?? "?"}
+                </span>
+
+                <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">
+                        {username ?? "Signed in"}
+                    </p>
+
+                    <p className="text-sm text-navy-400">
+                        {auth?.employee?.section_name}
+                    </p>
+                </div>
             </div>
 
             <button
                 onClick={logout}
-                className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                className="min-h-11 w-full rounded-xl border border-navy-600 px-4 py-2.5 text-base font-semibold text-navy-200 transition hover:bg-navy-800 hover:text-white"
             >
-                Logout
+                Log out
             </button>
         </div>
     );
