@@ -7,11 +7,11 @@ export default function Dashboard({ documents = [] }) {
             <div className="space-y-6">
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="text-2xl font-semibold text-slate-900">
-                        Welcome to RDO Dashboard
+                        Revenue District Office
                     </h2>
 
                     <p className="mt-2 text-slate-500">
-                        Manage documents for the RDO section.
+                        Documents routed to the Revenue District Office.
                     </p>
                 </div>
 
