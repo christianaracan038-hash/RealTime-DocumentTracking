@@ -1,40 +1,57 @@
+import { useState } from "react";
+import { usePage } from "@inertiajs/react";
+
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
-
 import EmployeePageHeader from "@/Components/Employee/EmployeePageHeader";
+import EmployeeButton from "@/Components/Employee/EmployeeButton";
 
-import DocumentForm from "@/Components/Employee/Documents/DocumentForm";
-import RecentDocumentsTable from "@/Components/Employee/Documents/RecentDocumentsTable";
+import ReferralFormModal from "@/Components/Employee/Referrals/ReferralFormModal";
+import RecentReferralsTable from "@/Components/Employee/Referrals/RecentReferralsTable";
 
 export default function Create({
     documents = [],
     sections = [],
-    transactionTypes = [],
+    referralOptions = {},
+    fromSection = null,
     filters = {},
 }) {
+    const [registering, setRegistering] = useState(false);
+
+    const { flash } = usePage().props;
+
     return (
-        <EmployeeLayout>
+        <EmployeeLayout title="Referral registration">
             <EmployeePageHeader
-                title="Register Document"
-                subtitle="Register a new document into the tracking system."
+                title="Referral registration"
+                subtitle="Register a referral (BIR Form 2309), then print its reference slip and attach it to the document."
+                action={
+                    <EmployeeButton
+                        size="lg"
+                        onClick={() => setRegistering(true)}
+                    >
+                        + New referral
+                    </EmployeeButton>
+                }
             />
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Registration Form */}
-                <div className="xl:col-span-1">
-                    <DocumentForm
-                        sections={sections}
-                        transactionTypes={transactionTypes}
-                    />
-                </div>
+            {flash?.success && (
+                <p
+                    role="status"
+                    className="mb-6 rounded-xl bg-ok-100 px-5 py-3.5 text-base font-semibold text-ok-600"
+                >
+                    {flash.success}
+                </p>
+            )}
 
-                {/* Recent Documents */}
-                <div className="xl:col-span-2">
-                    <RecentDocumentsTable
-                        documents={documents}
-                        filters={filters}
-                    />
-                </div>
-            </div>
+            <RecentReferralsTable documents={documents} filters={filters} />
+
+            <ReferralFormModal
+                open={registering}
+                onClose={() => setRegistering(false)}
+                sections={sections}
+                options={referralOptions}
+                fromSection={fromSection}
+            />
         </EmployeeLayout>
     );
 }

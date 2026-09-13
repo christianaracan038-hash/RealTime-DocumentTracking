@@ -15,6 +15,9 @@ class Document extends Model
         'document_date',
         'taxpayer_name',
         'transaction_type',
+        'concern',
+        'referred_for',
+        'remarks',
         'description',
         'reference_number',
 
@@ -23,8 +26,10 @@ class Document extends Model
         'current_section_id',
         'current_employee_id',
         'destination_section_id',
+        'addressee',
 
         'created_by',
+        'office_code',
 
         'received_at',
         'completed_at',

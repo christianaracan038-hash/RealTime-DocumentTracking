@@ -17,7 +17,7 @@ const sectionMenu = (dashboardRoute) => [
         route: "documents.index",
     },
     {
-        label: "Register Document",
+        label: "Referral Registration",
         route: "documents.create",
     },
     {

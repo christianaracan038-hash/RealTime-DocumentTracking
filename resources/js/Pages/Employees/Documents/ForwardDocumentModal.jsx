@@ -127,7 +127,7 @@ export default function ForwardDocumentModal({ document, onClose }) {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <p className="text-xs font-medium text-slate-400">
-                                    Tracking Number
+                                    Reference No.
                                 </p>
 
                                 <p className="font-semibold text-slate-800">
@@ -137,22 +137,22 @@ export default function ForwardDocumentModal({ document, onClose }) {
 
                             <div>
                                 <p className="text-xs font-medium text-slate-400">
-                                    Transaction Type
+                                    Concern
                                 </p>
 
                                 <p className="text-slate-700">
-                                    {document.transaction_type ?? "—"}
+                                    {document.concern ?? document.transaction_type ?? "—"}
                                 </p>
                             </div>
                         </div>
 
                         <div>
                             <p className="text-xs font-medium text-slate-400">
-                                Description
+                                Remarks
                             </p>
 
                             <p className="text-slate-700">
-                                {document.description}
+                                {document.remarks ?? document.description}
                             </p>
                         </div>
 

@@ -110,15 +110,15 @@ export default function History({ documents, filters = {} }) {
                                                 {document.tracking_number}
                                             </span>
 
-                                            {document.transaction_type && (
+                                            {(document.concern ?? document.transaction_type) && (
                                                 <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                                                    {document.transaction_type}
+                                                    {document.concern ?? document.transaction_type}
                                                 </span>
                                             )}
                                         </div>
 
                                         <p className="mt-2 text-sm text-slate-500">
-                                            {document.description}
+                                            {document.remarks ?? document.description}
                                         </p>
                                     </div>
 
@@ -331,9 +331,8 @@ export default function History({ documents, filters = {} }) {
 
                             {filters.search && (
                                 <p className="mt-1 text-xs text-slate-400">
-                                    Try another taxpayer name, transaction
-                                    type, tracking number, section, or
-                                    employee.
+                                    Try another taxpayer name, concern,
+                                    reference number, section, or employee.
                                 </p>
                             )}
                         </div>
