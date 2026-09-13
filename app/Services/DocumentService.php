@@ -27,11 +27,11 @@ class DocumentService
 
                 'taxpayer_name' => $data['taxpayer_name'],
 
-                'transaction_type' => $data['transaction_type'],
+                'concern' => $data['concern'],
 
-                'description' => $data['description'],
+                'referred_for' => $data['referred_for'],
 
-                'reference_number' => $data['reference_number'] ?? null,
+                'remarks' => $data['remarks'] ?? null,
 
                 'status_id' => 1,
 
@@ -41,7 +41,15 @@ class DocumentService
 
                 'destination_section_id' => $data['destination_section_id'],
 
+                'addressee' => $data['addressee'],
+
                 'created_by' => $employee->employee_id,
+
+                /*
+                * Copied from the sending section now, so the printed
+                * slip is unchanged if the section is recoded later.
+                */
+                'office_code' => $employee->section?->section_code,
 
             ]);
 
@@ -118,6 +126,12 @@ class DocumentService
                 'status',
                 'destinationSection',
                 'currentSection',
+
+                /*
+                * The slip's "From" is the section that registered it,
+                * which stays fixed even after the document moves on.
+                */
+                'creator.section',
             ])
             ->where('created_by', $employee->employee_id)
             ->when(
@@ -295,8 +309,12 @@ class DocumentService
             */
             $columns = [
                 'taxpayer_name',
-                'transaction_type',
+                'concern',
+                'referred_for',
+                'remarks',
+                'office_code',
                 'tracking_number',
+                'transaction_type',
                 'description',
                 'reference_number',
             ];

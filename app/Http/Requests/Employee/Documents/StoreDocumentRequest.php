@@ -5,19 +5,20 @@ namespace App\Http\Requests\Employee\Documents;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Registering a referral (BIR Form 2309 - Reference Slip).
+ *
+ * The reference number, QR code, sending section and office code are
+ * all produced by the system, so the form asks only for what the clerk
+ * reads off the paper.
+ */
 class StoreDocumentRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Validation Rules
-     */
     public function rules(): array
     {
         return [
@@ -33,22 +34,22 @@ class StoreDocumentRequest extends FormRequest
                 'max:255',
             ],
 
-            'transaction_type' => [
+            'concern' => [
                 'required',
                 'string',
-                Rule::in(config('transaction_types')),
+                Rule::in(config('referral.concerns')),
             ],
 
-            'description' => [
+            'referred_for' => [
                 'required',
                 'string',
-                'max:1000',
+                Rule::in(config('referral.referred_for')),
             ],
 
-            'reference_number' => [
+            'remarks' => [
                 'nullable',
                 'string',
-                'max:100',
+                'max:1000',
             ],
 
             'destination_section_id' => [
@@ -56,35 +57,38 @@ class StoreDocumentRequest extends FormRequest
                 Rule::exists('sections', 'section_id'),
             ],
 
+            'addressee' => [
+                'required',
+                'string',
+                Rule::in(config('referral.addressees')),
+            ],
+
         ];
     }
 
-    /**
-     * Custom Validation Messages
-     */
     public function messages(): array
     {
         return [
 
-            'document_date.required' => 'Please select the document date.',
+            'document_date.required' => 'Please enter the date issued.',
+            'document_date.date' => 'That is not a valid date.',
 
-            'document_date.date' => 'Invalid document date.',
+            'taxpayer_name.required' => 'Please enter the taxpayer\'s name.',
+            'taxpayer_name.max' => 'The taxpayer\'s name may not exceed 255 characters.',
 
-            'taxpayer_name.required' => 'Please enter the taxpayer name.',
+            'concern.required' => 'Please choose what this referral is about.',
+            'concern.in' => 'That concern is not in the list.',
 
-            'taxpayer_name.max' => 'Taxpayer name may not exceed 255 characters.',
+            'referred_for.required' => 'Please choose what the receiving office should do.',
+            'referred_for.in' => 'That option is not in the list.',
 
-            'transaction_type.required' => 'Please select the transaction type.',
+            'remarks.max' => 'Remarks may not exceed 1000 characters.',
 
-            'transaction_type.in' => 'Selected transaction type is invalid.',
+            'destination_section_id.required' => 'Please choose which section to send this to.',
+            'destination_section_id.exists' => 'That section does not exist.',
 
-            'description.required' => 'Please enter the document description.',
-
-            'description.max' => 'Description may not exceed 1000 characters.',
-
-            'destination_section_id.required' => 'Please select the destination section.',
-
-            'destination_section_id.exists' => 'Selected destination section is invalid.',
+            'addressee.required' => 'Please choose who in that section should receive it.',
+            'addressee.in' => 'That option is not in the list.',
 
         ];
     }

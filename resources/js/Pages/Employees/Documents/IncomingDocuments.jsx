@@ -2,6 +2,10 @@ import { useState } from "react";
 import DocumentDetailsModal from "./DocumentDetailsModal";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
+import {
+    addressedTo,
+    sentFrom,
+} from "@/Components/Employee/Referrals/referral";
 
 export default function IncomingDocuments({ documents = [] }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
@@ -16,7 +20,7 @@ export default function IncomingDocuments({ documents = [] }) {
                         </h2>
 
                         <p className="mt-1 text-base text-muted">
-                            Documents sent to your section. Open one, then scan
+                            Referrals sent to your section. Open one, then scan
                             its QR code to accept it.
                         </p>
                     </div>
@@ -47,29 +51,50 @@ export default function IncomingDocuments({ documents = [] }) {
                                             </p>
 
                                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                <span className="rounded-lg bg-paper px-2.5 py-1 text-sm font-medium text-muted">
+                                                <span className="rounded-lg bg-paper px-2.5 py-1 font-mono text-sm font-medium text-muted">
                                                     {document.tracking_number}
                                                 </span>
 
-                                                {document.transaction_type && (
+                                                {(document.concern ??
+                                                    document.transaction_type) && (
                                                     <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-sm font-medium text-brand-700">
-                                                        {
-                                                            document.transaction_type
-                                                        }
+                                                        {document.concern ??
+                                                            document.transaction_type}
+                                                    </span>
+                                                )}
+
+                                                {document.referred_for && (
+                                                    <span className="rounded-lg bg-paper px-2.5 py-1 text-sm font-medium text-navy-800">
+                                                        For:{" "}
+                                                        {document.referred_for}
                                                     </span>
                                                 )}
                                             </div>
 
-                                            <p className="mt-3 text-base text-navy-800">
-                                                {document.description}
-                                            </p>
+                                            {(document.remarks ??
+                                                document.description) && (
+                                                <p className="mt-3 text-base text-navy-800">
+                                                    {document.remarks ??
+                                                        document.description}
+                                                </p>
+                                            )}
 
                                             <p className="mt-2 text-sm text-muted">
                                                 From{" "}
                                                 <span className="font-semibold text-navy-800">
-                                                    {document.current_section
-                                                        ?.section_name ?? "-"}
+                                                    {sentFrom(document) || "-"}
                                                 </span>
+                                                {document.addressee && (
+                                                    <>
+                                                        {" "}
+                                                        &middot; addressed to{" "}
+                                                        <span className="font-semibold text-navy-800">
+                                                            {addressedTo(
+                                                                document,
+                                                            )}
+                                                        </span>
+                                                    </>
+                                                )}
                                             </p>
                                         </div>
 
@@ -90,7 +115,7 @@ export default function IncomingDocuments({ documents = [] }) {
                         </p>
 
                         <p className="mt-1 text-base text-muted">
-                            Documents sent to your section will appear here.
+                            Referrals sent to your section will appear here.
                         </p>
                     </div>
                 )}

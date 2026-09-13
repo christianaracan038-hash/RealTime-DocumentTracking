@@ -107,3 +107,60 @@
         }
     }
 }
+
+/*
+|--------------------------------------------------------------------------
+| Printing the reference slip
+|--------------------------------------------------------------------------
+|
+| BIR Form 2309 is printed on a quarter of a letter sheet, cut lengthwise:
+| 8.5in wide by 2.75in tall. When the slip dialog is open and the user
+| prints, only the slip itself reaches the page.
+|
+*/
+
+@media print {
+    @page {
+        size: 8.5in 2.75in;
+        margin: 0.15in;
+    }
+
+    /*
+    * Everything is hidden, then the slip dialog is shown again.
+    * visibility (not display) keeps the layout stable so the dialog can
+    * be pulled to the top-left corner of the page.
+    */
+    body * {
+        visibility: hidden;
+    }
+
+    .print-host,
+    .print-host * {
+        visibility: visible;
+    }
+
+    .print-host {
+        position: absolute !important;
+        inset: 0 auto auto 0 !important;
+        width: 100% !important;
+        padding: 0 !important;
+        background: transparent !important;
+        overflow: visible !important;
+    }
+
+    .print-host > * {
+        max-width: none !important;
+        border-radius: 0 !important;
+    }
+
+    .print-host .reference-slip {
+        width: 8.2in;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-hide,
+    .print-hide * {
+        display: none !important;
+    }
+}

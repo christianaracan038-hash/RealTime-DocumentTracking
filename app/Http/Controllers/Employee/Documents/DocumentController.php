@@ -41,12 +41,25 @@ class DocumentController extends Controller
                 ->get([
                     'section_id',
                     'section_name',
+                    'section_code',
+                    'description',
                 ]),
 
             /*
-            * Selectable transaction / document types.
+            * Dropdown choices for the referral form and the
+            * addressee card.
             */
-            'transactionTypes' => config('transaction_types'),
+            'referralOptions' => config('referral'),
+
+            /*
+            * The sending section, shown read-only on the form.
+            */
+            'fromSection' => $employee->section?->only([
+                'section_id',
+                'section_name',
+                'section_code',
+                'description',
+            ]),
 
             'documents' => $documentService->getRegisteredDocuments(
                 $employee,
@@ -76,7 +89,7 @@ class DocumentController extends Controller
 
         return redirect()
             ->route('documents.create')
-            ->with('success', 'Document registered successfully.');
+            ->with('success', 'Referral registered.');
     }
 
     /**

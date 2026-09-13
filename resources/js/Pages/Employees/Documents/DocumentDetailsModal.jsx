@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 import ForwardDocumentModal from "./ForwardDocumentModal";
+import { addressedTo } from "@/Components/Employee/Referrals/referral";
 
 export default function DocumentDetailsModal({ document, onClose }) {
     const [showScanner, setShowScanner] = useState(false);
@@ -39,21 +40,44 @@ export default function DocumentDetailsModal({ document, onClose }) {
                     <div className="space-y-4 px-6 py-5">
                         <div>
                             <p className="text-xs font-medium text-slate-400">
-                                Tracking Number
+                                Taxpayer
                             </p>
 
-                            <p className="font-semibold text-slate-800">
-                                {document.tracking_number}
+                            <p className="text-lg font-semibold text-slate-900">
+                                {document.taxpayer_name ??
+                                    "No taxpayer on record"}
                             </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs font-medium text-slate-400">
+                                    Reference No.
+                                </p>
+
+                                <p className="font-semibold text-slate-800">
+                                    {document.tracking_number}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-medium text-slate-400">
+                                    Concern
+                                </p>
+
+                                <p className="text-slate-700">
+                                    {document.concern ?? document.transaction_type ?? "—"}
+                                </p>
+                            </div>
                         </div>
 
                         <div>
                             <p className="text-xs font-medium text-slate-400">
-                                Description
+                                Remarks
                             </p>
 
                             <p className="text-slate-700">
-                                {document.description}
+                                {document.remarks ?? document.description}
                             </p>
                         </div>
 
@@ -81,12 +105,11 @@ export default function DocumentDetailsModal({ document, onClose }) {
 
                             <div>
                                 <p className="text-xs font-medium text-slate-400">
-                                    Destination
+                                    To
                                 </p>
 
                                 <p className="text-slate-700">
-                                    {document.destination_section
-                                        ?.section_name ?? "—"}
+                                    {addressedTo(document) || "—"}
                                 </p>
                             </div>
                         </div>

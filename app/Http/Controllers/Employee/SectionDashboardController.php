@@ -32,6 +32,7 @@ class SectionDashboardController extends Controller
                 'status',
                 'currentSection',
                 'destinationSection',
+                'creator.section',
             ])
             ->where('destination_section_id', $employee->section_id)
             ->where('status_id', 1)
