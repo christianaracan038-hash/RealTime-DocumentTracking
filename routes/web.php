@@ -1,17 +1,15 @@
 <?php
 
+use App\Http\Controllers\Admin\EmployeeAccountController;
+use App\Http\Controllers\Admin\Roles\RoleController;
+use App\Http\Controllers\Admin\Sections\SectionController;
+use App\Http\Controllers\Employee\Documents\DocumentController;
+use App\Http\Controllers\Employee\SectionDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\Admin\Sections\SectionController;
-use App\Http\Controllers\Admin\Roles\RoleController;
-use App\Http\Controllers\RDO\DashboardController;
-use App\Http\Controllers\Assessment\DashboardController as AssessmentDashboardController;
-use App\Http\Controllers\Employee\Documents\DocumentController;
-use Illuminate\Support\Facades\Auth;
-
-
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -22,11 +20,9 @@ Route::get('/', function () {
     ]);
 });
 
-
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
 
 Route::get('/test-web-auth', function () {
     return response()->json([
@@ -42,47 +38,47 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/admin', [\App\Http\Controllers\Admin\EmployeeAccountController::class, 'index'])->name('admin.dashboard');
-    Route::post('/admin/employees', [\App\Http\Controllers\Admin\EmployeeAccountController::class, 'store'])->name('admin.employees.store');
+    Route::get('/admin', [EmployeeAccountController::class, 'index'])->name('admin.dashboard');
+    Route::post('/admin/employees', [EmployeeAccountController::class, 'store'])->name('admin.employees.store');
     Route::resource('admin/sections', SectionController::class);
     Route::resource('admin/roles', RoleController::class);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Section dashboards
+|--------------------------------------------------------------------------
+|
+| One route per entry in config/section.php, each guarded by the section
+| middleware so an employee can only reach their own section's dashboard.
+| The page component travels as a route default and is read back by
+| SectionDashboardController.
+|
+*/
 
-Route::middleware([
-    'auth:employee',
-    'section:RDO',
-])->group(function () {
+foreach (config('section') as $sectionName => $dashboard) {
 
-    Route::get('/rdo/dashboard', [DashboardController::class, 'index'])
-        ->name('rdo.dashboard');
+    Route::middleware(['auth:employee', 'section:'.$sectionName])
+        ->get($dashboard['path'], [SectionDashboardController::class, 'index'])
+        ->defaults('page', $dashboard['page'])
+        ->name($dashboard['route']);
 
-});
-
-Route::middleware(['auth:employee', 'section:ASSESSMENT'])->group(function () {
-
-    Route::get('/assessment/dashboard', [AssessmentDashboardController::class, 'index'])
-        ->name('assessment.dashboard');
-
-});
+}
 
 Route::middleware(['auth:employee'])->group(function () {
 
     Route::get('/documents/create', [DocumentController::class, 'create'])
         ->name('documents.create');
 
-     Route::post('/documents', [DocumentController::class, 'store'])
+    Route::post('/documents', [DocumentController::class, 'store'])
         ->name('documents.store');
 
     Route::get('/documents/history', [DocumentController::class, 'history'])
         ->name('documents.history');
 
     Route::get('/employee/documents', [DocumentController::class, 'documents'])
-    ->name('documents.index');
+        ->name('documents.index');
 
 });
-
-
-
 
 require __DIR__.'/auth.php';
