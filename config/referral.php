@@ -14,8 +14,16 @@
 return [
 
     /*
-    * What the referral is about. "Other" is stored as-is; the form does
-    * not ask for a follow-up value.
+    * Every list below is shown as tick boxes. "Other" in any of them
+    * reveals a text box, and what is typed there is stored in place of
+    * the word "Other".
+    *
+    * Concerns and For allow more than one tick, as on the paper form.
+    * Remarks is one choice, since a document has one status.
+    */
+
+    /*
+    * What the referral is about.
     */
     'concerns' => [
         'Tax Assumption',
@@ -47,6 +55,16 @@ return [
     'addressees' => [
         'Chief',
         'Authorized & Chief',
+    ],
+
+    /*
+    * Where the document stands when it is registered.
+    */
+    'remarks' => [
+        'Complied',
+        'Completed',
+        'Processing',
+        'Other',
     ],
 
 ];
