@@ -65,9 +65,9 @@ class ReferralRegistrationTest extends TestCase
         return array_merge([
             'document_date' => '2026-09-13',
             'taxpayer_name' => 'Juan Dela Cruz',
-            'concern' => 'Promissory Note',
-            'referred_for' => 'Approval',
-            'remarks' => 'For the Chief to approve.',
+            'concerns' => ['Promissory Note'],
+            'referred_for' => ['Approval'],
+            'remarks' => 'Processing',
             'destination_section_id' => $this->compliance->section_id,
             'addressee' => 'Chief',
         ], $overrides);
@@ -88,7 +88,7 @@ class ReferralRegistrationTest extends TestCase
         $this->assertSame('Juan Dela Cruz', $document->taxpayer_name);
         $this->assertSame('Promissory Note', $document->concern);
         $this->assertSame('Approval', $document->referred_for);
-        $this->assertSame('For the Chief to approve.', $document->remarks);
+        $this->assertSame('Processing', $document->remarks);
         $this->assertSame('Chief', $document->addressee);
         $this->assertSame($this->compliance->section_id, (int) $document->destination_section_id);
 
@@ -103,13 +103,70 @@ class ReferralRegistrationTest extends TestCase
         Storage::disk('public')->assertExists('qrcodes/'.$document->qr_value.'.svg');
     }
 
-    public function test_remarks_are_optional(): void
+    public function test_remarks_are_required(): void
     {
         $this->actingAs($this->clerk, 'employee')
             ->post(route('documents.store'), $this->validReferral(['remarks' => '']))
+            ->assertSessionHasErrors('remarks');
+    }
+
+    public function test_several_ticks_are_joined_into_one_line(): void
+    {
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), $this->validReferral([
+                'concerns' => ['Tax Assumption', 'Promissory Note'],
+                'referred_for' => ['Approval', 'Signature', 'Necessary Action'],
+            ]))
             ->assertSessionHasNoErrors();
 
-        $this->assertNull(Document::first()->remarks);
+        $document = Document::first();
+
+        $this->assertSame('Tax Assumption, Promissory Note', $document->concern);
+        $this->assertSame('Approval, Signature, Necessary Action', $document->referred_for);
+    }
+
+    public function test_ticking_other_requires_the_text_and_stores_it_in_place(): void
+    {
+        // Ticking Other without saying what it is.
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), $this->validReferral([
+                'concerns' => ['Other'],
+                'referred_for' => ['Other'],
+                'remarks' => 'Other',
+            ]))
+            ->assertSessionHasErrors(['concern_other', 'referred_for_other', 'remarks_other']);
+
+        $this->assertSame(0, Document::count());
+
+        // Ticking Other and saying what it is.
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), $this->validReferral([
+                'concerns' => ['Tax Assumption', 'Other'],
+                'concern_other' => 'Lost receipt',
+                'referred_for' => ['Other'],
+                'referred_for_other' => 'Return to taxpayer',
+                'remarks' => 'Other',
+                'remarks_other' => 'Waiting for the taxpayer to call back.',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $document = Document::first();
+
+        $this->assertSame('Tax Assumption, Lost receipt', $document->concern);
+        $this->assertSame('Return to taxpayer', $document->referred_for);
+        $this->assertSame('Waiting for the taxpayer to call back.', $document->remarks);
+    }
+
+    public function test_the_other_text_is_ignored_when_other_is_not_ticked(): void
+    {
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), $this->validReferral([
+                'concerns' => ['Tax Assumption'],
+                'concern_other' => 'Should not appear',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Tax Assumption', Document::first()->concern);
     }
 
     public function test_transaction_type_and_description_are_no_longer_asked_for(): void
@@ -131,8 +188,9 @@ class ReferralRegistrationTest extends TestCase
             ->assertSessionHasErrors([
                 'document_date',
                 'taxpayer_name',
-                'concern',
+                'concerns',
                 'referred_for',
+                'remarks',
                 'destination_section_id',
                 'addressee',
             ]);
@@ -144,29 +202,38 @@ class ReferralRegistrationTest extends TestCase
     {
         $this->actingAs($this->clerk, 'employee')
             ->post(route('documents.store'), $this->validReferral([
-                'concern' => 'Something made up',
-                'referred_for' => 'Whenever',
+                'concerns' => ['Something made up'],
+                'referred_for' => ['Whenever'],
+                'remarks' => 'Maybe',
                 'addressee' => 'Anyone',
             ]))
-            ->assertSessionHasErrors(['concern', 'referred_for', 'addressee']);
+            ->assertSessionHasErrors(['concerns.0', 'referred_for.0', 'remarks', 'addressee']);
     }
 
     public function test_every_configured_option_is_accepted(): void
     {
+        $other = ['concern_other' => 'x', 'referred_for_other' => 'x', 'remarks_other' => 'x'];
+
         foreach (config('referral.concerns') as $concern) {
             foreach (config('referral.addressees') as $addressee) {
                 $this->actingAs($this->clerk, 'employee')
                     ->post(route('documents.store'), $this->validReferral([
-                        'concern' => $concern,
+                        'concerns' => [$concern],
                         'addressee' => $addressee,
-                    ]))
+                    ] + $other))
                     ->assertSessionHasNoErrors();
             }
         }
 
         foreach (config('referral.referred_for') as $for) {
             $this->actingAs($this->clerk, 'employee')
-                ->post(route('documents.store'), $this->validReferral(['referred_for' => $for]))
+                ->post(route('documents.store'), $this->validReferral(['referred_for' => [$for]] + $other))
+                ->assertSessionHasNoErrors();
+        }
+
+        foreach (config('referral.remarks') as $remark) {
+            $this->actingAs($this->clerk, 'employee')
+                ->post(route('documents.store'), $this->validReferral(['remarks' => $remark] + $other))
                 ->assertSessionHasNoErrors();
         }
     }
@@ -193,7 +260,8 @@ class ReferralRegistrationTest extends TestCase
     {
         $this->actingAs($this->clerk, 'employee')
             ->post(route('documents.store'), $this->validReferral([
-                'remarks' => 'Awaiting signature of the Assistant Chief.',
+                'remarks' => 'Other',
+                'remarks_other' => 'Awaiting signature of the Assistant Chief.',
             ]));
 
         foreach (['promissory', 'assistant chief', 'approval', '1002'] as $keyword) {

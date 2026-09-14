@@ -3,6 +3,7 @@ import { useForm } from "@inertiajs/react";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import DateField, { today } from "@/Components/Employee/DateField";
+import ChoiceGroup from "@/Components/Employee/ChoiceGroup";
 import { sectionLabel } from "./referral";
 
 /*
@@ -67,9 +68,12 @@ export default function ReferralFormModal({
         useForm({
             document_date: today(),
             taxpayer_name: "",
-            concern: "",
-            referred_for: "",
+            concerns: [],
+            concern_other: "",
+            referred_for: [],
+            referred_for_other: "",
             remarks: "",
+            remarks_other: "",
             destination_section_id: "",
             addressee: "",
         });
@@ -163,46 +167,45 @@ export default function ReferralFormModal({
                         />
                     </Field>
 
-                    <div className="grid gap-6 sm:grid-cols-2">
-                        <Field label="Concerns" error={errors.concern} required>
-                            <select
-                                value={data.concern}
-                                onChange={(e) =>
-                                    setData("concern", e.target.value)
-                                }
-                                className={FIELD}
-                            >
-                                <option value="">Select</option>
-                                {(options.concerns ?? []).map((c) => (
-                                    <option key={c} value={c}>
-                                        {c}
-                                    </option>
-                                ))}
-                            </select>
-                        </Field>
+                    <Field
+                        label="Concerns"
+                        hint="Tick all that apply."
+                        error={errors.concerns}
+                        required
+                    >
+                        <ChoiceGroup
+                            name="concerns"
+                            multiple
+                            options={options.concerns ?? []}
+                            value={data.concerns}
+                            onChange={(v) => setData("concerns", v)}
+                            otherValue={data.concern_other}
+                            onOtherChange={(v) => setData("concern_other", v)}
+                            otherPlaceholder="What is the other concern?"
+                            otherError={errors.concern_other}
+                        />
+                    </Field>
 
-                        <Field
-                            label="For"
-                            hint="Action requested of the receiving office."
-                            error={errors.referred_for}
-                            required
-                        >
-                            <select
-                                value={data.referred_for}
-                                onChange={(e) =>
-                                    setData("referred_for", e.target.value)
-                                }
-                                className={FIELD}
-                            >
-                                <option value="">Select</option>
-                                {(options.referred_for ?? []).map((f) => (
-                                    <option key={f} value={f}>
-                                        {f}
-                                    </option>
-                                ))}
-                            </select>
-                        </Field>
-                    </div>
+                    <Field
+                        label="For"
+                        hint="Action requested of the receiving office. Tick all that apply."
+                        error={errors.referred_for}
+                        required
+                    >
+                        <ChoiceGroup
+                            name="referred_for"
+                            multiple
+                            options={options.referred_for ?? []}
+                            value={data.referred_for}
+                            onChange={(v) => setData("referred_for", v)}
+                            otherValue={data.referred_for_other}
+                            onOtherChange={(v) =>
+                                setData("referred_for_other", v)
+                            }
+                            otherPlaceholder="What is the other action?"
+                            otherError={errors.referred_for_other}
+                        />
+                    </Field>
 
                     <Field
                         label="Date Issued"
@@ -302,14 +305,19 @@ export default function ReferralFormModal({
 
                     <Field
                         label="Remarks"
-                        hint='Write "Complied" or "Process completed" if it ends here. Otherwise, say why not yet.'
+                        hint="Where the document stands right now."
                         error={errors.remarks}
+                        required
                     >
-                        <textarea
-                            rows="3"
+                        <ChoiceGroup
+                            name="remarks"
+                            options={options.remarks ?? []}
                             value={data.remarks}
-                            onChange={(e) => setData("remarks", e.target.value)}
-                            className={`${FIELD} resize-none`}
+                            onChange={(v) => setData("remarks", v)}
+                            otherValue={data.remarks_other}
+                            onOtherChange={(v) => setData("remarks_other", v)}
+                            otherPlaceholder="Describe the status"
+                            otherError={errors.remarks_other}
                         />
                     </Field>
 

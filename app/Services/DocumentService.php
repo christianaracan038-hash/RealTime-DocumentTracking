@@ -27,11 +27,19 @@ class DocumentService
 
                 'taxpayer_name' => $data['taxpayer_name'],
 
-                'concern' => $data['concern'],
+                'concern' => $this->joinChoices(
+                    $data['concerns'],
+                    $data['concern_other'] ?? null
+                ),
 
-                'referred_for' => $data['referred_for'],
+                'referred_for' => $this->joinChoices(
+                    $data['referred_for'],
+                    $data['referred_for_other'] ?? null
+                ),
 
-                'remarks' => $data['remarks'] ?? null,
+                'remarks' => $data['remarks'] === 'Other'
+                    ? trim($data['remarks_other'])
+                    : $data['remarks'],
 
                 'status_id' => 1,
 
@@ -57,6 +65,23 @@ class DocumentService
 
             return $document;
         });
+    }
+
+    /**
+     * Turn a list of ticked options into one line for the slip.
+     *
+     * "Other" is replaced by whatever was typed for it, so the stored
+     * value reads naturally: "Approval, Signature, Return to sender".
+     */
+    private function joinChoices(array $ticked, ?string $other): string
+    {
+        $choices = [];
+
+        foreach ($ticked as $choice) {
+            $choices[] = $choice === 'Other' ? trim((string) $other) : $choice;
+        }
+
+        return implode(', ', array_filter($choices, fn ($c) => $c !== ''));
     }
 
     /**
