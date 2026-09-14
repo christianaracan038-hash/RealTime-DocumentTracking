@@ -102,14 +102,17 @@ export function ReferenceSlip({ document }) {
                 <Column title="From">
                     <p className="font-semibold">{sentFrom(document)}</p>
 
+                    {/*
+                     * Left blank on purpose: the office fills this in by
+                     * hand. The stored value is not the one they use.
+                     */}
                     <p className="mt-auto pt-2 text-[8px] uppercase">
                         Office code
                     </p>
-                    <p className="font-mono font-bold">
-                        {document.office_code ??
-                            document.creator?.section?.section_code ??
-                            "—"}
-                    </p>
+                    <p
+                        aria-label="Office code, to be written by hand"
+                        className="h-4 border-b border-navy-900"
+                    />
                 </Column>
             </div>
         </div>

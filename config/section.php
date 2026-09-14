@@ -57,4 +57,16 @@ return [
         'page' => 'Compliance/Dashboard',
     ],
 
+    /*
+    * The Admin Section is an office section that sends and receives
+    * referrals like any other. It is unrelated to the admin *panel*
+    * at /admin, which is where accounts are managed - hence the
+    * distinct path and page folder.
+    */
+    'ADMIN' => [
+        'path' => '/admin-section/dashboard',
+        'route' => 'admin-section.dashboard',
+        'page' => 'AdminSection/Dashboard',
+    ],
+
 ];

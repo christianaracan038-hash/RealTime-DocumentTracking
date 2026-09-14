@@ -32,6 +32,7 @@ const navigation = {
     CSS: sectionMenu("css.dashboard"),
     COLLECTION: sectionMenu("collection.dashboard"),
     COMPLIANCE: sectionMenu("compliance.dashboard"),
+    ADMIN: sectionMenu("admin-section.dashboard"),
 };
 
 export default navigation;

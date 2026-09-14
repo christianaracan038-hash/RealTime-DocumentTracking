@@ -84,7 +84,7 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
 
                                 <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
                                     <dt className="text-sm font-semibold text-muted">
-                                        Concern
+                                        Concerns
                                     </dt>
                                     <dd className="text-navy-800">
                                         {document.concern ??
@@ -111,12 +111,6 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                                     </dt>
                                     <dd className="text-navy-800">
                                         {sentFrom(document) || "—"}
-                                        <span className="ml-2 font-mono text-sm text-muted">
-                                            {document.office_code ??
-                                                document.creator?.section
-                                                    ?.section_code ??
-                                                ""}
-                                        </span>
                                     </dd>
 
                                     <dt className="text-sm font-semibold text-muted">
@@ -169,12 +163,11 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                         <thead className="bg-paper">
                             <tr>
                                 <th className={th}>Taxpayer</th>
-                                <th className={th}>Concern</th>
+                                <th className={th}>Concerns</th>
                                 <th className={th}>For</th>
                                 <th className={th}>Remarks</th>
                                 <th className={th}>From</th>
                                 <th className={th}>To</th>
-                                <th className={th}>Office code</th>
                                 <th className={th}>Reference no.</th>
                                 <th className={`${th} text-center`}>QR</th>
                                 <th className={th}>Status</th>
@@ -231,13 +224,6 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                                             {addressedTo(document)}
                                         </td>
 
-                                        <td className={`${td} font-mono`}>
-                                            {document.office_code ??
-                                                document.creator?.section
-                                                    ?.section_code ??
-                                                "—"}
-                                        </td>
-
                                         <td
                                             className={`${td} font-mono whitespace-nowrap`}
                                         >
@@ -280,7 +266,7 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                             ) : (
                                 <tr>
                                     <td
-                                        colSpan="11"
+                                        colSpan="10"
                                         className="py-14 text-center"
                                     >
                                         <p className="text-lg font-semibold text-navy-800">
