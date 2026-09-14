@@ -27,7 +27,7 @@ return new class extends Migration
                 $table->string('referred_for', 50)->nullable()->after('concern');
             }
 
-            // Free text: complied / completed, or why not yet.
+            // Free text: complied / completed, or why not yet. 
             if (! Schema::hasColumn('documents', 'remarks')) {
                 $table->text('remarks')->nullable()->after('referred_for');
             }

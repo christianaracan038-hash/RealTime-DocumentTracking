@@ -10,6 +10,7 @@ export default function ReceiveDocumentScanner({
 }) {
     const scannerRef = useRef(null);
     const isProcessingRef = useRef(false);
+    const isMountedRef = useRef(true);
 
     const isForward = mode === "forward";
 
@@ -19,9 +20,10 @@ export default function ReceiveDocumentScanner({
     const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
+        isMountedRef.current = true;
+
         const scannerId = "document-qr-reader";
         const scanner = new Html5Qrcode(scannerId);
-
         scannerRef.current = scanner;
 
         const startScanner = async () => {
@@ -34,49 +36,32 @@ export default function ReceiveDocumentScanner({
                     throw new Error("No camera found.");
                 }
 
-                /*
-                 * Ask for the rear camera. On a phone cameras[0] is
-                 * usually the front one, which cannot be pointed at a
-                 * slip on the desk. Desktops with one webcam still work:
-                 * the browser falls back to whatever it has.
-                 */
-                const cameraId = { facingMode: "environment" };
-
                 await scanner.start(
-                    cameraId,
+                    { facingMode: "environment" },
                     {
                         fps: 10,
-
-                        /*
-                         * Scan box scales with the viewfinder so it fits
-                         * a narrow phone as well as a desktop webcam.
-                         */
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
                             const edge =
                                 Math.min(viewfinderWidth, viewfinderHeight) *
                                 0.7;
-
                             return { width: edge, height: edge };
                         },
-
                         aspectRatio: 1.0,
                     },
                     async (decodedText) => {
-                        console.log("🔥 QR DETECTED:", decodedText);
-
-                        if (isProcessingRef.current) {
-                            return;
-                        }
-
+                        if (isProcessingRef.current) return;
                         isProcessingRef.current = true;
+
+                        try {
+                            await scannerRef.current?.stop();
+                        } catch (_) {}
 
                         await handleScan(decodedText);
                     },
                     () => {},
                 );
             } catch (err) {
-                console.error("QR scanner error:", err);
-
+                if (!isMountedRef.current) return;
                 setCameraError(
                     err.message ||
                         "Unable to start the QR scanner. Please check your camera permission.",
@@ -87,60 +72,66 @@ export default function ReceiveDocumentScanner({
         startScanner();
 
         return () => {
+            isMountedRef.current = false;
+
             if (scannerRef.current) {
                 scannerRef.current
                     .stop()
                     .catch(() => {})
                     .finally(() => {
-                        scannerRef.current?.clear();
+                        try {
+                            scannerRef.current?.clear();
+                        } catch (_) {}
+                        scannerRef.current = null;
                     });
             }
         };
     }, []);
 
+    const getCsrfToken = () =>
+        window.document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content") ?? null;
+
+    const apiFetch = async (url, options = {}) => {
+        const csrfToken = getCsrfToken();
+
+        const response = await fetch(url, {
+            ...options,
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {}),
+                ...(options.headers ?? {}),
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "An unexpected error occurred.");
+        }
+
+        return data;
+    };
+
     const handleScan = async (qrValue) => {
+        if (!isMountedRef.current) return;
+
         try {
             setProcessing(true);
             setError(null);
 
-            const csrfToken = window.document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute("content");
-
-            /*
-            |--------------------------------------------------------------------------
-            | STEP 1: Validate QR
-            |--------------------------------------------------------------------------
-            */
-
-            const scanResponse = await fetch("/api/documents/scan", {
+            const scanData = await apiFetch("/api/documents/scan", {
                 method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-
-                    ...(csrfToken
-                        ? {
-                              "X-CSRF-TOKEN": csrfToken,
-                          }
-                        : {}),
-                },
                 body: JSON.stringify({
                     qr_value: qrValue,
                     mode: isForward ? "forward" : "receive",
                 }),
             });
 
-            const scanData = await scanResponse.json();
-
-            console.log("SCAN RESPONSE:", scanData);
-
-            if (!scanResponse.ok) {
-                throw new Error(
-                    scanData.message || "Unable to validate document.",
-                );
-            }
+            if (!isMountedRef.current) return;
 
             const scannedDocument = scanData.document;
 
@@ -149,12 +140,6 @@ export default function ReceiveDocumentScanner({
                     "The scanned QR did not return a valid document.",
                 );
             }
-
-            /*
-            |--------------------------------------------------------------------------
-            | STEP 2: Make sure QR belongs to opened document
-            |--------------------------------------------------------------------------
-            */
 
             if (
                 String(scannedDocument.document_id) !==
@@ -165,68 +150,24 @@ export default function ReceiveDocumentScanner({
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | STEP 3: FORWARD MODE
-            |--------------------------------------------------------------------------
-            */
-
             if (isForward) {
-                console.log("QR verified for forwarding:", scannedDocument);
-
-                console.log(
-                    "Available destination sections:",
-                    scanData.sections,
-                );
+                if (!isMountedRef.current) return;
 
                 setProcessing(false);
 
                 if (onForwarded) {
-                    onForwarded(scannedDocument, scanData.sections || []);
+                    onForwarded(scannedDocument, scanData.sections ?? []);
                 }
 
                 return;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | STEP 4: RECEIVE MODE
-            |--------------------------------------------------------------------------
-            */
-
-            const actionResponse = await fetch(
+            const actionData = await apiFetch(
                 `/api/documents/${scannedDocument.document_id}/receive`,
-                {
-                    method: "POST",
-                    credentials: "same-origin",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-
-                        ...(csrfToken
-                            ? {
-                                  "X-CSRF-TOKEN": csrfToken,
-                              }
-                            : {}),
-                    },
-                },
+                { method: "POST" },
             );
 
-            const actionData = await actionResponse.json();
-
-            console.log("RECEIVE RESPONSE:", actionData);
-
-            if (!actionResponse.ok) {
-                throw new Error(
-                    actionData.message || "Unable to receive the document.",
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | STEP 5: RECEIVE SUCCESS
-            |--------------------------------------------------------------------------
-            */
+            if (!isMountedRef.current) return;
 
             setSuccess(true);
             setProcessing(false);
@@ -236,10 +177,12 @@ export default function ReceiveDocumentScanner({
             }
 
             setTimeout(() => {
-                onClose();
+                if (isMountedRef.current) {
+                    onClose();
+                }
             }, 1500);
         } catch (err) {
-            console.error(`${isForward ? "FORWARD" : "RECEIVE"} ERROR:`, err);
+            if (!isMountedRef.current) return;
 
             setError(
                 err.message ||
@@ -253,14 +196,11 @@ export default function ReceiveDocumentScanner({
         }
     };
 
-    if (!documentRecord) {
-        return null;
-    }
+    if (!documentRecord) return null;
 
     return (
         <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-navy-950/80 p-4 sm:items-center">
             <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
-                {/* Header */}
                 <div className="flex items-center justify-between border-b px-5 py-4">
                     <div>
                         <h2 className="text-lg font-semibold text-slate-800">
@@ -288,36 +228,30 @@ export default function ReceiveDocumentScanner({
                     </button>
                 </div>
 
-                {/* Scanner */}
                 <div className="p-5">
                     <div className="relative overflow-hidden rounded-xl bg-slate-900">
                         <div id="document-qr-reader" className="w-full" />
 
-                        {/* Processing */}
                         {processing && !success && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                                 <div className="text-center text-white">
                                     <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-
                                     <p className="text-sm font-medium">
                                         {isForward
                                             ? "Verifying document..."
-                                            : "Verifying document..."}
+                                            : "Processing document..."}
                                     </p>
                                 </div>
                             </div>
                         )}
 
-                        {/* Success */}
                         {success && (
                             <div className="absolute inset-0 flex items-center justify-center bg-green-600/90">
                                 <div className="text-center text-white">
                                     <div className="text-5xl">✓</div>
-
                                     <p className="mt-2 text-lg font-semibold">
                                         Document Received
                                     </p>
-
                                     <p className="mt-1 text-sm text-green-100">
                                         Tracking history recorded.
                                     </p>
@@ -325,7 +259,6 @@ export default function ReceiveDocumentScanner({
                             </div>
                         )}
 
-                        {/* Camera Error */}
                         {cameraError && (
                             <div className="absolute inset-0 flex items-center justify-center bg-slate-900 p-6 text-center">
                                 <p className="text-sm text-red-300">
@@ -335,7 +268,6 @@ export default function ReceiveDocumentScanner({
                         )}
                     </div>
 
-                    {/* Instruction */}
                     {!success && !cameraError && !processing && !error && (
                         <p className="mt-4 text-center text-sm text-slate-500">
                             {isForward
@@ -344,7 +276,6 @@ export default function ReceiveDocumentScanner({
                         </p>
                     )}
 
-                    {/* Error */}
                     {error && (
                         <div className="mt-4 rounded-lg bg-red-50 p-3 text-center text-sm text-red-700">
                             {error}
@@ -352,7 +283,6 @@ export default function ReceiveDocumentScanner({
                     )}
                 </div>
 
-                {/* Footer */}
                 <div className="border-t px-5 py-4">
                     <button
                         type="button"
