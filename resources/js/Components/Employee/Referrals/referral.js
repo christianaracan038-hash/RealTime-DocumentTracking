@@ -56,3 +56,44 @@ export function longDate(date) {
         day: "numeric",
     }).format(new Date(date));
 }
+
+/**
+ * "11:38AM 9/14/2026" - the exact moment of a transaction, in the
+ * office's own format. Manila time regardless of the phone's setting.
+ */
+export function exactTime(date) {
+    if (!date) return "";
+
+    const parts = Object.fromEntries(
+        new Intl.DateTimeFormat("en-US", {
+            timeZone: "Asia/Manila",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+            month: "numeric",
+            day: "numeric",
+            year: "numeric",
+        })
+            .formatToParts(new Date(date))
+            .map((p) => [p.type, p.value]),
+    );
+
+    return `${parts.hour}:${parts.minute}${parts.dayPeriod} ${parts.month}/${parts.day}/${parts.year}`;
+}
+
+/**
+ * "3h", "1d 4h", "35m" - how long a document has been waiting, short
+ * enough to sit inside a badge.
+ */
+export function waitedFor(hours) {
+    if (hours == null) return "";
+
+    if (hours < 1) return `${Math.max(1, Math.round(hours * 60))}m`;
+
+    if (hours < 24) return `${Math.round(hours)}h`;
+
+    const days = Math.floor(hours / 24);
+    const rest = Math.round(hours - days * 24);
+
+    return rest > 0 ? `${days}d ${rest}h` : `${days}d`;
+}

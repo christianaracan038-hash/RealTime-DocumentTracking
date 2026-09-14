@@ -1,6 +1,8 @@
 import { useState } from "react";
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 import DocumentDetailsModal from "@/Pages/Employees/Documents/DocumentDetailsModal";
+import AgeBadge from "@/Components/Employee/AgeBadge";
+import { exactTime } from "@/Components/Employee/Referrals/referral";
 
 export default function Documents({ documents = [] }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
@@ -58,15 +60,18 @@ export default function Documents({ documents = [] }) {
                                                     {document.tracking_number}
                                                 </span>
 
-                                                {(document.concern ?? document.transaction_type) && (
+                                                {(document.concern ??
+                                                    document.transaction_type) && (
                                                     <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                                                        {document.concern ?? document.transaction_type}
+                                                        {document.concern ??
+                                                            document.transaction_type}
                                                     </span>
                                                 )}
                                             </div>
 
                                             <p className="mt-2 text-sm text-slate-600">
-                                                {document.remarks ?? document.description}
+                                                {document.remarks ??
+                                                    document.description}
                                             </p>
 
                                             <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-500">
@@ -92,11 +97,19 @@ export default function Documents({ documents = [] }) {
                                             </div>
                                         </div>
 
-                                        <span className="shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                                            {document.status?.status_name ??
-                                                "Unknown"}
-                                        </span>
+                                        <div className="flex shrink-0 flex-col items-end gap-2">
+                                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                                {document.status?.status_name ??
+                                                    "Unknown"}
+                                            </span>
+                                            <AgeBadge document={document} />
+                                        </div>
                                     </div>
+
+                                    <p className="mt-3 text-sm text-slate-500">
+                                        Received{" "}
+                                        {exactTime(document.received_at)}
+                                    </p>
                                 </button>
                             ))}
                         </div>

@@ -141,7 +141,9 @@ export default function ForwardDocumentModal({ document, onClose }) {
                                 </p>
 
                                 <p className="text-slate-700">
-                                    {document.concern ?? document.transaction_type ?? "—"}
+                                    {document.concern ??
+                                        document.transaction_type ??
+                                        "—"}
                                 </p>
                             </div>
                         </div>

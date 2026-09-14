@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class Document extends Model
 {
@@ -37,6 +38,16 @@ class Document extends Model
         'qr_value',
         'qr_path',
         'qr_generated_at',
+    ];
+
+    /*
+    * Every screen that lists documents needs to know how long each one
+    * has been waiting and whether that is a problem, so both travel
+    * with the document wherever it is serialised.
+    */
+    protected $appends = [
+        'waiting_since',
+        'aging',
     ];
 
     protected $casts = [
@@ -98,6 +109,62 @@ class Document extends Model
             'document_id',
             'document_id'
         );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Aging
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * When the document last changed hands - the moment its current
+     * wait began.
+     *
+     * Pending: since it was last forwarded, or registered if never.
+     * Received: since the current holder received it.
+     */
+    public function getWaitingSinceAttribute(): ?Carbon
+    {
+        if ((int) $this->status_id === 2) {
+            return $this->received_at;
+        }
+
+        $lastMove = $this->relationLoaded('latestTrackingHistory')
+            ? $this->latestTrackingHistory
+            : $this->latestTrackingHistory()->first();
+
+        return $lastMove?->tracked_at ?? $this->created_at;
+    }
+
+    /**
+     * How the current wait compares to the office's two-day target.
+     *
+     * Returns the band name, the hours waited, and whether it has
+     * passed the overdue line, so the frontend only has to colour it.
+     */
+    public function getAgingAttribute(): array
+    {
+        $since = $this->waiting_since;
+
+        if (! $since) {
+            return ['band' => 'fresh', 'hours' => 0, 'overdue' => false];
+        }
+
+        $hours = $since->diffInMinutes(now()) / 60;
+        $limits = config('referral.aging');
+
+        $band = match (true) {
+            $hours < $limits['fresh_until'] => 'fresh',
+            $hours < $limits['aging_until'] => 'aging',
+            default => 'late',
+        };
+
+        return [
+            'band' => $band,
+            'hours' => round($hours, 1),
+            'overdue' => $hours >= $limits['overdue_after'],
+        ];
     }
 
     public function latestTrackingHistory()

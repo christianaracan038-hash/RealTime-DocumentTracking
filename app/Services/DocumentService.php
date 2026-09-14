@@ -157,6 +157,7 @@ class DocumentService
                 * which stays fixed even after the document moves on.
                 */
                 'creator.section',
+                'latestTrackingHistory',
             ])
             ->where('created_by', $employee->employee_id)
             ->when(
@@ -179,11 +180,12 @@ class DocumentService
                 'currentSection',
                 'destinationSection',
                 'currentEmployee',
+                'latestTrackingHistory',
 
                 /*
                 * Original creator
                 */
-                'creator',
+                'creator.section',
 
                 /*
                 * Complete movement history

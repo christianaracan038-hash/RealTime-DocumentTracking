@@ -141,6 +141,8 @@ class DocumentController extends Controller
                 'currentSection',
                 'destinationSection',
                 'currentEmployee',
+                'creator.section',
+                'latestTrackingHistory',
             ])
             ->where(
                 'current_employee_id',

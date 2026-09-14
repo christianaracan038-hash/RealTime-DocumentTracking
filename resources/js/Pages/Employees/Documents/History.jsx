@@ -2,6 +2,8 @@ import { router } from "@inertiajs/react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 import SearchInput from "@/Components/Employee/SearchInput";
+import AgeBadge from "@/Components/Employee/AgeBadge";
+import { exactTime } from "@/Components/Employee/Referrals/referral";
 
 const formatPhilippineDateTime = (date) => {
     if (!date) return "-";
@@ -110,26 +112,35 @@ export default function History({ documents, filters = {} }) {
                                                 {document.tracking_number}
                                             </span>
 
-                                            {(document.concern ?? document.transaction_type) && (
+                                            {(document.concern ??
+                                                document.transaction_type) && (
                                                 <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                                                    {document.concern ?? document.transaction_type}
+                                                    {document.concern ??
+                                                        document.transaction_type}
                                                 </span>
                                             )}
                                         </div>
 
                                         <p className="mt-2 text-sm text-slate-500">
-                                            {document.remarks ?? document.description}
+                                            {document.remarks ??
+                                                document.description}
                                         </p>
                                     </div>
 
-                                    <span
-                                        className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
-                                            document.status?.status_color,
-                                        )}`}
-                                    >
-                                        {document.status?.status_name ??
-                                            "Unknown"}
-                                    </span>
+                                    <div className="flex flex-col items-start gap-2 sm:items-end">
+                                        <span
+                                            className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                                                document.status?.status_color,
+                                            )}`}
+                                        >
+                                            {document.status?.status_name ??
+                                                "Unknown"}
+                                        </span>
+                                        <AgeBadge
+                                            document={document}
+                                            showSince
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Basic Information */}
@@ -164,7 +175,8 @@ export default function History({ documents, filters = {} }) {
                                         </p>
 
                                         <p className="mt-1 font-medium text-slate-700">
-                                            {document.current_employee?.username ?? "-"}
+                                            {document.current_employee
+                                                ?.username ?? "-"}
                                         </p>
                                     </div>
 
@@ -223,8 +235,8 @@ export default function History({ documents, filters = {} }) {
                                                                 </span>
                                                             </div>
 
-                                                            <span className="text-xs text-slate-400">
-                                                                {formatPhilippineDateTime(
+                                                            <span className="text-xs font-medium text-slate-500">
+                                                                {exactTime(
                                                                     history.tracked_at,
                                                                 )}
                                                             </span>

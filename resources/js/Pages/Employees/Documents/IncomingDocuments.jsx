@@ -2,8 +2,10 @@ import { useState } from "react";
 import DocumentDetailsModal from "./DocumentDetailsModal";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
+import AgeBadge from "@/Components/Employee/AgeBadge";
 import {
     addressedTo,
+    exactTime,
     sentFrom,
 } from "@/Components/Employee/Referrals/referral";
 
@@ -98,12 +100,19 @@ export default function IncomingDocuments({ documents = [] }) {
                                             </p>
                                         </div>
 
-                                        <EmployeeBadge
-                                            status={
-                                                document.status?.status_name
-                                            }
-                                        />
+                                        <div className="flex shrink-0 flex-col items-end gap-2">
+                                            <EmployeeBadge
+                                                status={
+                                                    document.status?.status_name
+                                                }
+                                            />
+                                            <AgeBadge document={document} />
+                                        </div>
                                     </div>
+
+                                    <p className="mt-3 text-sm text-muted">
+                                        Sent {exactTime(document.waiting_since)}
+                                    </p>
                                 </button>
                             </li>
                         ))}

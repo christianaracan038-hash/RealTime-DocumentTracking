@@ -4,9 +4,10 @@ import { router } from "@inertiajs/react";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
+import AgeBadge from "@/Components/Employee/AgeBadge";
 import SearchInput from "@/Components/Employee/SearchInput";
 import ReferenceSlipModal from "./ReferenceSlipModal";
-import { addressedTo, longDate, sentFrom } from "./referral";
+import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
 
 /*
  * Recent registered referrals.
@@ -77,9 +78,14 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                                         </p>
                                     </div>
 
-                                    <EmployeeBadge
-                                        status={document.status?.status_name}
-                                    />
+                                    <div className="flex shrink-0 flex-col items-end gap-2">
+                                        <EmployeeBadge
+                                            status={
+                                                document.status?.status_name
+                                            }
+                                        />
+                                        <AgeBadge document={document} />
+                                    </div>
                                 </div>
 
                                 <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
@@ -118,6 +124,13 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                                     </dt>
                                     <dd className="text-navy-800">
                                         {longDate(document.document_date)}
+                                    </dd>
+
+                                    <dt className="text-sm font-semibold text-muted">
+                                        Registered
+                                    </dt>
+                                    <dd className="text-navy-800">
+                                        {exactTime(document.created_at)}
                                     </dd>
 
                                     {(document.remarks ??
@@ -194,6 +207,10 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                                                     document.document_date,
                                                 )}
                                             </p>
+                                            <p className="text-sm text-muted">
+                                                Registered{" "}
+                                                {exactTime(document.created_at)}
+                                            </p>
                                         </td>
 
                                         <td className={td}>
@@ -242,11 +259,15 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                                         </td>
 
                                         <td className={td}>
-                                            <EmployeeBadge
-                                                status={
-                                                    document.status?.status_name
-                                                }
-                                            />
+                                            <div className="flex flex-col items-start gap-2">
+                                                <EmployeeBadge
+                                                    status={
+                                                        document.status
+                                                            ?.status_name
+                                                    }
+                                                />
+                                                <AgeBadge document={document} />
+                                            </div>
                                         </td>
 
                                         <td

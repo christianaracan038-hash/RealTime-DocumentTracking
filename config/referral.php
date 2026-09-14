@@ -58,6 +58,20 @@ return [
     ],
 
     /*
+    * How long a document may sit with one section before it is late.
+    *
+    * The office wants every referral moved within two days. A document
+    * waiting less than `fresh_until` hours shows green; up to
+    * `aging_until` shows yellow; beyond that red; and past
+    * `overdue_after` it is flagged overdue.
+    */
+    'aging' => [
+        'fresh_until' => 6,
+        'aging_until' => 24,
+        'overdue_after' => 48,
+    ],
+
+    /*
     * Where the document stands when it is registered.
     */
     'remarks' => [

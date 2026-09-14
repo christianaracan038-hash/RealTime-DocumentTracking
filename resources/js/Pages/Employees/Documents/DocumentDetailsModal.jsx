@@ -2,7 +2,11 @@ import { useState } from "react";
 
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 import ForwardDocumentModal from "./ForwardDocumentModal";
-import { addressedTo } from "@/Components/Employee/Referrals/referral";
+import {
+    addressedTo,
+    exactTime,
+} from "@/Components/Employee/Referrals/referral";
+import AgeBadge from "@/Components/Employee/AgeBadge";
 
 export default function DocumentDetailsModal({ document, onClose }) {
     const [showScanner, setShowScanner] = useState(false);
@@ -66,7 +70,9 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                 </p>
 
                                 <p className="text-slate-700">
-                                    {document.concern ?? document.transaction_type ?? "—"}
+                                    {document.concern ??
+                                        document.transaction_type ??
+                                        "—"}
                                 </p>
                             </div>
                         </div>
@@ -130,6 +136,32 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             >
                                 {status ?? "Unknown"}
                             </span>
+
+                            <div className="mt-2">
+                                <AgeBadge document={document} showSince />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs font-medium text-slate-400">
+                                    Registered
+                                </p>
+                                <p className="text-slate-700">
+                                    {exactTime(document.created_at)}
+                                </p>
+                            </div>
+
+                            {document.received_at && (
+                                <div>
+                                    <p className="text-xs font-medium text-slate-400">
+                                        Received
+                                    </p>
+                                    <p className="text-slate-700">
+                                        {exactTime(document.received_at)}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
