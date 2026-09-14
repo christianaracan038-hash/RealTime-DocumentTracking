@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
+import DateField, { today } from "@/Components/Employee/DateField";
 import { sectionLabel } from "./referral";
 
 /*
@@ -64,7 +65,7 @@ export default function ReferralFormModal({
 }) {
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
-            document_date: "",
+            document_date: today(),
             taxpayer_name: "",
             concern: "",
             referred_for: "",
@@ -138,21 +139,16 @@ export default function ReferralFormModal({
 
                 <form onSubmit={submit} className="space-y-6 px-7 py-6">
                     {/* Produced by the system */}
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
                         <ReadOnly
                             label="Reference No."
                             value="Assigned on save"
                         />
                         <ReadOnly label="QR code" value="Created on save" />
-                        <ReadOnly
-                            label="Office code"
-                            value={fromSection?.section_code ?? "—"}
-                        />
                     </div>
 
                     <Field
-                        label="Taxpayer name"
-                        hint="As written on the document."
+                        label="Taxpayer's Name"
                         error={errors.taxpayer_name}
                         required
                     >
@@ -168,7 +164,7 @@ export default function ReferralFormModal({
                     </Field>
 
                     <div className="grid gap-6 sm:grid-cols-2">
-                        <Field label="Concern" error={errors.concern} required>
+                        <Field label="Concerns" error={errors.concern} required>
                             <select
                                 value={data.concern}
                                 onChange={(e) =>
@@ -176,7 +172,7 @@ export default function ReferralFormModal({
                                 }
                                 className={FIELD}
                             >
-                                <option value="">Choose one</option>
+                                <option value="">Select</option>
                                 {(options.concerns ?? []).map((c) => (
                                     <option key={c} value={c}>
                                         {c}
@@ -187,7 +183,7 @@ export default function ReferralFormModal({
 
                         <Field
                             label="For"
-                            hint="What the receiving office should do."
+                            hint="Action requested of the receiving office."
                             error={errors.referred_for}
                             required
                         >
@@ -198,7 +194,7 @@ export default function ReferralFormModal({
                                 }
                                 className={FIELD}
                             >
-                                <option value="">Choose one</option>
+                                <option value="">Select</option>
                                 {(options.referred_for ?? []).map((f) => (
                                     <option key={f} value={f}>
                                         {f}
@@ -209,23 +205,22 @@ export default function ReferralFormModal({
                     </div>
 
                     <Field
-                        label="Date issued"
+                        label="Date Issued"
                         error={errors.document_date}
                         required
                     >
-                        <input
-                            type="date"
+                        <DateField
+                            id="document_date"
                             value={data.document_date}
-                            onChange={(e) =>
-                                setData("document_date", e.target.value)
+                            onChange={(value) =>
+                                setData("document_date", value)
                             }
-                            className={FIELD}
                         />
                     </Field>
 
                     {/* Where it goes, and to whom */}
                     <Field
-                        label="Send to which section"
+                        label="Receiving Section"
                         error={errors.destination_section_id}
                         required
                     >
@@ -240,7 +235,7 @@ export default function ReferralFormModal({
                             }}
                             className={FIELD}
                         >
-                            <option value="">Choose a section</option>
+                            <option value="">Select</option>
                             {sections.map((s) => (
                                 <option key={s.section_id} value={s.section_id}>
                                     {sectionLabel(s)}

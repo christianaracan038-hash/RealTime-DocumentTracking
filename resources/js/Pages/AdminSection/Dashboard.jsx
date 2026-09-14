@@ -3,11 +3,11 @@ import IncomingDocuments from "@/Pages/Employees/Documents/IncomingDocuments";
 
 export default function Dashboard({ documents = [] }) {
     return (
-        <EmployeeLayout title="RDO Dashboard">
+        <EmployeeLayout title="Admin Section Dashboard">
             <div className="space-y-6">
                 <div className="rounded-2xl bg-navy-900 p-7">
                     <p className="text-sm font-semibold tracking-widest text-accent-400 uppercase">
-                        RDO's/ARDO's Office
+                        Admin Section
                     </p>
 
                     <h2 className="mt-2 text-2xl font-bold text-white">
@@ -15,8 +15,8 @@ export default function Dashboard({ documents = [] }) {
                     </h2>
 
                     <p className="mt-2 max-w-2xl text-base text-navy-200">
-                        Anything sent to the RDO's/ARDO's Office waits here
-                        until someone scans it in.
+                        Anything sent to the Admin Section waits here until
+                        someone scans it in.
                     </p>
                 </div>
 
