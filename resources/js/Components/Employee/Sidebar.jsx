@@ -1,6 +1,7 @@
 import { Link, usePage } from "@inertiajs/react";
 
 import UserInfo from "./UserInfo";
+import Logos from "./Logos";
 import navigation from "@/config/navigation";
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
@@ -38,6 +39,8 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                 <div className="shrink-0 px-6 py-6 lg:py-7">
                     <div className="flex items-start justify-between gap-3">
                         <div>
+                            <Logos size="sm" className="mb-4" />
+
                             <p className="text-sm font-semibold tracking-wide text-accent-400 uppercase">
                                 Document Tracking
                             </p>

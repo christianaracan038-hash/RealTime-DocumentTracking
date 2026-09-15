@@ -9,13 +9,6 @@ import SearchInput from "@/Components/Employee/SearchInput";
 import ReferenceSlipModal from "./ReferenceSlipModal";
 import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
 
-/*
- * Recent registered referrals.
- *
- * One row per referral, in the same order as the printed slip so the
- * clerk can check a row against the paper in their hand. "View slip"
- * opens the printable Form 2309 for that row.
- */
 export default function RecentReferralsTable({ documents, filters = {} }) {
     const [slipFor, setSlipFor] = useState(null);
 

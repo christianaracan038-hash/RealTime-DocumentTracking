@@ -1,3 +1,5 @@
+import Logos from "@/Components/Employee/Logos";
+
 /*
  * The sign-in shell.
  *
@@ -10,6 +12,8 @@ export default function GuestLayout({ children }) {
         <div className="flex min-h-screen flex-col lg:flex-row">
             {/* Identity */}
             <div className="flex flex-col justify-center bg-navy-900 px-8 py-10 lg:w-2/5 lg:px-14 lg:py-16">
+                <Logos size="lg" className="mb-6" />
+
                 <p className="text-sm font-semibold tracking-widest text-accent-400 uppercase">
                     Revenue District Office
                 </p>
