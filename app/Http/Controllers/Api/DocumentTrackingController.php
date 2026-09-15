@@ -42,6 +42,7 @@ class DocumentTrackingController extends Controller
                 'currentSection',
                 'destinationSection',
                 'currentEmployee',
+                'creator',
             ])
             ->where('qr_value', $validated['qr_value'])
             ->first();
@@ -72,7 +73,9 @@ class DocumentTrackingController extends Controller
             // Pending = status_id 1
             if ((int) $document->status_id !== 1) {
                 return response()->json([
-                    'message' => 'This document has already been received.',
+                    'message' => (int) $document->status_id === 3
+                        ? 'This document has been completed. Nothing more to do.'
+                        : 'This document has already been received.',
                     'status' => $document->status?->status_name,
                 ], 409);
             }
@@ -94,7 +97,9 @@ class DocumentTrackingController extends Controller
         // Forwarding is only allowed if document is already received.
         if ((int) $document->status_id !== 2) {
             return response()->json([
-                'message' => 'This document must be received before it can be forwarded.',
+                'message' => (int) $document->status_id === 3
+                    ? 'This document has been completed. Nothing more to do.'
+                    : 'This document must be received before it can be forwarded.',
                 'status' => $document->status?->status_name,
             ], 409);
         }
@@ -119,16 +124,22 @@ class DocumentTrackingController extends Controller
         | Get sections available for forwarding.
         |
         | Exclude:
-        | - employee's current section
+        | - the employee's own section (it is already here)
+        | - the section that registered it. A document does not go back
+        |   where it came from; once the work is done it is completed.
         |--------------------------------------------------------------------------
         */
 
         $sections = Section::query()
-            ->where('section_id', '!=', $employee->section_id)
+            ->whereNotIn('section_id', array_filter([
+                $employee->section_id,
+                $document->creator?->section_id,
+            ]))
             ->orderBy('section_name')
             ->get([
                 'section_id',
                 'section_name',
+                'description',
             ]);
 
         return response()->json([
@@ -290,6 +301,7 @@ class DocumentTrackingController extends Controller
                     'currentSection',
                     'destinationSection',
                     'currentEmployee',
+                    'creator',
                 ])
                 ->find($document->document_id);
 
@@ -351,6 +363,25 @@ class DocumentTrackingController extends Controller
 
             /*
             |--------------------------------------------------------------------------
+            | Cannot forward back to the section that registered it.
+            |
+            | The scan step already hides that section, but the rule is
+            | enforced here under the lock so it cannot be bypassed.
+            |--------------------------------------------------------------------------
+            */
+
+            $originSectionId = (int) $document->creator?->section_id;
+
+            if ($originSectionId && $originSectionId === $toSectionId) {
+                return [
+                    'success' => false,
+                    'status' => 422,
+                    'message' => 'This document came from that section. If the work is done, mark it as completed instead.',
+                ];
+            }
+
+            /*
+            |--------------------------------------------------------------------------
             | Get destination section.
             |--------------------------------------------------------------------------
             */
@@ -405,6 +436,103 @@ class DocumentTrackingController extends Controller
                 'success' => true,
                 'status' => 200,
                 'message' => 'Document forwarded successfully.',
+                'document' => $document->fresh([
+                    'status',
+                    'currentSection',
+                    'destinationSection',
+                    'currentEmployee',
+                ]),
+            ];
+        });
+
+        return response()->json(
+            $result,
+            $result['status']
+        );
+    }
+
+    /**
+     * Mark a received document as completed - the end of its journey.
+     *
+     * Only the current holder may do this, and only while Received.
+     * Nothing can be received or forwarded afterwards; the document
+     * remains visible in History.
+     */
+    public function complete(
+        Request $request,
+        Document $document
+    ): JsonResponse {
+        $employee = Auth::guard('employee')->user();
+
+        $result = DB::transaction(function () use (
+            $document,
+            $employee
+        ) {
+
+            $document = Document::query()
+                ->lockForUpdate()
+                ->with([
+                    'status',
+                    'currentSection',
+                    'destinationSection',
+                ])
+                ->find($document->document_id);
+
+            if (! $document) {
+                return [
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Document not found.',
+                ];
+            }
+
+            if ((int) $document->status_id === 3) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'message' => 'This document has already been completed.',
+                ];
+            }
+
+            if ((int) $document->status_id !== 2) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'message' => 'Only a received document can be completed.',
+                ];
+            }
+
+            if (
+                (int) $document->current_employee_id !==
+                (int) $employee->employee_id
+            ) {
+                return [
+                    'success' => false,
+                    'status' => 403,
+                    'message' => 'This document is not currently assigned to you.',
+                ];
+            }
+
+            $document->update([
+                'status_id' => 3,
+                'completed_at' => now(),
+            ]);
+
+            TrackingHistory::create([
+                'document_id' => $document->document_id,
+                'from_section_id' => $document->current_section_id,
+                'to_section_id' => $document->current_section_id,
+                'employee_id' => $employee->employee_id,
+                'status_id' => 3,
+                'action' => 'COMPLETED',
+                'remarks' => 'Requested action carried out. Document completed.',
+                'tracked_at' => now(),
+            ]);
+
+            return [
+                'success' => true,
+                'status' => 200,
+                'message' => 'Document marked as completed.',
                 'document' => $document->fresh([
                     'status',
                     'currentSection',

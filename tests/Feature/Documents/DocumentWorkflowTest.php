@@ -43,6 +43,7 @@ class DocumentWorkflowTest extends TestCase
         */
         DocumentStatus::create(['status_name' => 'Pending', 'status_color' => 'yellow', 'description' => 'Registered.', 'sort_order' => 1]);
         DocumentStatus::create(['status_name' => 'Received', 'status_color' => 'green', 'description' => 'Received.', 'sort_order' => 2]);
+        DocumentStatus::create(['status_name' => 'Completed', 'status_color' => 'blue', 'description' => 'Completed.', 'sort_order' => 3]);
 
         $this->rdo = Section::create(['section_code' => 'RDO', 'section_name' => 'RDO', 'is_active' => true]);
         $this->assessment = Section::create(['section_code' => 'ASSESSMENT', 'section_name' => 'ASSESSMENT', 'is_active' => true]);
@@ -145,9 +146,140 @@ class DocumentWorkflowTest extends TestCase
 
         $offered = collect($response->json('sections'))->pluck('section_id');
 
-        $this->assertNotContains($this->assessment->section_id, $offered);
-        $this->assertContains($this->rdo->section_id, $offered);
+        $this->assertNotContains($this->assessment->section_id, $offered, 'Not its own section.');
+        $this->assertNotContains($this->rdo->section_id, $offered, 'Not the section that registered it.');
         $this->assertContains($this->finance->section_id, $offered);
+    }
+
+    public function test_a_document_cannot_be_forwarded_back_to_the_section_that_registered_it(): void
+    {
+        $document = $this->receivedDocument();
+
+        // Assessment tries to send it back to RDO, where it started.
+        $this->actingAs($this->assessmentStaff, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/forward", [
+                'destination_section_id' => $this->rdo->section_id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('success', false);
+
+        $document->refresh();
+
+        $this->assertSame(2, (int) $document->status_id, 'A refused forward must not change status.');
+        $this->assertSame($this->assessment->section_id, (int) $document->destination_section_id);
+        $this->assertSame(1, TrackingHistory::count(), 'Only the RECEIVED row should exist.');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Complete
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_the_holder_can_mark_a_received_document_as_completed(): void
+    {
+        $document = $this->receivedDocument();
+
+        $this->actingAs($this->assessmentStaff, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $document->refresh();
+
+        $this->assertSame(3, (int) $document->status_id, 'Status should be Completed.');
+        $this->assertNotNull($document->completed_at);
+
+        // It stays where it was completed.
+        $this->assertSame($this->assessment->section_id, (int) $document->current_section_id);
+        $this->assertSame($this->assessmentStaff->employee_id, (int) $document->current_employee_id);
+
+        $this->assertDatabaseHas('tracking_histories', [
+            'document_id' => $document->document_id,
+            'from_section_id' => $this->assessment->section_id,
+            'to_section_id' => $this->assessment->section_id,
+            'employee_id' => $this->assessmentStaff->employee_id,
+            'status_id' => 3,
+            'action' => 'COMPLETED',
+        ]);
+    }
+
+    public function test_a_pending_document_cannot_be_completed(): void
+    {
+        $document = $this->registerDocument();
+
+        $this->actingAs($this->rdoStaff, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertStatus(409);
+
+        $this->assertSame(1, (int) $document->fresh()->status_id);
+    }
+
+    public function test_only_the_current_holder_can_complete(): void
+    {
+        $document = $this->receivedDocument();
+
+        $this->actingAs($this->assessmentColleague, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertForbidden();
+
+        $this->assertSame(2, (int) $document->fresh()->status_id);
+    }
+
+    public function test_a_completed_document_is_the_end_of_the_road(): void
+    {
+        $document = $this->receivedDocument();
+
+        $this->actingAs($this->assessmentStaff, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertOk();
+
+        // Cannot complete twice.
+        $this->actingAs($this->assessmentStaff, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertStatus(409);
+
+        // Cannot forward.
+        $this->actingAs($this->assessmentStaff, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/forward", [
+                'destination_section_id' => $this->finance->section_id,
+            ])
+            ->assertStatus(409);
+
+        // Cannot be received - by anyone.
+        $this->actingAs($this->assessmentColleague, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/receive")
+            ->assertStatus(409);
+
+        // Scanning it says so plainly.
+        $this->actingAs($this->assessmentStaff, 'employee')
+            ->postJson('/api/documents/scan', ['qr_value' => $document->qr_value, 'mode' => 'receive'])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'This document has been completed. Nothing more to do.');
+
+        $this->assertSame(3, (int) $document->fresh()->status_id);
+    }
+
+    public function test_a_completed_document_leaves_the_held_list_but_stays_in_history(): void
+    {
+        $document = $this->receivedDocument();
+
+        $this->actingAs($this->assessmentStaff, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertOk();
+
+        $held = $this->actingAs($this->assessmentStaff, 'employee')
+            ->get(route('documents.index'))
+            ->viewData('page')['props']['documents'];
+
+        $this->assertCount(0, $held, 'Completed documents are not "on my desk".');
+
+        $history = $this->actingAs($this->assessmentStaff, 'employee')
+            ->get(route('documents.history'))
+            ->viewData('page')['props']['documents']['data'];
+
+        $this->assertCount(1, $history, 'But the history keeps it.');
+        $this->assertSame('Completed', $history[0]['status']['status_name']);
     }
 
     /*

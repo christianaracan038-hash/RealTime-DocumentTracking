@@ -9,6 +9,7 @@
 const TONES = {
     Pending: "bg-accent-400 text-navy-900",
     Received: "bg-ok-100 text-ok-600",
+    Completed: "bg-brand-100 text-brand-700",
 };
 
 export default function EmployeeBadge({ status, className = "" }) {
