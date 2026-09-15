@@ -1,10 +1,12 @@
 /*
  * Sidebar menus, keyed by the employee's section_name in uppercase.
  *
- * Every section gets the same four items; only the dashboard route
- * differs. Keep the keys in step with config/section.php — a section
- * missing from there cannot log in, and one missing from here gets an
- * empty sidebar.
+ * Every section gets the same items; only the dashboard route differs.
+ * Registering a referral is not here - it opens from the dashboard,
+ * where the rest of the section's work already is.
+ *
+ * Keep the keys in step with config/section.php - a section missing from
+ * there cannot log in, and one missing from here gets an empty sidebar.
  */
 
 const sectionMenu = (dashboardRoute) => [
@@ -15,10 +17,6 @@ const sectionMenu = (dashboardRoute) => [
     {
         label: "Documents",
         route: "documents.index",
-    },
-    {
-        label: "Referral Registration",
-        route: "documents.create",
     },
     {
         label: "History",

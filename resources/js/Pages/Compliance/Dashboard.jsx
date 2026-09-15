@@ -1,27 +1,12 @@
-import EmployeeLayout from "@/Layouts/EmployeeLayouts";
-import IncomingDocuments from "@/Pages/Employees/Documents/IncomingDocuments";
+import SectionDashboard from "@/Components/Employee/SectionDashboard";
 
-export default function Dashboard({ documents = [] }) {
+export default function Dashboard(props) {
     return (
-        <EmployeeLayout title="Compliance Dashboard">
-            <div className="space-y-6">
-                <div className="rounded-2xl bg-navy-900 p-7">
-                    <p className="text-sm font-semibold tracking-widest text-accent-400 uppercase">
-                        Compliance Section
-                    </p>
-
-                    <h2 className="mt-2 text-2xl font-bold text-white">
-                        Documents on your desk
-                    </h2>
-
-                    <p className="mt-2 max-w-2xl text-base text-navy-200">
-                        Anything sent to Compliance waits here until someone
-                        scans it in.
-                    </p>
-                </div>
-
-                <IncomingDocuments documents={documents} />
-            </div>
-        </EmployeeLayout>
+        <SectionDashboard
+            {...props}
+            title="Compliance Dashboard"
+            eyebrow="Compliance Section"
+            blurb="Anything sent to Compliance waits here until someone scans it in."
+        />
     );
 }

@@ -9,7 +9,11 @@ import SearchInput from "@/Components/Employee/SearchInput";
 import ReferenceSlipModal from "./ReferenceSlipModal";
 import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
 
-export default function RecentReferralsTable({ documents, filters = {} }) {
+export default function RecentReferralsTable({
+    documents,
+    filters = {},
+    only = ["documents", "filters"],
+}) {
     const [slipFor, setSlipFor] = useState(null);
 
     // Already filtered by the database; do not filter again here.
@@ -44,6 +48,7 @@ export default function RecentReferralsTable({ documents, filters = {} }) {
                             label="Find a referral"
                             initialValue={filters.search}
                             placeholder="Taxpayer, concern, reference no..."
+                            only={only}
                         />
                     </div>
                 </div>
