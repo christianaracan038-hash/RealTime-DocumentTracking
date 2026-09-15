@@ -8,6 +8,8 @@ import {
     exactTime,
 } from "@/Components/Employee/Referrals/referral";
 import AgeBadge from "@/Components/Employee/AgeBadge";
+import { useNotice } from "@/Components/Employee/Notice";
+import { sectionLabel } from "@/Components/Employee/Referrals/referral";
 
 export default function DocumentDetailsModal({ document, onClose }) {
     const [showScanner, setShowScanner] = useState(false);
@@ -18,9 +20,34 @@ export default function DocumentDetailsModal({ document, onClose }) {
     const [completing, setCompleting] = useState(false);
     const [completeError, setCompleteError] = useState(null);
 
+    const { notify } = useNotice();
+
     if (!document) {
         return null;
     }
+
+    /*
+     * Every action ends the same way: a formal notice saying what
+     * happened, then the page data refreshes so the document moves to
+     * where it now belongs.
+     */
+    const finish = (title, message, extra = []) => {
+        notify({
+            title,
+            message,
+            details: [
+                ["Taxpayer", document.taxpayer_name],
+                ["Reference no.", document.tracking_number],
+                ...extra,
+            ],
+        });
+
+        setShowScanner(false);
+        setShowForwardModal(false);
+        onClose();
+
+        router.reload();
+    };
 
     const status = document.status?.status_name;
     const isCompleted = status === "Completed";
@@ -54,8 +81,10 @@ export default function DocumentDetailsModal({ document, onClose }) {
                 throw new Error(body.message ?? "Could not complete.");
             }
 
-            // Reload the page data so the document leaves the list.
-            router.reload({ onFinish: () => onClose() });
+            finish(
+                "Document completed",
+                "Its journey ends here. It stays in History.",
+            );
         } catch (err) {
             setCompleteError(err.message);
             setCompleting(false);
@@ -316,10 +345,11 @@ export default function DocumentDetailsModal({ document, onClose }) {
                     document={document}
                     mode="receive"
                     onClose={() => setShowScanner(false)}
-                    onReceived={() => {
-                        setShowScanner(false);
-                        onClose();
-                    }}
+                    onReceived={() =>
+                        finish("Document received", "It is now on your desk.", [
+                            ["From", sectionLabel(document.current_section)],
+                        ])
+                    }
                 />
             )}
 
@@ -328,6 +358,22 @@ export default function DocumentDetailsModal({ document, onClose }) {
                 <ForwardDocumentModal
                     document={document}
                     onClose={() => setShowForwardModal(false)}
+                    onForwarded={(forwarded, section) =>
+                        finish(
+                            "Document forwarded",
+                            "The receiving section will scan it in.",
+                            [
+                                [
+                                    "To",
+                                    section
+                                        ? sectionLabel(section)
+                                        : sectionLabel(
+                                              forwarded?.destination_section,
+                                          ),
+                                ],
+                            ],
+                        )
+                    }
                 />
             )}
         </>
