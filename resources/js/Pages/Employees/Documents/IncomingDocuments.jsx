@@ -6,7 +6,7 @@ import AgeBadge from "@/Components/Employee/AgeBadge";
 import {
     addressedTo,
     exactTime,
-    sentFrom,
+    forwardedBy,
 } from "@/Components/Employee/Referrals/referral";
 
 export default function IncomingDocuments({ documents = [] }) {
@@ -84,7 +84,8 @@ export default function IncomingDocuments({ documents = [] }) {
                                             <p className="mt-2 text-sm text-muted">
                                                 From{" "}
                                                 <span className="font-semibold text-navy-800">
-                                                    {sentFrom(document) || "-"}
+                                                    {forwardedBy(document) ||
+                                                        "-"}
                                                 </span>
                                                 {document.addressee && (
                                                     <>

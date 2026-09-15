@@ -35,11 +35,23 @@ export function addressedTo(document) {
 }
 
 /**
- * The "FROM" line: the section that registered the referral.
+ * The "FROM" line on the slip: the section that registered the
+ * referral. Fixed for the life of the document.
  */
 export function sentFrom(document) {
     return sectionLabel(
         document?.creator?.section ?? document?.current_section,
+    );
+}
+
+/**
+ * Who sent it to you *this time*. For a pending document that is the
+ * section currently holding it - the one that registered or forwarded
+ * it - which may differ from the section that started it off.
+ */
+export function forwardedBy(document) {
+    return sectionLabel(
+        document?.current_section ?? document?.creator?.section,
     );
 }
 

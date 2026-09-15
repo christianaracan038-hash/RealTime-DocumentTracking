@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { router } from "@inertiajs/react";
 
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 import ForwardDocumentModal from "./ForwardDocumentModal";
@@ -12,11 +13,54 @@ export default function DocumentDetailsModal({ document, onClose }) {
     const [showScanner, setShowScanner] = useState(false);
     const [showForwardModal, setShowForwardModal] = useState(false);
 
+    // Completing is final, so it asks once before it acts.
+    const [confirmingComplete, setConfirmingComplete] = useState(false);
+    const [completing, setCompleting] = useState(false);
+    const [completeError, setCompleteError] = useState(null);
+
     if (!document) {
         return null;
     }
 
     const status = document.status?.status_name;
+    const isCompleted = status === "Completed";
+
+    const complete = async () => {
+        setCompleting(true);
+        setCompleteError(null);
+
+        try {
+            // Same CSRF handling as the forward request.
+            const csrfToken = window.document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+
+            const response = await fetch(
+                `/api/documents/${document.document_id}/complete`,
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {}),
+                    },
+                },
+            );
+
+            const body = await response.json();
+
+            if (!response.ok) {
+                throw new Error(body.message ?? "Could not complete.");
+            }
+
+            // Reload the page data so the document leaves the list.
+            router.reload({ onFinish: () => onClose() });
+        } catch (err) {
+            setCompleteError(err.message);
+            setCompleting(false);
+        }
+    };
 
     const isReceived = status === "Received";
     const isPending = status === "Pending";
@@ -127,11 +171,13 @@ export default function DocumentDetailsModal({ document, onClose }) {
 
                             <span
                                 className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                                    isReceived
-                                        ? "bg-green-100 text-green-700"
-                                        : isPending
-                                          ? "bg-yellow-100 text-yellow-700"
-                                          : "bg-slate-100 text-slate-700"
+                                    isCompleted
+                                        ? "bg-brand-100 text-brand-700"
+                                        : isReceived
+                                          ? "bg-green-100 text-green-700"
+                                          : isPending
+                                            ? "bg-yellow-100 text-yellow-700"
+                                            : "bg-slate-100 text-slate-700"
                                 }`}
                             >
                                 {status ?? "Unknown"}
@@ -162,6 +208,17 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                     </p>
                                 </div>
                             )}
+
+                            {document.completed_at && (
+                                <div>
+                                    <p className="text-xs font-medium text-slate-400">
+                                        Completed
+                                    </p>
+                                    <p className="text-slate-700">
+                                        {exactTime(document.completed_at)}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -186,17 +243,70 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             </button>
                         )}
 
-                        {/* Received */}
-                        {isReceived && (
-                            <button
-                                type="button"
-                                onClick={() => setShowForwardModal(true)}
-                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                            >
-                                Forward Document
-                            </button>
+                        {/* Received: forward it on, or end its journey here */}
+                        {isReceived && !confirmingComplete && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmingComplete(true)}
+                                    className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+                                >
+                                    Mark as Completed
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForwardModal(true)}
+                                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                                >
+                                    Forward Document
+                                </button>
+                            </>
                         )}
                     </div>
+
+                    {/* Confirm before completing - there is no undo */}
+                    {isReceived && confirmingComplete && (
+                        <div className="border-t bg-brand-50 px-6 py-5">
+                            <p className="text-base font-semibold text-navy-900">
+                                Mark this document as completed?
+                            </p>
+
+                            <p className="mt-1 text-sm text-navy-800">
+                                This ends its journey here. It cannot be
+                                received or forwarded afterwards, and will stay
+                                in History.
+                            </p>
+
+                            {completeError && (
+                                <p className="mt-3 text-sm font-medium text-stop-600">
+                                    {completeError}
+                                </p>
+                            )}
+
+                            <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    disabled={completing}
+                                    onClick={() => setConfirmingComplete(false)}
+                                    className="min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:opacity-50"
+                                >
+                                    Go back
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={completing}
+                                    onClick={complete}
+                                    className="min-h-11 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+                                >
+                                    {completing
+                                        ? "Completing..."
+                                        : "Yes, mark as completed"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

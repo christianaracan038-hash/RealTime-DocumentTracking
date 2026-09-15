@@ -145,18 +145,22 @@ class DocumentAgingTest extends TestCase
         $this->assertFalse($fresh->aging['overdue']);
     }
 
-    public function test_a_received_document_waits_from_the_moment_it_was_received(): void
+    public function test_a_received_document_no_longer_ages(): void
     {
         $now = Carbon::parse('2026-09-14 11:38:00');
 
+        // Received thirty hours ago - would be "late" if it were pending.
         $document = $this->registeredAt($now->copy()->subHours(30), statusId: 2);
 
         Carbon::setTestNow($now);
 
-        $aging = $document->fresh()->aging;
+        $fresh = $document->fresh();
 
-        $this->assertSame('late', $aging['band']);
-        $this->assertFalse($aging['overdue'], '30 hours is late but not yet past the two-day line.');
+        $this->assertNull($fresh->aging, 'Once received, the clock stops and no badge is shown.');
+        $this->assertTrue(
+            $fresh->waiting_since->equalTo($fresh->received_at),
+            'The exact receipt time is still available for the history.'
+        );
     }
 
     public function test_aging_travels_with_the_document_to_the_dashboard(): void

@@ -126,6 +126,10 @@ class Document extends Model
      */
     public function getWaitingSinceAttribute(): ?Carbon
     {
+        if ((int) $this->status_id === 3) {
+            return $this->completed_at;
+        }
+
         if ((int) $this->status_id === 2) {
             return $this->received_at;
         }
@@ -143,8 +147,17 @@ class Document extends Model
      * Returns the band name, the hours waited, and whether it has
      * passed the overdue line, so the frontend only has to colour it.
      */
-    public function getAgingAttribute(): array
+    public function getAgingAttribute(): ?array
     {
+        /*
+        * Only a pending document is waiting on someone. Once received,
+        * the office considers the clock stopped - the exact times stay
+        * in the history, but no badge nags the holder.
+        */
+        if ((int) $this->status_id !== 1) {
+            return null;
+        }
+
         $since = $this->waiting_since;
 
         if (! $since) {

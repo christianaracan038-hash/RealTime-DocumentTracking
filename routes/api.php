@@ -1,11 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\DocumentTrackingController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web'])->group(function () {
-
 
     Route::middleware('auth:employee')->group(function () {
 
@@ -19,11 +17,15 @@ Route::middleware(['web'])->group(function () {
             [DocumentTrackingController::class, 'receive']
         )->name('api.documents.receive');
 
-        
         Route::post(
             '/documents/{document}/forward',
             [DocumentTrackingController::class, 'forward']
         )->name('api.documents.forward');
+
+        Route::post(
+            '/documents/{document}/complete',
+            [DocumentTrackingController::class, 'complete']
+        )->name('api.documents.complete');
 
     });
 
