@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
 use App\Models\Document;
 use App\Models\Section;
+use App\Services\DashboardResolver;
 use App\Services\DocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,56 +25,19 @@ class DocumentController extends Controller
     }
 
     /**
-     * Show document registration form.
+     * The old standalone registration page.
+     *
+     * Registering now happens in a dialog on the section dashboard, so
+     * this only redirects - a bookmark or an old link still lands
+     * somewhere sensible.
      */
-    public function create(
-        Request $request,
-        DocumentService $documentService
-    ): Response {
+    public function create(): RedirectResponse
+    {
         $employee = Auth::guard('employee')->user();
 
-        $search = $request->string('search')->toString();
-
-        return Inertia::render('Employees/Documents/Create', [
-            'sections' => Section::query()
-                ->where('section_id', '!=', $employee->section_id)
-                ->orderBy('section_name')
-                ->get([
-                    'section_id',
-                    'section_name',
-                    'section_code',
-                    'description',
-                ]),
-
-            /*
-            * Dropdown choices for the referral form and the
-            * addressee card.
-            */
-            'referralOptions' => config('referral'),
-
-            /*
-            * The sending section, shown read-only on the form.
-            */
-            'fromSection' => $employee->section?->only([
-                'section_id',
-                'section_name',
-                'section_code',
-                'description',
-            ]),
-
-            'documents' => $documentService->getRegisteredDocuments(
-                $employee,
-                $search
-            ),
-
-            /*
-            * Echo the keyword back so the input stays filled
-            * after the server round-trip.
-            */
-            'filters' => [
-                'search' => $search,
-            ],
-        ]);
+        return redirect()->to(
+            DashboardResolver::resolve($employee) ?? '/'
+        );
     }
 
     /**
@@ -87,8 +51,12 @@ class DocumentController extends Controller
             $request->validated()
         );
 
+        /*
+        * Back to the dashboard the dialog was opened from, whichever
+        * section that is.
+        */
         return redirect()
-            ->route('documents.create')
+            ->back()
             ->with('success', 'Referral registered.');
     }
 

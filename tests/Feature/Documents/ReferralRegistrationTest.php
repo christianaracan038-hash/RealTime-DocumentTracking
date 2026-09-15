@@ -76,8 +76,9 @@ class ReferralRegistrationTest extends TestCase
     public function test_a_clerk_can_register_a_referral(): void
     {
         $this->actingAs($this->clerk, 'employee')
+            ->from(route('rdo.dashboard'))
             ->post(route('documents.store'), $this->validReferral())
-            ->assertRedirect(route('documents.create'))
+            ->assertRedirect(route('rdo.dashboard'))
             ->assertSessionHas('success');
 
         $document = Document::first();
@@ -169,6 +170,13 @@ class ReferralRegistrationTest extends TestCase
         $this->assertSame('Tax Assumption', Document::first()->concern);
     }
 
+    public function test_the_old_registration_page_redirects_to_the_dashboard(): void
+    {
+        $this->actingAs($this->clerk, 'employee')
+            ->get(route('documents.create'))
+            ->assertRedirect(route('rdo.dashboard'));
+    }
+
     public function test_transaction_type_and_description_are_no_longer_asked_for(): void
     {
         $this->actingAs($this->clerk, 'employee')
@@ -238,10 +246,10 @@ class ReferralRegistrationTest extends TestCase
         }
     }
 
-    public function test_the_referrals_page_offers_the_dropdown_lists_and_the_sending_section(): void
+    public function test_the_dashboard_offers_the_dropdown_lists_and_the_sending_section(): void
     {
         $response = $this->actingAs($this->clerk, 'employee')
-            ->get(route('documents.create'))
+            ->get(route('rdo.dashboard'))
             ->assertOk();
 
         $props = $response->viewData('page')['props'];
@@ -266,11 +274,11 @@ class ReferralRegistrationTest extends TestCase
 
         foreach (['promissory', 'assistant chief', 'approval', '1002'] as $keyword) {
             $response = $this->actingAs($this->clerk, 'employee')
-                ->get(route('documents.create', ['search' => $keyword]));
+                ->get(route('rdo.dashboard', ['search' => $keyword]));
 
             $this->assertCount(
                 1,
-                $response->viewData('page')['props']['documents']['data'],
+                $response->viewData('page')['props']['referrals']['data'],
                 "Expected a match for [{$keyword}]."
             );
         }
