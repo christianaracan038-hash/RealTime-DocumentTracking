@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -37,6 +38,14 @@ class HandleInertiaRequests extends Middleware
 
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+
+                /*
+                * Changes on every flash, so the frontend can tell a new
+                * message from the same one still sitting in props.
+                */
+                'id' => fn () => $request->session()->get('success')
+                    ? (string) Str::uuid()
+                    : null,
             ],
 
             'auth' => [

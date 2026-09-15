@@ -1,7 +1,11 @@
 import { useState } from "react";
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 
-export default function ForwardDocumentModal({ document, onClose }) {
+export default function ForwardDocumentModal({
+    document,
+    onClose,
+    onForwarded = null,
+}) {
     const [showScanner, setShowScanner] = useState(false);
 
     const [verifiedDocument, setVerifiedDocument] = useState(null);
@@ -69,9 +73,22 @@ export default function ForwardDocumentModal({ document, onClose }) {
             setSuccess(true);
             setForwarding(false);
 
-            setTimeout(() => {
-                onClose();
-            }, 1500);
+            /*
+             * Hand the result to the parent, which shows the formal
+             * notice and refreshes the page. Fall back to closing if
+             * nobody is listening.
+             */
+            if (onForwarded) {
+                onForwarded(
+                    data.document ?? verifiedDocument,
+                    sections.find(
+                        (s) =>
+                            String(s.section_id) === String(selectedSectionId),
+                    ) ?? null,
+                );
+            } else {
+                setTimeout(onClose, 1500);
+            }
         } catch (err) {
             console.error("FORWARD ERROR:", err);
 
