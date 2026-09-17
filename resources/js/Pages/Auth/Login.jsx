@@ -36,7 +36,7 @@ export default function Login({ status }) {
     };
 
     const field =
-        "min-h-12 w-full rounded-xl border-2 border-transparent bg-white px-4 py-3 text-base text-navy-900 placeholder:text-muted focus:border-accent-400";
+        "min-h-12 w-full rounded-xl border-2 border-transparent bg-white px-4 py-3 text-base text-navy-900 placeholder:text-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40";
 
     return (
         <GuestLayout>
@@ -106,7 +106,7 @@ export default function Login({ status }) {
                         name="remember"
                         checked={data.remember}
                         onChange={(e) => setData("remember", e.target.checked)}
-                        className="h-5 w-5 rounded border-navy-400 bg-navy-800 text-accent-400 focus:ring-accent-400"
+                        className="h-5 w-5 rounded border-navy-400 bg-navy-800 text-brand-500 focus:ring-brand-500"
                     />
 
                     <span className="text-base text-white">
@@ -116,7 +116,7 @@ export default function Login({ status }) {
 
                 <EmployeeButton
                     type="submit"
-                    variant="accent"
+                    variant="quiet"
                     size="lg"
                     disabled={processing}
                     className="w-full"
