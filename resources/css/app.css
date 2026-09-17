@@ -113,54 +113,42 @@
 | Printing the reference slip
 |--------------------------------------------------------------------------
 |
-| BIR Form 2309 is printed on a quarter of a letter sheet, cut lengthwise:
-| 8.5in wide by 2.75in tall. When the slip dialog is open and the user
-| prints, only the slip itself reaches the page.
+| BIR Form 2309 is printed on a quarter of a letter sheet, lengthwise:
+| a 5.5in x 4.25in landscape card.
+|
+| The slip is rendered into #print-root directly under <body>, and every
+| other child of <body> is removed with display:none. It has to be
+| display:none, not visibility:hidden - a hidden element that still has
+| height still gets paginated, and the app's full page height was being
+| sliced into a dozen blank quarter-sheets.
 |
 */
 
 @media print {
     @page {
-        size: 8.5in 2.75in;
-        margin: 0.15in;
+        size: 5.5in 4.25in;
+        margin: 0.2in;
     }
 
-    /*
-    * Everything is hidden, then the slip dialog is shown again.
-    * visibility (not display) keeps the layout stable so the dialog can
-    * be pulled to the top-left corner of the page.
-    */
-    body * {
-        visibility: hidden;
-    }
-
-    .print-host,
-    .print-host * {
-        visibility: visible;
-    }
-
-    .print-host {
-        position: absolute !important;
-        inset: 0 auto auto 0 !important;
-        width: 100% !important;
-        padding: 0 !important;
-        background: transparent !important;
+    html,
+    body {
+        height: auto !important;
         overflow: visible !important;
+        background: #fff !important;
     }
 
-    .print-host > * {
-        max-width: none !important;
-        border-radius: 0 !important;
+    body > *:not(#print-root) {
+        display: none !important;
     }
 
-    .print-host .reference-slip {
-        width: 8.2in;
+    #print-root {
+        display: block !important;
+    }
+
+    #print-root .reference-slip {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-    }
-
-    .print-hide,
-    .print-hide * {
-        display: none !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 }
