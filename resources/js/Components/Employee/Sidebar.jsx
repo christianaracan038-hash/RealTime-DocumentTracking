@@ -2,6 +2,7 @@ import { Link, usePage } from "@inertiajs/react";
 
 import UserInfo from "./UserInfo";
 import Logos from "./Logos";
+import Icon from "./Icon";
 import navigation from "@/config/navigation";
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
@@ -55,9 +56,9 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                             type="button"
                             onClick={onClose}
                             aria-label="Close menu"
-                            className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl leading-none text-navy-200 transition hover:bg-navy-800 hover:text-white lg:hidden"
+                            className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl leading-none text-navy-200 transition hover:bg-navy-800 hover:text-white lg:hidden"
                         >
-                            &times;
+                            <Icon name="close" />
                         </button>
                     </div>
 
@@ -99,6 +100,15 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                                         isCurrent
                                             ? "bg-accent-400"
                                             : "bg-transparent"
+                                    }`}
+                                />
+
+                                <Icon
+                                    name={item.icon}
+                                    className={`w-5 text-center ${
+                                        isCurrent
+                                            ? "text-accent-400"
+                                            : "text-navy-400"
                                     }`}
                                 />
 

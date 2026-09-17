@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
 use App\Models\Document;
 use App\Models\Section;
-use App\Services\DashboardResolver;
 use App\Services\DocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,19 +24,64 @@ class DocumentController extends Controller
     }
 
     /**
-     * The old standalone registration page.
+     * Referrals this employee registered.
      *
-     * Registering now happens in a dialog on the section dashboard, so
-     * this only redirects - a bookmark or an old link still lands
-     * somewhere sensible.
+     * Also where new ones are registered from: the dashboard's button
+     * links here with ?new=1 so the form opens on arrival.
+     */
+    public function referrals(
+        Request $request,
+        DocumentService $documentService
+    ): Response {
+        $employee = Auth::guard('employee')->user();
+
+        $search = $request->string('search')->toString();
+
+        return Inertia::render('Employees/Referrals/Index', [
+            'referrals' => $documentService->getRegisteredDocuments(
+                $employee,
+                $search
+            ),
+
+            /*
+            * A referral cannot be addressed to the section sending it.
+            */
+            'sections' => Section::query()
+                ->where('section_id', '!=', $employee->section_id)
+                ->orderBy('section_name')
+                ->get([
+                    'section_id',
+                    'section_name',
+                    'section_code',
+                    'description',
+                ]),
+
+            'referralOptions' => config('referral'),
+
+            'fromSection' => $employee->section?->only([
+                'section_id',
+                'section_name',
+                'section_code',
+                'description',
+            ]),
+
+            'filters' => [
+                'search' => $search,
+            ],
+
+            /*
+            * Open the registration form as soon as the page loads.
+            */
+            'openForm' => $request->boolean('new'),
+        ]);
+    }
+
+    /**
+     * The old standalone registration page.
      */
     public function create(): RedirectResponse
     {
-        $employee = Auth::guard('employee')->user();
-
-        return redirect()->to(
-            DashboardResolver::resolve($employee) ?? '/'
-        );
+        return redirect()->route('referrals.index');
     }
 
     /**
@@ -52,11 +96,11 @@ class DocumentController extends Controller
         );
 
         /*
-        * Back to the dashboard the dialog was opened from, whichever
-        * section that is.
+        * Back to the referrals list, where the new row is now at the
+        * top and another can be added.
         */
         return redirect()
-            ->back()
+            ->route('referrals.index')
             ->with('success', 'Referral registered.');
     }
 

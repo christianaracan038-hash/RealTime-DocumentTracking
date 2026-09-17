@@ -6,6 +6,7 @@ import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
 import AgeBadge from "@/Components/Employee/AgeBadge";
 import SearchInput from "@/Components/Employee/SearchInput";
+import Icon from "@/Components/Employee/Icon";
 import ReferenceSlipModal from "./ReferenceSlipModal";
 import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
 
@@ -13,6 +14,9 @@ export default function RecentReferralsTable({
     documents,
     filters = {},
     only = ["documents", "filters"],
+    heading = "Recent registered referrals",
+    subheading = "Referrals you registered, newest first.",
+    action = null,
 }) {
     const [slipFor, setSlipFor] = useState(null);
 
@@ -32,18 +36,26 @@ export default function RecentReferralsTable({
     return (
         <>
             <EmployeeCard>
-                <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-navy-900">
-                            Recent registered referrals
-                        </h2>
+                {/*
+                 * Add and find sit together above the list, so the two
+                 * things a clerk does here are in one place.
+                 */}
+                <div className="mb-6 space-y-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold text-navy-900">
+                                {heading}
+                            </h2>
 
-                        <p className="mt-1 text-base text-muted">
-                            Referrals you registered, newest first.
-                        </p>
+                            <p className="mt-1 text-base text-muted">
+                                {subheading}
+                            </p>
+                        </div>
+
+                        {action}
                     </div>
 
-                    <div className="w-full lg:w-96">
+                    <div className="w-full lg:max-w-md">
                         <SearchInput
                             label="Find a referral"
                             initialValue={filters.search}
@@ -150,6 +162,7 @@ export default function RecentReferralsTable({
                                     onClick={() => setSlipFor(document)}
                                     className="mt-4 w-full"
                                 >
+                                    <Icon name="print" />
                                     View slip
                                 </EmployeeButton>
                             </li>

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
+import Icon from "@/Components/Employee/Icon";
 import { addressedTo, longDate, sentFrom } from "./referral";
 
 /*
@@ -160,9 +161,9 @@ export default function ReferenceSlipModal({ document, onClose }) {
                         type="button"
                         onClick={onClose}
                         aria-label="Close"
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
                     >
-                        &times;
+                        <Icon name="close" />
                     </button>
                 </div>
 
@@ -178,6 +179,7 @@ export default function ReferenceSlipModal({ document, onClose }) {
                     </EmployeeButton>
 
                     <EmployeeButton onClick={() => window.print()}>
+                        <Icon name="print" />
                         Print slip
                     </EmployeeButton>
                 </div>

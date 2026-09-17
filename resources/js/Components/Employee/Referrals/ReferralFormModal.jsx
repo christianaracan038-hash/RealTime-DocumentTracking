@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
+import Icon from "@/Components/Employee/Icon";
 import DateField, { today } from "@/Components/Employee/DateField";
 import ChoiceGroup from "@/Components/Employee/ChoiceGroup";
 import { sectionLabel } from "./referral";
@@ -135,9 +136,9 @@ export default function ReferralFormModal({
                         onClick={onClose}
                         disabled={processing}
                         aria-label="Close"
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
                     >
-                        &times;
+                        <Icon name="close" />
                     </button>
                 </div>
 
@@ -341,6 +342,7 @@ export default function ReferralFormModal({
                             size="lg"
                             disabled={processing}
                         >
+                            <Icon name="register" />
                             {processing
                                 ? "Registering..."
                                 : "Register referral"}

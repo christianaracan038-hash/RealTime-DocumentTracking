@@ -1,5 +1,7 @@
 import { usePage, router } from "@inertiajs/react";
 
+import Icon from "./Icon";
+
 export default function UserInfo() {
     const { auth } = usePage().props;
 
@@ -37,8 +39,9 @@ export default function UserInfo() {
 
             <button
                 onClick={logout}
-                className="min-h-11 w-full rounded-xl border border-navy-600 px-4 py-2.5 text-base font-semibold text-navy-200 transition hover:bg-navy-800 hover:text-white"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-navy-600 px-4 py-2.5 text-base font-semibold text-navy-200 transition hover:bg-navy-800 hover:text-white"
             >
+                <Icon name="logout" />
                 Log out
             </button>
         </div>

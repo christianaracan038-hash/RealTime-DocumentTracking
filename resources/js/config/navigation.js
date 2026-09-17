@@ -13,14 +13,22 @@ const sectionMenu = (dashboardRoute) => [
     {
         label: "Dashboard",
         route: dashboardRoute,
+        icon: "dashboard",
+    },
+    {
+        label: "Referrals",
+        route: "referrals.index",
+        icon: "referrals",
     },
     {
         label: "Documents",
         route: "documents.index",
+        icon: "documents",
     },
     {
         label: "History",
         route: "documents.history",
+        icon: "history",
     },
 ];
 

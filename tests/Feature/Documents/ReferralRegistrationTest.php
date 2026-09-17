@@ -76,9 +76,8 @@ class ReferralRegistrationTest extends TestCase
     public function test_a_clerk_can_register_a_referral(): void
     {
         $this->actingAs($this->clerk, 'employee')
-            ->from(route('rdo.dashboard'))
             ->post(route('documents.store'), $this->validReferral())
-            ->assertRedirect(route('rdo.dashboard'))
+            ->assertRedirect(route('referrals.index'))
             ->assertSessionHas('success');
 
         $document = Document::first();
@@ -170,11 +169,26 @@ class ReferralRegistrationTest extends TestCase
         $this->assertSame('Tax Assumption', Document::first()->concern);
     }
 
-    public function test_the_old_registration_page_redirects_to_the_dashboard(): void
+    public function test_the_old_registration_page_redirects_to_the_referrals_page(): void
     {
         $this->actingAs($this->clerk, 'employee')
             ->get(route('documents.create'))
-            ->assertRedirect(route('rdo.dashboard'));
+            ->assertRedirect(route('referrals.index'));
+    }
+
+    public function test_the_dashboard_button_opens_the_form_on_arrival(): void
+    {
+        $plain = $this->actingAs($this->clerk, 'employee')
+            ->get(route('referrals.index'))
+            ->viewData('page')['props'];
+
+        $this->assertFalse($plain['openForm'], 'Visiting the list on its own shows the list.');
+
+        $fromButton = $this->actingAs($this->clerk, 'employee')
+            ->get(route('referrals.index', ['new' => 1]))
+            ->viewData('page')['props'];
+
+        $this->assertTrue($fromButton['openForm'], 'Arriving from the dashboard opens the form.');
     }
 
     public function test_transaction_type_and_description_are_no_longer_asked_for(): void
@@ -246,10 +260,10 @@ class ReferralRegistrationTest extends TestCase
         }
     }
 
-    public function test_the_dashboard_offers_the_dropdown_lists_and_the_sending_section(): void
+    public function test_the_referrals_page_offers_the_dropdown_lists_and_the_sending_section(): void
     {
         $response = $this->actingAs($this->clerk, 'employee')
-            ->get(route('rdo.dashboard'))
+            ->get(route('referrals.index'))
             ->assertOk();
 
         $props = $response->viewData('page')['props'];
@@ -274,7 +288,7 @@ class ReferralRegistrationTest extends TestCase
 
         foreach (['promissory', 'assistant chief', 'approval', '1002'] as $keyword) {
             $response = $this->actingAs($this->clerk, 'employee')
-                ->get(route('rdo.dashboard', ['search' => $keyword]));
+                ->get(route('referrals.index', ['search' => $keyword]));
 
             $this->assertCount(
                 1,
