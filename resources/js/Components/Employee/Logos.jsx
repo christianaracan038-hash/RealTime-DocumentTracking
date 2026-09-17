@@ -13,7 +13,7 @@ import { usePage } from "@inertiajs/react";
 
 const ALT = {
     bir: "Bureau of Internal Revenue",
-    office: "Revenue District Office",
+    office: "Bagong Pilipinas",
 };
 
 const SIZES = {

@@ -1,10 +1,33 @@
 # Office images
 
-Drop the two logos here with exactly these names:
+Served as-is at `/images/<name>` — no build step. Anything dropped here
+is available immediately; nothing needs rebuilding.
 
-- `bir-logo.png` — the bureau seal. Shown on the login page, the sidebar, and printed on the reference slip.
-- `office-logo.png` — the district office's own logo. Shown on the login page and the sidebar.
+| File | Where it appears |
+|---|---|
+| `bir-logo.png` | Login screen, sidebar, and the printed reference slip |
+| `office-logo.png` | Login screen and sidebar |
+| `login-bg.jpg` | Behind the login screen, blurred and darkened |
 
-PNG with a transparent background looks best on the navy panels. Square, at least 256×256 px.
+A missing file is never requested: `HandleInertiaRequests` checks which
+of these exist and tells the page, so the browser logs no 404s.
 
-Files here are served as-is at `/images/<name>` — no build step. Anything else you add (a login background, for example) goes in this folder too.
+## Keep them small
+
+These load on every page, often on a phone on mobile data. The logos are
+displayed at 40–80px, so 160px is already twice what any screen needs,
+and the background is blurred, so detail beyond ~1400px is invisible.
+
+The current files are 15 KB, 8 KB and 135 KB. If you replace one, aim
+for the same order of magnitude — the originals were 1.0 MB, 240 KB and
+1.9 MB, which is 20× the whole rest of the page.
+
+Resizing with ffmpeg, which is already on the machine:
+
+    # logo: 160px, transparency kept, palette reduced
+    ffmpeg -i new-logo.png -vf "scale=160:-1:flags=lanczos,split[a][b];\
+    [a]palettegen=reserve_transparent=1:max_colors=256[p];\
+    [b][p]paletteuse=alpha_threshold=128" -compression_level 100 out.png
+
+    # background: 1400px JPEG
+    ffmpeg -i new-bg.png -vf "scale=1400:-1:flags=lanczos" -q:v 7 out.jpg

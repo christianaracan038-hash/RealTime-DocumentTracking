@@ -60,6 +60,13 @@ class HandleInertiaRequests extends Middleware
                 ->map(fn ($path) => '/'.$path)
                 ->all(),
 
+            /*
+            * Photograph behind the sign-in screen, if it has been added.
+            */
+            'backgroundImage' => fn () => file_exists(public_path('images/login-bg.jpg'))
+                ? '/images/login-bg.jpg'
+                : null,
+
             'auth' => [
                 'user' => $request->user(),
 
