@@ -35,23 +35,23 @@ export default function GuestLayout({ children }) {
             <div className="flex flex-col justify-center px-8 py-10 lg:w-2/5 lg:px-14 lg:py-16">
                 <Logos size="lg" className="mb-6" />
 
-                <p className="text-sm font-semibold tracking-widest text-brand-700 uppercase">
+                <p className="text-sm font-semibold tracking-widest text-accent-400 uppercase [text-shadow:0_1px_3px_rgba(5,10,36,0.7)]">
                     Revenue District Office
                 </p>
 
-                <h1 className="mt-4 text-3xl font-bold text-navy-900 lg:text-4xl">
-                    Document Tracking
+                <h1 className="mt-4 text-3xl font-bold text-white lg:text-4xl [text-shadow:0_2px_6px_rgba(5,10,36,0.7)]">
+                    Document Tracking Referral-Based
                 </h1>
 
-                <p className="mt-4 max-w-md text-lg text-navy-800">
+                <p className="mt-4 max-w-md text-lg text-white [text-shadow:0_1px_4px_rgba(5,10,36,0.7)]">
                     Register a referral, scan its QR code to receive it, and see
                     where every document has been.
                 </p>
             </div>
 
-            {/* Form, on the dashboard navy */}
+            {/* Form, on navy sweeping into yellow at the corner */}
             <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
-                <div className="w-full max-w-md rounded-2xl bg-navy-900 p-6 text-white shadow-2xl sm:p-8">
+                <div className="w-full max-w-md rounded-2xl bg-gradient-to-br from-navy-950 via-navy-900 via-65% to-accent-500 p-6 text-white shadow-2xl sm:p-8">
                     {children}
                 </div>
             </div>

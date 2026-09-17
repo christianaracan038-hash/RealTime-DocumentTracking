@@ -116,7 +116,7 @@ export default function Login({ status }) {
 
                 <EmployeeButton
                     type="submit"
-                    variant="accent"
+                    variant="quiet"
                     size="lg"
                     disabled={processing}
                     className="w-full"
