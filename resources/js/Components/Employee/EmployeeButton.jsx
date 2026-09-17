@@ -8,6 +8,7 @@
  *   secondary  a real but lesser action.
  *   quiet      cancel, close, go back.
  *   danger     destructive, and rare.
+ *   accent     the primary action when the surface is navy.
  */
 
 const VARIANTS = {
@@ -17,6 +18,13 @@ const VARIANTS = {
         "bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100",
     quiet: "bg-white text-navy-800 border border-line hover:bg-paper",
     danger: "bg-stop-600 text-white hover:brightness-110",
+
+    /*
+     * For a button sitting on navy, where the brand blue would vanish.
+     * The attention yellow with navy text - the one thing to press on
+     * that surface.
+     */
+    accent: "bg-accent-400 text-navy-900 shadow-sm hover:bg-accent-500 active:bg-accent-600",
 };
 
 const SIZES = {
