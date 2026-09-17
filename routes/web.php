@@ -74,6 +74,14 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::post('/documents', [DocumentController::class, 'store'])
         ->name('documents.store');
 
+    /*
+    * Referrals this employee registered, and where new ones are
+    * registered from. Reached by the dashboard's "New referral"
+    * button, which opens the form on arrival via ?new=1.
+    */
+    Route::get('/referrals', [DocumentController::class, 'referrals'])
+        ->name('referrals.index');
+
     Route::get('/documents/history', [DocumentController::class, 'history'])
         ->name('documents.history');
 

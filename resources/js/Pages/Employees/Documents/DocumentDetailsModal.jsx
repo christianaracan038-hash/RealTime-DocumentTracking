@@ -8,6 +8,7 @@ import {
     exactTime,
 } from "@/Components/Employee/Referrals/referral";
 import AgeBadge from "@/Components/Employee/AgeBadge";
+import Icon from "@/Components/Employee/Icon";
 import { useNotice } from "@/Components/Employee/Notice";
 import { sectionLabel } from "@/Components/Employee/Referrals/referral";
 
@@ -107,9 +108,10 @@ export default function DocumentDetailsModal({ document, onClose }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="text-xl text-slate-400 hover:text-slate-700"
+                            aria-label="Close"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-paper hover:text-slate-700"
                         >
-                            ×
+                            <Icon name="close" />
                         </button>
                     </div>
 
@@ -266,8 +268,9 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             <button
                                 type="button"
                                 onClick={() => setShowScanner(true)}
-                                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
                             >
+                                <Icon name="scan" />
                                 Receive Document
                             </button>
                         )}
@@ -278,16 +281,18 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                 <button
                                     type="button"
                                     onClick={() => setConfirmingComplete(true)}
-                                    className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50"
                                 >
+                                    <Icon name="complete" />
                                     Mark as Completed
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => setShowForwardModal(true)}
-                                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                                 >
+                                    <Icon name="forward" />
                                     Forward Document
                                 </button>
                             </>

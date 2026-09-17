@@ -1,20 +1,16 @@
-import { useEffect, useState } from "react";
-import { usePage } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
-import EmployeeButton from "@/Components/Employee/EmployeeButton";
-import { useNotice } from "@/Components/Employee/Notice";
-
+import Icon from "@/Components/Employee/Icon";
 import IncomingDocuments from "@/Pages/Employees/Documents/IncomingDocuments";
-import ReferralFormModal from "@/Components/Employee/Referrals/ReferralFormModal";
-import RecentReferralsTable from "@/Components/Employee/Referrals/RecentReferralsTable";
 
 /*
  * The body of every section dashboard.
  *
- * One screen covering both halves of the day: what has been sent to us
- * and needs receiving, and what we have sent out. Registering a referral
- * opens a dialog from here, so there is no separate page to find.
+ * Deliberately one job only: what has been sent to us and needs
+ * receiving. Registering a referral, and the list of referrals we have
+ * sent out, live on their own screen - the button below goes there with
+ * the form already open.
  *
  * Each section's page file passes its own wording and renders this.
  */
@@ -23,40 +19,7 @@ export default function SectionDashboard({
     eyebrow,
     blurb,
     documents = [],
-    referrals = [],
-    sections = [],
-    referralOptions = {},
-    fromSection = null,
-    filters = {},
 }) {
-    const [registering, setRegistering] = useState(false);
-
-    const { flash } = usePage().props;
-    const { notify } = useNotice();
-
-    /*
-     * The server flashes a success message after a referral is saved.
-     * Turn it into the formal notice, with the new referral's details.
-     * Keyed on flash.id, which changes each time, so registering two in
-     * a row raises two notices.
-     */
-    useEffect(() => {
-        if (!flash?.success) return;
-
-        const latest = referrals?.data?.[0];
-
-        notify({
-            title: "Referral registered",
-            message: flash.success,
-            details: latest
-                ? [
-                      ["Taxpayer", latest.taxpayer_name],
-                      ["Reference no.", latest.tracking_number],
-                  ]
-                : [],
-        });
-    }, [flash?.id]);
-
     return (
         <EmployeeLayout title={title}>
             <div className="space-y-6">
@@ -77,32 +40,18 @@ export default function SectionDashboard({
                             </p>
                         </div>
 
-                        <EmployeeButton
-                            size="lg"
-                            onClick={() => setRegistering(true)}
-                            className="w-full shrink-0 lg:w-auto"
+                        <Link
+                            href={route("referrals.index", { new: 1 })}
+                            className="inline-flex min-h-13 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-7 text-lg font-semibold text-white shadow-sm transition hover:bg-brand-700 lg:w-auto"
                         >
-                            + New referral
-                        </EmployeeButton>
+                            <Icon name="add" />
+                            New referral
+                        </Link>
                     </div>
                 </div>
 
                 <IncomingDocuments documents={documents} />
-
-                <RecentReferralsTable
-                    documents={referrals}
-                    filters={filters}
-                    only={["referrals", "filters"]}
-                />
             </div>
-
-            <ReferralFormModal
-                open={registering}
-                onClose={() => setRegistering(false)}
-                sections={sections}
-                options={referralOptions}
-                fromSection={fromSection}
-            />
         </EmployeeLayout>
     );
 }

@@ -1,5 +1,7 @@
 import { usePage } from "@inertiajs/react";
 
+import Icon from "./Icon";
+
 export default function Header({ title, onOpenMenu = () => {} }) {
     const { auth } = usePage().props;
 
@@ -13,18 +15,7 @@ export default function Header({ title, onOpenMenu = () => {} }) {
                     aria-label="Open menu"
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-navy-900 transition hover:bg-paper lg:hidden"
                 >
-                    <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.25"
-                        strokeLinecap="round"
-                        aria-hidden="true"
-                    >
-                        <path d="M4 7h16M4 12h16M4 17h16" />
-                    </svg>
+                    <Icon name="menu" className="text-xl" />
                 </button>
 
                 <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-1">

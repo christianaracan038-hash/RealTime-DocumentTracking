@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import EmployeeButton from "./EmployeeButton";
+import Icon from "./Icon";
 import { exactTime } from "./Referrals/referral";
 
 /*
@@ -76,18 +77,7 @@ function SuccessNotice({ notice, onDone }) {
                         aria-hidden="true"
                         className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20"
                     >
-                        <svg
-                            width="44"
-                            height="44"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <path d="M4 12.5l5 5L20 6.5" />
-                        </svg>
+                        <Icon name="check" className="text-4xl" />
                     </span>
 
                     <h2 id="notice-title" className="mt-4 text-2xl font-bold">
