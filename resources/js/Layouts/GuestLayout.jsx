@@ -16,12 +16,16 @@ import Logos from "@/Components/Employee/Logos";
  * one job to do, on a card in the same navy as the dashboard so it is
  * unmistakably the thing to fill in. On a phone the left collapses to
  * a short banner so the form is immediately reachable.
+ *
+ * `isolate` on the outer box matters: it makes the box its own stacking
+ * context, so the -z-10 photo layer paints above the box's fallback
+ * background instead of underneath it, where bg-paper would hide it.
  */
 export default function GuestLayout({ children }) {
     const { backgroundImage } = usePage().props;
 
     return (
-        <div className="relative flex min-h-screen flex-col bg-paper lg:flex-row">
+        <div className="relative isolate flex min-h-screen flex-col bg-paper lg:flex-row">
             {/* Background - the photo, blurred, nothing else */}
             {backgroundImage && (
                 <div
