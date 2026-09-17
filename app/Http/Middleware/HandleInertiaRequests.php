@@ -48,6 +48,18 @@ class HandleInertiaRequests extends Middleware
                     : null,
             ],
 
+            /*
+            * Only the logo files that exist. Without this the browser
+            * requests each one and logs a 404 until they are uploaded.
+            */
+            'logos' => fn () => collect([
+                'bir' => 'images/bir-logo.png',
+                'office' => 'images/office-logo.png',
+            ])
+                ->filter(fn ($path) => file_exists(public_path($path)))
+                ->map(fn ($path) => '/'.$path)
+                ->all(),
+
             'auth' => [
                 'user' => $request->user(),
 

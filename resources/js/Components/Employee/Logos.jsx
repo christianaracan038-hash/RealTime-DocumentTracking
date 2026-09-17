@@ -1,19 +1,20 @@
+import { usePage } from "@inertiajs/react";
+
 /*
- * The two office logos, side by side.
+ * The office logos, side by side.
  *
- * Files live in public/images/ and are referenced by fixed name:
+ * Which files exist is decided on the server (HandleInertiaRequests),
+ * so a logo that has not been uploaded yet is never requested and the
+ * browser console stays clean. Drop the files in as:
  *
- *   /images/bir-logo.png     the bureau seal (also printed on the slip)
- *   /images/office-logo.png  the district office's own logo
- *
- * A file that is not there simply does not render - no broken-image
- * icon - so the page looks right before and after the files arrive.
+ *   public/images/bir-logo.png     the bureau seal (also on the slip)
+ *   public/images/office-logo.png  the district office's own logo
  */
 
-const LOGOS = [
-    { src: "/images/bir-logo.png", alt: "Bureau of Internal Revenue" },
-    { src: "/images/office-logo.png", alt: "Revenue District Office" },
-];
+const ALT = {
+    bir: "Bureau of Internal Revenue",
+    office: "Revenue District Office",
+};
 
 const SIZES = {
     sm: "h-10 w-10",
@@ -22,15 +23,20 @@ const SIZES = {
 };
 
 export default function Logos({ size = "md", className = "" }) {
+    const { logos } = usePage().props;
+
+    const available = Object.entries(logos ?? {});
+
+    if (available.length === 0) return null;
+
     return (
         <div className={`flex items-center gap-3 ${className}`}>
-            {LOGOS.map(({ src, alt }) => (
+            {available.map(([key, src]) => (
                 <img
-                    key={src}
+                    key={key}
                     src={src}
-                    alt={alt}
+                    alt={ALT[key] ?? ""}
                     className={`${SIZES[size] ?? SIZES.md} shrink-0 object-contain`}
-                    onError={(e) => (e.currentTarget.style.display = "none")}
                 />
             ))}
         </div>

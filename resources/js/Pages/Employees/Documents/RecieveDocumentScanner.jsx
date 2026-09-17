@@ -14,6 +14,41 @@ export default function ReceiveDocumentScanner({
 
     const isForward = mode === "forward";
 
+    /*
+     * html5-qrcode's stop() and clear() THROW SYNCHRONOUSLY when the
+     * scanner is not running - "Cannot stop, scanner is not running or
+     * paused." That happens on the ordinary path: the decode callback
+     * stops the camera, then the component unmounts and tries to stop
+     * it again. A synchronous throw cannot be caught with .catch(), so
+     * it escaped the cleanup function and crashed the React tree.
+     */
+    const stopCamera = async (alsoClear = false) => {
+        const scanner = scannerRef.current;
+
+        if (!scanner) return;
+
+        try {
+            await scanner.stop();
+        } catch {
+            // Already stopped, or never started. Nothing to do.
+        }
+
+        if (!alsoClear) return;
+
+        try {
+            scanner.clear();
+        } catch {
+            // Throws for the same reason; equally harmless.
+        }
+    };
+
+    /*
+     * The library throws plain strings, so err.message is undefined for
+     * its own errors. Keep whichever of the two carries the reason.
+     */
+    const errorText = (err, fallback) =>
+        (typeof err === "string" ? err : err?.message) || fallback;
+
     const [cameraError, setCameraError] = useState(null);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(null);
@@ -52,9 +87,7 @@ export default function ReceiveDocumentScanner({
                         if (isProcessingRef.current) return;
                         isProcessingRef.current = true;
 
-                        try {
-                            await scannerRef.current?.stop();
-                        } catch (_) {}
+                        await stopCamera();
 
                         await handleScan(decodedText);
                     },
@@ -62,9 +95,12 @@ export default function ReceiveDocumentScanner({
                 );
             } catch (err) {
                 if (!isMountedRef.current) return;
+
                 setCameraError(
-                    err.message ||
+                    errorText(
+                        err,
                         "Unable to start the QR scanner. Please check your camera permission.",
+                    ),
                 );
             }
         };
@@ -74,17 +110,9 @@ export default function ReceiveDocumentScanner({
         return () => {
             isMountedRef.current = false;
 
-            if (scannerRef.current) {
-                scannerRef.current
-                    .stop()
-                    .catch(() => {})
-                    .finally(() => {
-                        try {
-                            scannerRef.current?.clear();
-                        } catch (_) {}
-                        scannerRef.current = null;
-                    });
-            }
+            stopCamera(true).finally(() => {
+                scannerRef.current = null;
+            });
         };
     }, []);
 
@@ -185,10 +213,12 @@ export default function ReceiveDocumentScanner({
             if (!isMountedRef.current) return;
 
             setError(
-                err.message ||
+                errorText(
+                    err,
                     `Something went wrong while ${
                         isForward ? "validating" : "receiving"
                     } the document.`,
+                ),
             );
 
             setProcessing(false);
