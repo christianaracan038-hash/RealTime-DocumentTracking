@@ -53,6 +53,14 @@ export default function ReceiveDocumentScanner({
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(null);
     const [processing, setProcessing] = useState(false);
+    const [toast, setToast] = useState(null);
+
+    const notify = (type, message, duration = 3000) => {
+        setToast({ type, message });
+        setTimeout(() => {
+            if (isMountedRef.current) setToast(null);
+        }, duration);
+    };
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -182,10 +190,16 @@ export default function ReceiveDocumentScanner({
                 if (!isMountedRef.current) return;
 
                 setProcessing(false);
+                setSuccess(true);
+                notify("success", "Document verified successfully.");
 
-                if (onForwarded) {
-                    onForwarded(scannedDocument, scanData.sections ?? []);
-                }
+                setTimeout(() => {
+                    if (!isMountedRef.current) return;
+
+                    if (onForwarded) {
+                        onForwarded(scannedDocument, scanData.sections ?? []);
+                    }
+                }, 1200);
 
                 return;
             }
@@ -199,6 +213,7 @@ export default function ReceiveDocumentScanner({
 
             setSuccess(true);
             setProcessing(false);
+            notify("success", "Document received successfully.");
 
             if (onReceived) {
                 onReceived(actionData.document);
@@ -212,14 +227,15 @@ export default function ReceiveDocumentScanner({
         } catch (err) {
             if (!isMountedRef.current) return;
 
-            setError(
-                errorText(
-                    err,
-                    `Something went wrong while ${
-                        isForward ? "validating" : "receiving"
-                    } the document.`,
-                ),
+            const message = errorText(
+                err,
+                `Something went wrong while ${
+                    isForward ? "validating" : "receiving"
+                } the document.`,
             );
+
+            setError(message);
+            notify("error", message);
 
             setProcessing(false);
             isProcessingRef.current = false;
@@ -230,6 +246,13 @@ export default function ReceiveDocumentScanner({
 
     return (
         <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-navy-950/80 p-4 sm:items-center">
+            <style>{`
+                @keyframes scan-progress-bar {
+                    0% { transform: translateX(-100%); }
+                    50% { transform: translateX(150%); }
+                    100% { transform: translateX(400%); }
+                }
+            `}</style>
             <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
                 <div className="flex items-center justify-between border-b px-5 py-4">
                     <div>
@@ -259,7 +282,7 @@ export default function ReceiveDocumentScanner({
                 </div>
 
                 <div className="p-5">
-                    <div className="relative overflow-hidden rounded-xl bg-slate-900">
+                    <div className="relative min-h-[280px] overflow-hidden rounded-xl bg-slate-900">
                         <div id="document-qr-reader" className="w-full" />
 
                         {processing && !success && (
@@ -271,6 +294,16 @@ export default function ReceiveDocumentScanner({
                                             ? "Verifying document..."
                                             : "Processing document..."}
                                     </p>
+
+                                    <div className="mx-auto mt-4 h-1.5 w-40 overflow-hidden rounded-full bg-white/20">
+                                        <div
+                                            className="h-full w-1/3 rounded-full bg-white"
+                                            style={{
+                                                animation:
+                                                    "scan-progress-bar 1.1s ease-in-out infinite",
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -280,10 +313,14 @@ export default function ReceiveDocumentScanner({
                                 <div className="text-center text-white">
                                     <div className="text-5xl">✓</div>
                                     <p className="mt-2 text-lg font-semibold">
-                                        Document Received
+                                        {isForward
+                                            ? "Document Verified"
+                                            : "Document Received"}
                                     </p>
                                     <p className="mt-1 text-sm text-green-100">
-                                        Tracking history recorded.
+                                        {isForward
+                                            ? "Loading destination sections..."
+                                            : "Tracking history recorded."}
                                     </p>
                                 </div>
                             </div>
@@ -324,6 +361,20 @@ export default function ReceiveDocumentScanner({
                     </button>
                 </div>
             </div>
+
+            {toast && (
+                <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[80] flex justify-center px-4">
+                    <div
+                        className={`rounded-full px-4 py-2.5 text-sm font-medium text-white shadow-lg ${
+                            toast.type === "error"
+                                ? "bg-red-600"
+                                : "bg-slate-900"
+                        }`}
+                    >
+                        {toast.message}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
