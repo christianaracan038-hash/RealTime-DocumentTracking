@@ -8,10 +8,10 @@ import { addressedTo, longDate, sentFrom } from "./referral";
 /*
  * BIR Form 2309 - Reference Slip.
  *
- * Printed on a quarter sheet, lengthwise: a 5.5in x 4.25in landscape
- * card, stapled to the physical document as its tracker. Six sections in
- * a 3 x 2 grid, read left to right, top to bottom - six columns in a row
- * do not fit on a card that size.
+ * Printed portrait, full sheet, stacked sections top to bottom - matching
+ * the original 1971 form: Header / To / Subject / For / Remarks / From.
+ * The only deliberate deviation from the original form is the QR code,
+ * placed inside the "To" section next to the reference number.
  *
  * Printing: the slip is rendered a second time into a portal directly
  * under <body>, and the print stylesheet hides every other child of
@@ -19,16 +19,23 @@ import { addressedTo, longDate, sentFrom } from "./referral";
  * rest of the page from spanning a dozen blank pages, since a hidden
  * element that still has height still gets paginated.
  *
+ * NOTE: page orientation (portrait) needs to be set wherever your global
+ * print stylesheet lives, e.g.:
+ *   @media print {
+ *     @page { size: portrait; margin: 0.4in; }
+ *   }
+ * This file only controls the content, not the @page size.
+ *
  * The seal is read from /images/bir-logo.png.
  */
 
-function Cell({ title, children, className = "" }) {
+function Section({ title, children, className = "" }) {
     return (
         <div
-            className={`flex min-w-0 flex-col border-navy-900 px-2 py-1.5 ${className}`}
+            className={`flex min-w-0 flex-col border-navy-900 px-3 py-2 ${className}`}
         >
             {title && (
-                <p className="mb-1 text-[8px] font-bold tracking-wider text-navy-900 uppercase">
+                <p className="mb-1 text-[9px] font-bold tracking-wider text-navy-900 uppercase">
                     {title}
                 </p>
             )}
@@ -39,86 +46,95 @@ function Cell({ title, children, className = "" }) {
 
 export function ReferenceSlip({ document }) {
     return (
-        <div className="reference-slip w-[5.1in] border-2 border-navy-900 bg-white text-navy-900">
-            <div className="grid grid-cols-3 grid-rows-[1.8in_1.8in] text-[9.5px] leading-snug">
-                {/* 1. Header */}
-                <Cell className="items-center justify-center border-r border-b text-center">
-                    <img
-                        src="/images/bir-logo.png"
-                        alt=""
-                        className="mb-1 h-10 w-10 object-contain"
-                        onError={(e) =>
-                            (e.currentTarget.style.display = "none")
-                        }
-                    />
+        <div className="reference-slip flex h-[8in] w-[4.300in] flex-col border-2 border-navy-900 bg-white text-[9px] leading-snug text-navy-900">
+            {/* 1. Header */}
+            <div className="flex shrink-0 items-center gap-3 border-b border-navy-900 px-3 py-2">
+                <img
+                    src="/images/bir-logo.png"
+                    alt=""
+                    className="h-9 w-9 shrink-0 object-contain"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                />
+                <div className="min-w-0">
+                    <p className="text-[7px] font-semibold">BIR</p>
+                    <p className="text-[8px] font-bold">FORM 2309</p>
+                    <p className="text-[6.5px]">(REVISED OCTOBER, 1971)</p>
+                </div>
+                <div className="ml-auto text-right">
                     <p className="text-[7px] font-semibold tracking-wide">
-                        REPUBLIC OF THE PHILIPPINES
-                    </p>
-                    <p className="text-[8.5px] font-bold">
                         BUREAU OF INTERNAL REVENUE
                     </p>
-                    <p className="mt-1 text-[10px] font-bold">REFERENCE SLIP</p>
-                    <p className="text-[7.5px]">BIR FORM 2309</p>
-                    <p className="text-[7px]">(REVISED OCTOBER, 1971)</p>
-                </Cell>
+                    <p className="text-[10.5px] font-bold">REFERENCE SLIP</p>
+                </div>
+            </div>
 
-                {/* 2. QR + reference number */}
-                <Cell className="items-center justify-center border-r border-b text-center">
+            {/* 2. To (+ QR - the one intentional addition) */}
+            <Section
+                title="To"
+                className="flex-row shrink-0 items-start gap-3 border-b"
+            >
+                <div className="min-w-0 flex-1">
+                    <p className="text-[7.5px] uppercase">
+                        Name and/or designation of recipient
+                    </p>
+                    <p className="mt-1 font-bold">{addressedTo(document)}</p>
+
+                    <p className="mt-2 text-[7.5px] uppercase">Date</p>
+                    <p className="font-semibold">
+                        {longDate(document.document_date)}
+                    </p>
+                </div>
+
+                <div className="flex shrink-0 flex-col items-center text-center">
                     <img
                         src={route("documents.qr", document.document_id)}
                         alt={`QR code for ${document.tracking_number}`}
-                        className="h-[1.05in] w-[1.05in]"
+                        className="h-[0.7in] w-[0.7in]"
                     />
                     <p className="mt-1 text-[7px] uppercase">Reference No.</p>
                     <p className="font-mono text-[9px] font-bold">
                         {document.tracking_number}
                     </p>
-                </Cell>
+                </div>
+            </Section>
 
-                {/* 3. To + date */}
-                <Cell title="To" className="border-b">
-                    <p className="text-[7px] uppercase">Date</p>
-                    <p className="font-semibold">
-                        {longDate(document.document_date)}
-                    </p>
+            {/* 3. Subject */}
+            <Section
+                title="Subject"
+                className="min-h-[0.9in] shrink-0 border-b"
+            >
+                <p className="font-bold">{document.taxpayer_name}</p>
+                <p>{document.concern}</p>
+            </Section>
 
-                    <p className="mt-auto pt-2 font-bold">
-                        {addressedTo(document)}
-                    </p>
-                </Cell>
+            {/* 4. For */}
+            <Section title="For" className="min-h-[0.6in] shrink-0 border-b">
+                <p className="font-semibold">{document.referred_for}</p>
+            </Section>
 
-                {/* 4. Subject + for */}
-                <Cell title="Subject" className="border-r">
-                    <p className="font-bold">{document.taxpayer_name}</p>
-                    <p>{document.concern}</p>
+            {/* 5. Remarks */}
+            <Section title="Remarks" className="h-[3.5in] border-b">
+                <p className="whitespace-pre-wrap">{document.remarks || " "}</p>
+            </Section>
 
-                    <p className="mt-auto pt-2 text-[7px] uppercase">For</p>
-                    <p className="font-semibold">{document.referred_for}</p>
-                </Cell>
-
-                {/* 5. Remarks */}
-                <Cell title="Remarks" className="border-r">
-                    <p className="whitespace-pre-wrap">
-                        {document.remarks || " "}
-                    </p>
-                </Cell>
-
-                {/* 6. From + office code */}
-                <Cell title="From">
+            {/* 6. From + office code */}
+            <div className="flex shrink-0 items-end gap-4 px-3 py-2">
+                <div className="min-w-0 flex-1">
+                    <p className="text-[7.5px] uppercase">From</p>
                     <p className="font-semibold">{sentFrom(document)}</p>
+                </div>
 
-                    {/*
-                     * Left blank on purpose: the office fills this in by
-                     * hand. The stored value is not the one they use.
-                     */}
-                    <p className="mt-auto pt-2 text-[7px] uppercase">
-                        Office code
-                    </p>
+                {/*
+                 * Left blank on purpose: the office fills this in by
+                 * hand. The stored value is not the one they use.
+                 */}
+                <div className="w-[1.8in] shrink-0">
+                    <p className="text-[7.5px] uppercase">Office code</p>
                     <p
                         aria-label="Office code, to be written by hand"
                         className="h-4 border-b border-navy-900"
                     />
-                </Cell>
+                </div>
             </div>
         </div>
     );
@@ -130,14 +146,14 @@ export default function ReferenceSlipModal({ document, onClose }) {
         window.addEventListener("keydown", onKey);
 
         return () => window.removeEventListener("keydown", onKey);
-    }, []);
+    }, [onClose]);
 
     if (!document) return null;
 
     return (
         <>
             <div
-                className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center sm:p-8"
+                className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 print:hidden sm:items-center sm:p-8"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Reference slip"
@@ -155,7 +171,7 @@ export default function ReferenceSlipModal({ document, onClose }) {
 
                             <p className="mt-1 text-base text-muted">
                                 Print this and attach it to the document. It
-                                prints on a quarter sheet, lengthwise.
+                                prints portrait, full sheet.
                             </p>
                         </div>
 
@@ -192,9 +208,19 @@ export default function ReferenceSlipModal({ document, onClose }) {
              * display:none and leave only this. Invisible on screen.
              */}
             {createPortal(
-                <div id="print-root" className="hidden print:block">
-                    <ReferenceSlip document={document} />
-                </div>,
+                <>
+                    <style>{`
+                        @media print {
+                            @page {
+                                size: 4.375in 9in;
+                                margin: 0;
+                            }
+                        }
+                    `}</style>
+                    <div id="print-root" className="hidden print:block">
+                        <ReferenceSlip document={document} />
+                    </div>
+                </>,
                 window.document.body,
             )}
         </>
