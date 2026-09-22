@@ -95,9 +95,6 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::get('/documents/{document}/qr', [DocumentQrController::class, 'show'])
         ->name('documents.qr');
 
-    Route::post('/documents/quick-create', [DocumentController::class, 'quickCreate'])
-        ->name('documents.quick-create');
-
     Route::patch('/documents/{document}/complete', [DocumentController::class, 'complete'])
         ->name('documents.complete');
 

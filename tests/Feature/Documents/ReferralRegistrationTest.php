@@ -12,10 +12,12 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * Registering a referral (BIR Form 2309).
+ * Registering a referral (BIR Form 2309), in two steps.
  *
- * The clerk supplies what is on the paper; the system supplies the
- * reference number, QR code, sending section and office code.
+ * Step 1, at the counter: the routing facts, so the clock starts when
+ * the document actually arrives and it can be forwarded the same
+ * morning. Step 2, later and usually by someone else: the descriptive
+ * fields.
  */
 class ReferralRegistrationTest extends TestCase
 {
@@ -27,6 +29,8 @@ class ReferralRegistrationTest extends TestCase
 
     protected EmployeeAcc $clerk;
 
+    protected EmployeeAcc $encoder;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,11 +38,13 @@ class ReferralRegistrationTest extends TestCase
         Storage::fake('public');
 
         DocumentStatus::create(['status_name' => 'Pending', 'status_color' => 'yellow', 'sort_order' => 1]);
+        DocumentStatus::create(['status_name' => 'Received', 'status_color' => 'green', 'sort_order' => 2]);
+        DocumentStatus::create(['status_name' => 'Completed', 'status_color' => 'blue', 'sort_order' => 3]);
 
         $this->rdo = Section::create([
             'section_code' => '1002',
             'section_name' => 'RDO',
-            'description' => 'Revenue District Office',
+            'description' => "RDO's/ARDO's Office",
             'is_active' => true,
         ]);
 
@@ -51,6 +57,7 @@ class ReferralRegistrationTest extends TestCase
 
         $role = Role::create(['role_name' => 'Staff', 'is_active' => true]);
 
+        // Step 1: the person at the counter.
         $this->clerk = EmployeeAcc::create([
             'username' => 'rdo.staff',
             'password' => 'password',
@@ -58,89 +65,209 @@ class ReferralRegistrationTest extends TestCase
             'role_id' => $role->role_id,
             'is_active' => true,
         ]);
+
+        // Step 2: a colleague in the same section, later in the day.
+        $this->encoder = EmployeeAcc::create([
+            'username' => 'rdo.encoder',
+            'password' => 'password',
+            'section_id' => $this->rdo->section_id,
+            'role_id' => $role->role_id,
+            'is_active' => true,
+        ]);
     }
 
-    protected function validReferral(array $overrides = []): array
+    protected function arrival(array $overrides = []): array
     {
         return array_merge([
-            'document_date' => '2026-09-13',
+            'document_date' => '2026-09-22',
             'taxpayer_name' => 'Juan Dela Cruz',
-            'concerns' => ['Promissory Note'],
-            'referred_for' => ['Approval'],
-            'remarks' => 'Processing',
             'destination_section_id' => $this->compliance->section_id,
             'addressee' => 'Chief',
         ], $overrides);
     }
 
-    public function test_a_clerk_can_register_a_referral(): void
+    protected function details(array $overrides = []): array
+    {
+        return array_merge([
+            'concerns' => ['Promissory Note'],
+            'referred_for' => ['Approval'],
+            'remarks' => 'Processing',
+        ], $overrides);
+    }
+
+    protected function registerArrival(): Document
     {
         $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral())
-            ->assertRedirect(route('referrals.index'))
+            ->post(route('documents.store'), $this->arrival())
+            ->assertSessionHasNoErrors();
+
+        return Document::latest('document_id')->first();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 1 - the arrival
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_step_one_records_the_arrival_and_starts_the_clock(): void
+    {
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), $this->arrival())
             ->assertSessionHas('success');
 
         $document = Document::first();
 
-        $this->assertNotNull($document);
-
-        // What the clerk typed.
+        // The routing facts, read off the paper.
         $this->assertSame('Juan Dela Cruz', $document->taxpayer_name);
-        $this->assertSame('Promissory Note', $document->concern);
-        $this->assertSame('Approval', $document->referred_for);
-        $this->assertSame('Processing', $document->remarks);
-        $this->assertSame('Chief', $document->addressee);
         $this->assertSame($this->compliance->section_id, (int) $document->destination_section_id);
+        $this->assertSame('Chief', $document->addressee);
 
-        // What the system filled in.
+        // Produced by the system, now - this is when the clock starts.
         $this->assertMatchesRegularExpression('/^DOC-\d{8}-\d{6}$/', $document->tracking_number);
         $this->assertSame($document->tracking_number, $document->qr_value);
-        $this->assertSame('1002', $document->office_code, 'Office code is copied from the sending section.');
-        $this->assertSame($this->rdo->section_id, (int) $document->current_section_id);
+        $this->assertNotNull($document->qr_generated_at);
+        $this->assertSame('1002', $document->office_code);
         $this->assertSame($this->clerk->employee_id, (int) $document->created_by);
-        $this->assertSame(1, (int) $document->status_id, 'A new referral is Pending.');
 
         Storage::disk('public')->assertExists('qrcodes/'.$document->qr_value.'.svg');
+
+        // Pending, so it is routable immediately.
+        $this->assertSame(1, (int) $document->status_id);
+
+        // But the paperwork is not done.
+        $this->assertTrue($document->awaiting_details);
+        $this->assertNull($document->concern);
+        $this->assertNull($document->referred_for);
+        $this->assertNull($document->remarks);
     }
 
-    public function test_remarks_are_required(): void
+    public function test_step_one_does_not_ask_for_the_descriptive_fields(): void
     {
         $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral(['remarks' => '']))
-            ->assertSessionHasErrors('remarks');
-    }
-
-    public function test_several_ticks_are_joined_into_one_line(): void
-    {
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral([
-                'concerns' => ['Tax Assumption', 'Promissory Note'],
-                'referred_for' => ['Approval', 'Signature', 'Necessary Action'],
-            ]))
+            ->post(route('documents.store'), $this->arrival())
             ->assertSessionHasNoErrors();
 
-        $document = Document::first();
+        $this->assertSame(1, Document::count());
+    }
+
+    public function test_step_one_requires_every_routing_fact(): void
+    {
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), [])
+            ->assertSessionHasErrors([
+                'document_date',
+                'taxpayer_name',
+                'destination_section_id',
+                'addressee',
+            ]);
+
+        $this->assertSame(0, Document::count());
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | The point of the split
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_a_referral_can_be_forwarded_before_its_details_are_filled_in(): void
+    {
+        $document = $this->registerArrival();
+
+        $receiver = EmployeeAcc::create([
+            'username' => 'compliance.staff',
+            'password' => 'password',
+            'section_id' => $this->compliance->section_id,
+            'role_id' => Role::first()->role_id,
+            'is_active' => true,
+        ]);
+
+        // Compliance sees it waiting, the same morning.
+        $listed = $this->actingAs($receiver, 'employee')
+            ->get(route('compliance.dashboard'))
+            ->viewData('page')['props']['documents'];
+
+        $this->assertCount(1, $listed);
+        $this->assertTrue($listed[0]['awaiting_details']);
+
+        // And can receive it.
+        $this->actingAs($receiver, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/receive")
+            ->assertOk();
+
+        $this->assertSame(2, (int) $document->fresh()->status_id);
+    }
+
+    public function test_the_clock_starts_at_step_one_not_step_two(): void
+    {
+        $document = $this->registerArrival();
+
+        $registeredAt = $document->created_at;
+        $qrAt = $document->qr_generated_at;
+
+        $this->travel(9)->hours();
+
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details())
+            ->assertSessionHasNoErrors();
+
+        $document->refresh();
+
+        $this->assertTrue($registeredAt->equalTo($document->created_at), 'Completing must not restart the clock.');
+        $this->assertTrue($qrAt->equalTo($document->qr_generated_at), 'The QR keeps its original time.');
+        $this->assertTrue($document->details_completed_at->greaterThan($registeredAt));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Step 2 - the details
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_a_colleague_can_complete_a_referral_someone_else_registered(): void
+    {
+        $document = $this->registerArrival();
+
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details([
+                'concerns' => ['Tax Assumption', 'Promissory Note'],
+                'referred_for' => ['Approval', 'Signature'],
+            ]))
+            ->assertRedirect(route('referrals.index'))
+            ->assertSessionHas('success');
+
+        $document->refresh();
 
         $this->assertSame('Tax Assumption, Promissory Note', $document->concern);
-        $this->assertSame('Approval, Signature, Necessary Action', $document->referred_for);
+        $this->assertSame('Approval, Signature', $document->referred_for);
+        $this->assertSame('Processing', $document->remarks);
+
+        $this->assertFalse($document->awaiting_details);
+        $this->assertSame(
+            $this->encoder->employee_id,
+            (int) $document->details_completed_by,
+            'Both halves of the work are attributable.'
+        );
+        $this->assertSame($this->clerk->employee_id, (int) $document->created_by);
     }
 
     public function test_ticking_other_requires_the_text_and_stores_it_in_place(): void
     {
-        // Ticking Other without saying what it is.
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral([
+        $document = $this->registerArrival();
+
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Other'],
                 'referred_for' => ['Other'],
                 'remarks' => 'Other',
             ]))
             ->assertSessionHasErrors(['concern_other', 'referred_for_other', 'remarks_other']);
 
-        $this->assertSame(0, Document::count());
+        $this->assertTrue($document->fresh()->awaiting_details);
 
-        // Ticking Other and saying what it is.
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral([
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Tax Assumption', 'Other'],
                 'concern_other' => 'Lost receipt',
                 'referred_for' => ['Other'],
@@ -150,127 +277,138 @@ class ReferralRegistrationTest extends TestCase
             ]))
             ->assertSessionHasNoErrors();
 
-        $document = Document::first();
+        $document->refresh();
 
         $this->assertSame('Tax Assumption, Lost receipt', $document->concern);
         $this->assertSame('Return to taxpayer', $document->referred_for);
         $this->assertSame('Waiting for the taxpayer to call back.', $document->remarks);
     }
 
-    public function test_the_other_text_is_ignored_when_other_is_not_ticked(): void
+    public function test_details_cannot_be_completed_twice(): void
     {
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral([
-                'concerns' => ['Tax Assumption'],
-                'concern_other' => 'Should not appear',
-            ]))
+        $document = $this->registerArrival();
+
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details())
             ->assertSessionHasNoErrors();
 
-        $this->assertSame('Tax Assumption', Document::first()->concern);
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details(['remarks' => 'Complied']))
+            ->assertForbidden();
+
+        $this->assertSame('Processing', $document->fresh()->remarks);
     }
 
-    public function test_the_old_registration_page_redirects_to_the_referrals_page(): void
+    public function test_only_the_configured_sections_may_complete_details(): void
     {
-        $this->actingAs($this->clerk, 'employee')
-            ->get(route('documents.create'))
-            ->assertRedirect(route('referrals.index'));
+        $document = $this->registerArrival();
+
+        $outsider = EmployeeAcc::create([
+            'username' => 'compliance.clerk',
+            'password' => 'password',
+            'section_id' => $this->compliance->section_id,
+            'role_id' => Role::first()->role_id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($outsider, 'employee')
+            ->patch(route('documents.complete', $document), $this->details())
+            ->assertForbidden();
+
+        $this->assertTrue($document->fresh()->awaiting_details);
     }
 
-    public function test_the_dashboard_button_opens_the_form_on_arrival(): void
+    public function test_a_referral_left_bare_by_the_old_draft_flow_can_be_caught_up(): void
     {
-        $plain = $this->actingAs($this->clerk, 'employee')
-            ->get(route('referrals.index'))
-            ->viewData('page')['props'];
+        // What the earlier flow produced: a tracking number and nothing else.
+        $bare = Document::create([
+            'tracking_number' => 'DOC-20260920-000099',
+            'qr_value' => 'DOC-20260920-000099',
+            'status_id' => 1,
+            'current_section_id' => $this->rdo->section_id,
+            'current_employee_id' => $this->clerk->employee_id,
+            'created_by' => $this->clerk->employee_id,
+        ]);
 
-        $this->assertFalse($plain['openForm'], 'Visiting the list on its own shows the list.');
-
-        $fromButton = $this->actingAs($this->clerk, 'employee')
-            ->get(route('referrals.index', ['new' => 1]))
-            ->viewData('page')['props'];
-
-        $this->assertTrue($fromButton['openForm'], 'Arriving from the dashboard opens the form.');
-    }
-
-    public function test_transaction_type_and_description_are_no_longer_asked_for(): void
-    {
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral())
-            ->assertSessionHasNoErrors();
-
-        $document = Document::first();
-
-        $this->assertNull($document->transaction_type);
-        $this->assertNull($document->description);
-    }
-
-    public function test_every_required_field_is_enforced(): void
-    {
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), [])
+        // The routing facts are missing, so they are asked for here.
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $bare), $this->details())
             ->assertSessionHasErrors([
-                'document_date',
                 'taxpayer_name',
-                'concerns',
-                'referred_for',
-                'remarks',
+                'document_date',
                 'destination_section_id',
                 'addressee',
             ]);
 
-        $this->assertSame(0, Document::count());
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $bare), $this->details($this->arrival()))
+            ->assertSessionHasNoErrors();
+
+        $bare->refresh();
+
+        $this->assertSame('Juan Dela Cruz', $bare->taxpayer_name);
+        $this->assertSame($this->compliance->section_id, (int) $bare->destination_section_id);
+        $this->assertFalse($bare->awaiting_details);
     }
 
-    public function test_dropdown_values_must_come_from_the_configured_lists(): void
+    /*
+    |--------------------------------------------------------------------------
+    | Closing the document
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_a_document_cannot_be_closed_while_its_details_are_missing(): void
     {
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral([
-                'concerns' => ['Something made up'],
-                'referred_for' => ['Whenever'],
-                'remarks' => 'Maybe',
-                'addressee' => 'Anyone',
-            ]))
-            ->assertSessionHasErrors(['concerns.0', 'referred_for.0', 'remarks', 'addressee']);
-    }
+        $document = $this->registerArrival();
 
-    public function test_every_configured_option_is_accepted(): void
-    {
-        $other = ['concern_other' => 'x', 'referred_for_other' => 'x', 'remarks_other' => 'x'];
+        $receiver = EmployeeAcc::create([
+            'username' => 'compliance.staff',
+            'password' => 'password',
+            'section_id' => $this->compliance->section_id,
+            'role_id' => Role::first()->role_id,
+            'is_active' => true,
+        ]);
 
-        foreach (config('referral.concerns') as $concern) {
-            foreach (config('referral.addressees') as $addressee) {
-                $this->actingAs($this->clerk, 'employee')
-                    ->post(route('documents.store'), $this->validReferral([
-                        'concerns' => [$concern],
-                        'addressee' => $addressee,
-                    ] + $other))
-                    ->assertSessionHasNoErrors();
-            }
-        }
-
-        foreach (config('referral.referred_for') as $for) {
-            $this->actingAs($this->clerk, 'employee')
-                ->post(route('documents.store'), $this->validReferral(['referred_for' => [$for]] + $other))
-                ->assertSessionHasNoErrors();
-        }
-
-        foreach (config('referral.remarks') as $remark) {
-            $this->actingAs($this->clerk, 'employee')
-                ->post(route('documents.store'), $this->validReferral(['remarks' => $remark] + $other))
-                ->assertSessionHasNoErrors();
-        }
-    }
-
-    public function test_the_referrals_page_offers_the_dropdown_lists_and_the_sending_section(): void
-    {
-        $response = $this->actingAs($this->clerk, 'employee')
-            ->get(route('referrals.index'))
+        $this->actingAs($receiver, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/receive")
             ->assertOk();
 
-        $props = $response->viewData('page')['props'];
+        $this->actingAs($receiver, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertStatus(409);
 
+        $this->assertSame(2, (int) $document->fresh()->status_id);
+
+        // Once the details are in, it can be closed.
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details())
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($receiver, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/complete")
+            ->assertOk();
+
+        $this->assertSame(3, (int) $document->fresh()->status_id);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | The page
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_the_referrals_page_lists_what_is_awaiting_details(): void
+    {
+        $this->registerArrival();
+
+        $props = $this->actingAs($this->encoder, 'employee')
+            ->get(route('referrals.index'))
+            ->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertCount(1, $props['awaitingDetails']);
+        $this->assertTrue($props['canCompleteDetails'], 'RDO may do step 2.');
         $this->assertSame(config('referral'), $props['referralOptions']);
-        $this->assertSame('1002', $props['fromSection']['section_code']);
-        $this->assertSame('Revenue District Office', $props['fromSection']['description']);
 
         // You cannot refer a document to your own section.
         $offered = collect($props['sections'])->pluck('section_id');
@@ -280,13 +418,16 @@ class ReferralRegistrationTest extends TestCase
 
     public function test_the_referral_can_be_found_by_concern_and_remarks(): void
     {
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->validReferral([
+        $document = $this->registerArrival();
+
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details([
                 'remarks' => 'Other',
                 'remarks_other' => 'Awaiting signature of the Assistant Chief.',
-            ]));
+            ]))
+            ->assertSessionHasNoErrors();
 
-        foreach (['promissory', 'assistant chief', 'approval', '1002'] as $keyword) {
+        foreach (['juan', 'promissory', 'assistant chief', 'approval', '1002'] as $keyword) {
             $response = $this->actingAs($this->clerk, 'employee')
                 ->get(route('referrals.index', ['search' => $keyword]));
 
@@ -296,5 +437,12 @@ class ReferralRegistrationTest extends TestCase
                 "Expected a match for [{$keyword}]."
             );
         }
+    }
+
+    public function test_the_old_registration_page_redirects_to_the_referrals_page(): void
+    {
+        $this->actingAs($this->clerk, 'employee')
+            ->get(route('documents.create'))
+            ->assertRedirect(route('referrals.index'));
     }
 }

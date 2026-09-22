@@ -110,23 +110,29 @@
 
 /*
 |--------------------------------------------------------------------------
-| Printing the reference slip
+| Printing
 |--------------------------------------------------------------------------
 |
-| BIR Form 2309 is printed on a quarter of a letter sheet, lengthwise:
-| a 5.5in x 4.25in landscape card.
+| Two things print: the arrival stub from step 1, and BIR Form 2309 once
+| the details are in. Each gets a named @page sized to its own content,
+| so neither is paginated across sheets it does not need.
 |
-| The slip is rendered into #print-root directly under <body>, and every
-| other child of <body> is removed with display:none. It has to be
+| Whichever is open renders into #print-root directly under <body>, and
+| every other child of <body> is removed with display:none. It has to be
 | display:none, not visibility:hidden - a hidden element that still has
-| height still gets paginated, and the app's full page height was being
-| sliced into a dozen blank quarter-sheets.
+| height still gets paginated, which is what turned one slip into eleven
+| blank pages.
 |
 */
 
 @media print {
-    @page {
-        size: 5.5in 4.25in;
+    @page stub {
+        size: 4.5in 3.2in;
+        margin: 0.2in;
+    }
+
+    @page slip {
+        size: 4.75in 8.5in;
         margin: 0.2in;
     }
 
@@ -145,6 +151,15 @@
         display: block !important;
     }
 
+    #print-root .arrival-stub {
+        page: stub;
+    }
+
+    #print-root .reference-slip {
+        page: slip;
+    }
+
+    #print-root .arrival-stub,
     #print-root .reference-slip {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
