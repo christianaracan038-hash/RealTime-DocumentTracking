@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\DocumentStatus;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DocumentStatusSeeder extends Seeder
 {
@@ -12,6 +13,25 @@ class DocumentStatusSeeder extends Seeder
      */
     public function run(): void
     {
+        /*
+        * Draft (status_id 0) — a document that has a tracking number
+        * and QR code (Step 1) but has not yet had its referral details
+        * filled in (Step 2). Inserted through the query builder with
+        * an explicit status_id, since 0 falls outside the normal
+        * auto-increment sequence used by the statuses below.
+        */
+        DB::table('document_statuses')->updateOrInsert(
+            [
+                'status_id' => 0,
+            ],
+            [
+                'status_name' => 'Draft',
+                'status_color' => 'gray',
+                'description' => 'QR generated; referral details not yet completed.',
+                'sort_order' => 0,
+            ]
+        );
+
         $statuses = [
 
             [

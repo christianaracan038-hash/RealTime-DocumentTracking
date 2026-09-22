@@ -81,4 +81,17 @@ return [
         'Other',
     ],
 
+    /*
+    * Which section(s) may complete a draft's referral details
+    * (Step 2) — regardless of who generated the QR in Step 1 or
+    * which section currently holds the document.
+    *
+    * Must match `sections.section_name` EXACTLY (case, apostrophes,
+    * spacing and all), since the check is a strict comparison. Add
+    * more entries here if there is more than one RDO/ARDO section.
+    */
+    'draft_completion_sections' => [
+        "RDO",
+    ],
+
 ];

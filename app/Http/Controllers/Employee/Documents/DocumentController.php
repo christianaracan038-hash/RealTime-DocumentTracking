@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Employee\Documents;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Employee\Documents\CompleteDocumentRequest;
 use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
 use App\Models\Document;
 use App\Models\Section;
@@ -27,7 +28,10 @@ class DocumentController extends Controller
      * Referrals this employee registered.
      *
      * Also where new ones are registered from: the dashboard's button
-     * links here with ?new=1 so the form opens on arrival.
+     * links here with ?new=1 so the form opens on arrival. If a draft
+     * document id is passed via ?draft=, its details (tracking number,
+     * QR) are loaded so the form can complete it instead of creating
+     * a new document from scratch.
      */
     public function referrals(
         Request $request,
@@ -36,6 +40,16 @@ class DocumentController extends Controller
         $employee = Auth::guard('employee')->user();
 
         $search = $request->string('search')->toString();
+
+        $draftId = $request->integer('draft');
+
+        $draftDocument = $draftId
+            ? Document::query()
+                ->where('document_id', $draftId)
+                ->where('created_by', $employee->employee_id)
+                ->where('status_id', 0)
+                ->first()
+            : null;
 
         return Inertia::render('Employees/Referrals/Index', [
             'referrals' => $documentService->getRegisteredDocuments(
@@ -73,6 +87,20 @@ class DocumentController extends Controller
             * Open the registration form as soon as the page loads.
             */
             'openForm' => $request->boolean('new'),
+
+            'draftDocument' => $draftDocument,
+
+            /*
+            * Only RDO-section employees may complete a draft's
+            * referral details. The frontend uses this to hide the
+            * "Complete referral" action for everyone else, instead
+            * of letting them hit a 403 after clicking it.
+            */
+            'canCompleteDrafts' => in_array(
+                $employee->section?->section_name,
+                config('referral.draft_completion_sections', ['RDO']),
+                true
+            ),
         ]);
     }
 
@@ -175,5 +203,37 @@ class DocumentController extends Controller
                 'documents' => $documents,
             ]
         );
+    }
+
+    /**
+     * Step 1 — generate a draft document with its tracking number and
+     * QR code. The referral's details are filled in afterward, via
+     * complete().
+     */
+    public function quickCreate(DocumentService $documentService): RedirectResponse
+    {
+        $employee = Auth::guard('employee')->user();
+
+        $document = $documentService->createDraft($employee);
+
+        return redirect()->route('referrals.index', [
+            'new' => 1,
+            'draft' => $document->document_id,
+        ]);
+    }
+
+    /**
+     * Step 2 — complete a draft document's referral details.
+     */
+    public function complete(
+        CompleteDocumentRequest $request,
+        Document $document,
+        DocumentService $documentService
+    ): RedirectResponse {
+        $documentService->completeDraft($document, $request->validated());
+
+        return redirect()
+            ->route('referrals.index')
+            ->with('success', 'Referral registered.');
     }
 }

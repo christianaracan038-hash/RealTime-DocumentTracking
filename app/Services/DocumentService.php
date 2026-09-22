@@ -436,4 +436,70 @@ class DocumentService
             );
         });
     }
+
+
+        /**
+     * Step 1 — create a draft document and generate its QR immediately.
+     *
+     * This is the moment the office's timer starts: tracking_number and
+     * qr_generated_at are produced here, before any of the referral's
+     * details (taxpayer, concerns, destination, etc.) are known. The
+     * draft is completed later via completeDraft(), which never touches
+     * qr_generated_at.
+     */
+    public function createDraft($employee): Document
+    {
+        return DB::transaction(function () use ($employee) {
+
+            $document = Document::create([
+                'tracking_number' => $this->generateTrackingNumber(),
+                'status_id' => 0, // Draft
+                'current_section_id' => $employee->section_id,
+                'current_employee_id' => $employee->employee_id,
+                'created_by' => $employee->employee_id,
+                'office_code' => $employee->section?->section_code,
+            ]);
+
+            $this->generateQrCode($document);
+
+            return $document;
+        });
+    }
+
+    /**
+     * Step 2 — fill in a draft's referral details and register it.
+     *
+     * qr_generated_at (and the tracking number/QR themselves) are left
+     * exactly as Step 1 produced them — completing the form never resets
+     * the clock.
+     */
+    public function completeDraft(Document $document, array $data): Document
+    {
+        $document->update([
+            'document_date' => $data['document_date'],
+
+            'taxpayer_name' => $data['taxpayer_name'],
+
+            'concern' => $this->joinChoices(
+                $data['concerns'],
+                $data['concern_other'] ?? null
+            ),
+
+            'referred_for' => $this->joinChoices(
+                $data['referred_for'],
+                $data['referred_for_other'] ?? null
+            ),
+
+            'remarks' => $data['remarks'] === 'Other'
+                ? trim($data['remarks_other'])
+                : $data['remarks'],
+
+            'destination_section_id' => $data['destination_section_id'],
+            'addressee' => $data['addressee'],
+
+            'status_id' => 1, // Pending
+        ]);
+
+        return $document->fresh();
+    }
 }

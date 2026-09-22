@@ -133,7 +133,6 @@ class DocumentTrackingController extends Controller
         $sections = Section::query()
             ->whereNotIn('section_id', array_filter([
                 $employee->section_id,
-                $document->creator?->section_id,
             ]))
             ->orderBy('section_name')
             ->get([
@@ -148,6 +147,10 @@ class DocumentTrackingController extends Controller
             'mode' => 'forward',
             'document' => $document,
             'sections' => $sections,
+            'debug' => [
+                'employee_section_id' => $employee->section_id,
+                'creator_section_id' => $document->creator?->section_id,
+            ],
         ]);
     }
 
@@ -370,15 +373,15 @@ class DocumentTrackingController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $originSectionId = (int) $document->creator?->section_id;
+            // $originSectionId = (int) $document->creator?->section_id;
 
-            if ($originSectionId && $originSectionId === $toSectionId) {
-                return [
-                    'success' => false,
-                    'status' => 422,
-                    'message' => 'This document came from that section. If the work is done, mark it as completed instead.',
-                ];
-            }
+            // if ($originSectionId && $originSectionId === $toSectionId) {
+            //     return [
+            //         'success' => false,
+            //         'status' => 422,
+            //         'message' => 'This document came from that section. If the work is done, mark it as completed instead.',
+            //     ];
+            // }
 
             /*
             |--------------------------------------------------------------------------
