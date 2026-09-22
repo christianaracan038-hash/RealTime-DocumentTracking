@@ -287,15 +287,14 @@ export default function ReceiveDocumentScanner({
 
                         {processing && !success && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                                <div className="text-center text-white">
-                                    <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+                                <div className="w-52 text-center text-white">
                                     <p className="text-sm font-medium">
                                         {isForward
                                             ? "Verifying document..."
                                             : "Processing document..."}
                                     </p>
 
-                                    <div className="mx-auto mt-4 h-1.5 w-40 overflow-hidden rounded-full bg-white/20">
+                                    <div className="mx-auto mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
                                         <div
                                             className="h-full w-1/3 rounded-full bg-white"
                                             style={{
