@@ -14,6 +14,14 @@ import { sectionLabel } from "./referral";
  * paper. The reference number, QR code, sending section and office code
  * are produced by the system and shown read-only, so the clerk can see
  * them but never has to type them.
+ *
+ * Two ways this modal is used:
+ * - `document` is null: a brand-new referral. Submitting POSTs to
+ *   documents.store and creates the row from scratch.
+ * - `document` is a draft (Step 1 already ran: it has a tracking_number
+ *   and QR, status is "Draft"): this form only fills in the remaining
+ *   details. Submitting PATCHes documents.complete for that document's
+ *   id, and qr_generated_at is never touched.
  */
 
 const FIELD =
@@ -64,20 +72,29 @@ export default function ReferralFormModal({
     sections = [],
     options = {},
     fromSection = null,
+    document = null,
 }) {
-    const { data, setData, post, processing, errors, reset, clearErrors } =
-        useForm({
-            document_date: today(),
-            taxpayer_name: "",
-            concerns: [],
-            concern_other: "",
-            referred_for: [],
-            referred_for_other: "",
-            remarks: "",
-            remarks_other: "",
-            destination_section_id: "",
-            addressee: "",
-        });
+    const {
+        data,
+        setData,
+        post,
+        patch,
+        processing,
+        errors,
+        reset,
+        clearErrors,
+    } = useForm({
+        document_date: document?.document_date ?? today(),
+        taxpayer_name: document?.taxpayer_name ?? "",
+        concerns: [],
+        concern_other: "",
+        referred_for: [],
+        referred_for_other: "",
+        remarks: "",
+        remarks_other: "",
+        destination_section_id: "",
+        addressee: "",
+    });
 
     // Escape closes, like every other dialog.
     useEffect(() => {
@@ -98,14 +115,20 @@ export default function ReferralFormModal({
     const submit = (e) => {
         e.preventDefault();
 
-        post(route("documents.store"), {
+        const opts = {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
                 clearErrors();
                 onClose();
             },
-        });
+        };
+
+        if (document) {
+            patch(route("documents.complete", document.document_id), opts);
+        } else {
+            post(route("documents.store"), opts);
+        }
     };
 
     return (
@@ -147,9 +170,25 @@ export default function ReferralFormModal({
                     <div className="grid gap-3 sm:grid-cols-2">
                         <ReadOnly
                             label="Reference No."
-                            value="Assigned on save"
+                            value={
+                                document?.tracking_number ?? "Assigned on save"
+                            }
                         />
-                        <ReadOnly label="QR code" value="Created on save" />
+
+                        {document?.qr_path ? (
+                            <div className="rounded-xl bg-paper px-4 py-3">
+                                <p className="text-xs font-semibold tracking-wide text-muted uppercase">
+                                    QR code
+                                </p>
+                                <img
+                                    src={`/${document.qr_path}`}
+                                    alt="Document QR code"
+                                    className="mt-1 h-14 w-14"
+                                />
+                            </div>
+                        ) : (
+                            <ReadOnly label="QR code" value="Created on save" />
+                        )}
                     </div>
 
                     <Field

@@ -19,6 +19,15 @@ import { addressedTo, longDate, sentFrom } from "./referral";
  * rest of the page from spanning a dozen blank pages, since a hidden
  * element that still has height still gets paginated.
  *
+ * On-screen preview: the slip's true size (4.3in x 8in) reads as quite
+ * large at 100% browser zoom — it used to force people to zoom their
+ * whole browser out to ~80% just to see it. Instead, only the preview
+ * copy inside the modal is visually shrunk with CSS `zoom`, which
+ * (unlike `transform: scale`) also shrinks the space it takes up, so
+ * there's no leftover blank gap below it. The print copy is a
+ * completely separate node (#print-root) and is never touched by this,
+ * so it always prints at true size regardless of the preview's zoom.
+ *
  * NOTE: page orientation (portrait) needs to be set wherever your global
  * print stylesheet lives, e.g.:
  *   @media print {
@@ -185,8 +194,18 @@ export default function ReferenceSlipModal({ document, onClose }) {
                         </button>
                     </div>
 
-                    <div className="overflow-x-auto px-7 py-6">
-                        <ReferenceSlip document={document} />
+                    {/*
+                     * `zoom` (not `transform: scale`) shrinks both the
+                     * visual size AND the space reserved for it, so the
+                     * modal doesn't end up with an empty gap below a
+                     * scaled-down slip. Only this preview copy is
+                     * affected — the print copy below is a separate,
+                     * untouched node.
+                     */}
+                    <div className="flex justify-center overflow-x-auto px-7 py-6">
+                        <div style={{ zoom: 0.6 }}>
+                            <ReferenceSlip document={document} />
+                        </div>
                     </div>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-line px-7 py-5 sm:flex-row sm:justify-end">
@@ -206,6 +225,8 @@ export default function ReferenceSlipModal({ document, onClose }) {
              * The copy that actually prints. It lives directly under <body>
              * so the print stylesheet can hide everything else with
              * display:none and leave only this. Invisible on screen.
+             * Always renders at true size — the preview's zoom above
+             * never reaches this node.
              */}
             {createPortal(
                 <>

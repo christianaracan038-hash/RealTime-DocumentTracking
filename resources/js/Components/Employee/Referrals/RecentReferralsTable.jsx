@@ -17,6 +17,7 @@ export default function RecentReferralsTable({
     heading = "Recent registered referrals",
     subheading = "Referrals you registered, newest first.",
     action = null,
+    onCompleteDraft = null,
 }) {
     const [slipFor, setSlipFor] = useState(null);
 
@@ -28,6 +29,10 @@ export default function RecentReferralsTable({
 
         router.visit(url, { preserveState: true, preserveScroll: true });
     };
+
+    const isDraft = (document) =>
+        document.status?.status_name === "Draft" ||
+        Number(document.status_id) === 0;
 
     const th =
         "px-4 py-3 text-left text-xs font-semibold tracking-wider text-muted uppercase whitespace-nowrap";
@@ -80,8 +85,10 @@ export default function RecentReferralsTable({
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         <p className="text-lg font-bold text-navy-900">
-                                            {document.taxpayer_name ??
-                                                "No taxpayer on record"}
+                                            {isDraft(document)
+                                                ? "Draft referral"
+                                                : (document.taxpayer_name ??
+                                                  "No taxpayer on record")}
                                         </p>
                                         <p className="mt-0.5 font-mono text-sm text-muted">
                                             {document.tracking_number}
@@ -98,73 +105,103 @@ export default function RecentReferralsTable({
                                     </div>
                                 </div>
 
-                                <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
-                                    <dt className="text-sm font-semibold text-muted">
-                                        Concerns
-                                    </dt>
-                                    <dd className="text-navy-800">
-                                        {document.concern ??
-                                            document.transaction_type ??
-                                            "—"}
-                                    </dd>
+                                {isDraft(document) ? (
+                                    <p className="mt-4 text-base text-muted">
+                                        QR generated{" "}
+                                        {exactTime(
+                                            document.qr_generated_at ??
+                                                document.created_at,
+                                        )}
+                                        . Referral details are not yet complete.
+                                    </p>
+                                ) : (
+                                    <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
+                                        <dt className="text-sm font-semibold text-muted">
+                                            Concerns
+                                        </dt>
+                                        <dd className="text-navy-800">
+                                            {document.concern ??
+                                                document.transaction_type ??
+                                                "—"}
+                                        </dd>
 
-                                    <dt className="text-sm font-semibold text-muted">
-                                        For
-                                    </dt>
-                                    <dd className="text-navy-800">
-                                        {document.referred_for ?? "—"}
-                                    </dd>
+                                        <dt className="text-sm font-semibold text-muted">
+                                            For
+                                        </dt>
+                                        <dd className="text-navy-800">
+                                            {document.referred_for ?? "—"}
+                                        </dd>
 
-                                    <dt className="text-sm font-semibold text-muted">
-                                        To
-                                    </dt>
-                                    <dd className="text-navy-800">
-                                        {addressedTo(document) || "—"}
-                                    </dd>
+                                        <dt className="text-sm font-semibold text-muted">
+                                            To
+                                        </dt>
+                                        <dd className="text-navy-800">
+                                            {addressedTo(document) || "—"}
+                                        </dd>
 
-                                    <dt className="text-sm font-semibold text-muted">
-                                        From
-                                    </dt>
-                                    <dd className="text-navy-800">
-                                        {sentFrom(document) || "—"}
-                                    </dd>
+                                        <dt className="text-sm font-semibold text-muted">
+                                            From
+                                        </dt>
+                                        <dd className="text-navy-800">
+                                            {sentFrom(document) || "—"}
+                                        </dd>
 
-                                    <dt className="text-sm font-semibold text-muted">
-                                        Date
-                                    </dt>
-                                    <dd className="text-navy-800">
-                                        {longDate(document.document_date)}
-                                    </dd>
+                                        <dt className="text-sm font-semibold text-muted">
+                                            Date
+                                        </dt>
+                                        <dd className="text-navy-800">
+                                            {longDate(document.document_date)}
+                                        </dd>
 
-                                    <dt className="text-sm font-semibold text-muted">
-                                        Registered
-                                    </dt>
-                                    <dd className="text-navy-800">
-                                        {exactTime(document.created_at)}
-                                    </dd>
+                                        <dt className="text-sm font-semibold text-muted">
+                                            Registered
+                                        </dt>
+                                        <dd className="text-navy-800">
+                                            {exactTime(document.created_at)}
+                                        </dd>
 
-                                    {(document.remarks ??
-                                        document.description) && (
-                                        <>
-                                            <dt className="text-sm font-semibold text-muted">
-                                                Remarks
-                                            </dt>
-                                            <dd className="text-navy-800">
-                                                {document.remarks ??
-                                                    document.description}
-                                            </dd>
-                                        </>
-                                    )}
-                                </dl>
+                                        {(document.remarks ??
+                                            document.description) && (
+                                            <>
+                                                <dt className="text-sm font-semibold text-muted">
+                                                    Remarks
+                                                </dt>
+                                                <dd className="text-navy-800">
+                                                    {document.remarks ??
+                                                        document.description}
+                                                </dd>
+                                            </>
+                                        )}
+                                    </dl>
+                                )}
 
-                                <EmployeeButton
-                                    variant="secondary"
-                                    onClick={() => setSlipFor(document)}
-                                    className="mt-4 w-full"
-                                >
-                                    <Icon name="print" />
-                                    View slip
-                                </EmployeeButton>
+                                {isDraft(document) ? (
+                                    onCompleteDraft ? (
+                                        <EmployeeButton
+                                            variant="secondary"
+                                            onClick={() =>
+                                                onCompleteDraft(document)
+                                            }
+                                            className="mt-4 w-full"
+                                        >
+                                            <Icon name="register" />
+                                            Complete referral
+                                        </EmployeeButton>
+                                    ) : (
+                                        <p className="mt-4 text-center text-sm text-muted">
+                                            Awaiting completion by RDO.
+                                        </p>
+                                    )
+                                ) : (
+                                    <EmployeeButton
+                                        variant="secondary"
+                                        onClick={() => setSlipFor(document)}
+                                        className="mt-4 w-full"
+                                    >
+                                        <Icon name="print" />
+                                        View slip
+                                    </EmployeeButton>
+                                )}
                             </li>
                         ))
                     ) : (
@@ -210,17 +247,24 @@ export default function RecentReferralsTable({
                                     >
                                         <td className={td}>
                                             <p className="font-bold text-navy-900">
-                                                {document.taxpayer_name ??
-                                                    "No taxpayer on record"}
+                                                {isDraft(document)
+                                                    ? "Draft referral"
+                                                    : (document.taxpayer_name ??
+                                                      "No taxpayer on record")}
                                             </p>
                                             <p className="mt-0.5 text-sm text-muted">
-                                                {longDate(
-                                                    document.document_date,
-                                                )}
+                                                {isDraft(document)
+                                                    ? "Not yet completed"
+                                                    : longDate(
+                                                          document.document_date,
+                                                      )}
                                             </p>
                                             <p className="text-sm text-muted">
-                                                Registered{" "}
-                                                {exactTime(document.created_at)}
+                                                QR generated{" "}
+                                                {exactTime(
+                                                    document.qr_generated_at ??
+                                                        document.created_at,
+                                                )}
                                             </p>
                                         </td>
 
@@ -284,14 +328,33 @@ export default function RecentReferralsTable({
                                         <td
                                             className={`${td} whitespace-nowrap`}
                                         >
-                                            <EmployeeButton
-                                                variant="secondary"
-                                                onClick={() =>
-                                                    setSlipFor(document)
-                                                }
-                                            >
-                                                View slip
-                                            </EmployeeButton>
+                                            {isDraft(document) ? (
+                                                onCompleteDraft ? (
+                                                    <EmployeeButton
+                                                        variant="secondary"
+                                                        onClick={() =>
+                                                            onCompleteDraft(
+                                                                document,
+                                                            )
+                                                        }
+                                                    >
+                                                        Complete referral
+                                                    </EmployeeButton>
+                                                ) : (
+                                                    <span className="text-sm text-muted">
+                                                        Awaiting RDO
+                                                    </span>
+                                                )
+                                            ) : (
+                                                <EmployeeButton
+                                                    variant="secondary"
+                                                    onClick={() =>
+                                                        setSlipFor(document)
+                                                    }
+                                                >
+                                                    View slip
+                                                </EmployeeButton>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

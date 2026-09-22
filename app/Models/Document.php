@@ -121,6 +121,10 @@ class Document extends Model
      * When the document last changed hands - the moment its current
      * wait began.
      *
+     * Draft: since the QR was generated in Step 1 — before any
+     *   referral detail existed. This is the whole point of timing
+     *   the QR generation separately: it shows exactly how long
+     *   Step 2 has been sitting untouched.
      * Pending: since it was last forwarded, or registered if never.
      * Received: since the current holder received it.
      */
@@ -132,6 +136,10 @@ class Document extends Model
 
         if ((int) $this->status_id === 2) {
             return $this->received_at;
+        }
+
+        if ((int) $this->status_id === 0) {
+            return $this->qr_generated_at ?? $this->created_at;
         }
 
         $lastMove = $this->relationLoaded('latestTrackingHistory')
@@ -150,11 +158,13 @@ class Document extends Model
     public function getAgingAttribute(): ?array
     {
         /*
-        * Only a pending document is waiting on someone. Once received,
-        * the office considers the clock stopped - the exact times stay
-        * in the history, but no badge nags the holder.
+        * A draft and a pending document are both waiting on someone —
+        * a draft on whoever completes Step 2, a pending one on the
+        * destination section. Once received, the office considers the
+        * clock stopped - the exact times stay in the history, but no
+        * badge nags the holder.
         */
-        if ((int) $this->status_id !== 1) {
+        if (! in_array((int) $this->status_id, [0, 1], true)) {
             return null;
         }
 
