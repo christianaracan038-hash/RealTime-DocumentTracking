@@ -111,37 +111,80 @@ class DocumentService
             ->withQueryString();
     }
 
+    /**
+     * Which documents an employee may see.
+     *
+     * Deliberately broad: anything they created, hold, or that is in or
+     * headed for their section, plus anything their section or they
+     * personally ever touched. A section that once handled a document
+     * keeps seeing it after it moves on.
+     *
+     * Shared by the history list and the detail endpoint, so opening a
+     * document can never show more than the list would.
+     */
+    public function applyVisibility($query, $employee)
+    {
+        return $query
+            /*
+            * 1. Created by this employee
+            */
+            ->where('created_by', $employee->employee_id)
+
+            /*
+            * 2. Currently held by this employee
+            */
+            ->orWhere('current_employee_id', $employee->employee_id)
+
+            /*
+            * 3. Currently inside employee's section
+            */
+            ->orWhere('current_section_id', $employee->section_id)
+
+            /*
+            * 4. Currently destined for employee's section
+            */
+            ->orWhere('destination_section_id', $employee->section_id)
+
+            /*
+            * 5. Employee's section appeared anywhere in the history.
+            *
+            * Records -> Accounting -> HR -> Legal: Accounting can
+            * still see the document.
+            */
+            ->orWhereHas('trackingHistories', function ($historyQuery) use ($employee) {
+                $historyQuery->where(function ($query) use ($employee) {
+                    $query
+                        ->where('from_section_id', $employee->section_id)
+                        ->orWhere('to_section_id', $employee->section_id);
+                });
+            })
+
+            /*
+            * 6. Employee personally performed a tracking action.
+            */
+            ->orWhereHas('trackingHistories', function ($historyQuery) use ($employee) {
+                $historyQuery->where('employee_id', $employee->employee_id);
+            });
+    }
+
     public function getHistoryDocuments($employee, ?string $search = null)
     {
         return Document::query()
+            /*
+            * Only what a row shows. The movement trail used to be
+            * loaded here for every document on the page, with four
+            * relations per trail row - most of it never looked at.
+            * It is fetched one document at a time now, by
+            * findForEmployee(), when someone opens that document.
+            */
             ->with([
-                /*
-                * Current document information
-                */
                 'status',
-                'currentSection',
-                'destinationSection',
-                'currentEmployee',
+
+                /*
+                * The aging accessor reads the last move; without this
+                * it would cost a query per row.
+                */
                 'latestTrackingHistory',
-
-                /*
-                * Original creator
-                */
-                'creator.section',
-
-                /*
-                * Complete movement history
-                */
-                'trackingHistories' => function ($query) {
-                    $query
-                        ->with([
-                            'fromSection',
-                            'toSection',
-                            'employee',
-                            'status',
-                        ])
-                        ->orderBy('tracked_at', 'asc');
-                },
             ])
 
             /*
@@ -149,86 +192,7 @@ class DocumentService
             * DOCUMENT VISIBILITY
             * ==========================================================
             */
-            ->where(function ($query) use ($employee) {
-
-                /*
-                * 1. Created by this employee
-                */
-                $query->where(
-                    'created_by',
-                    $employee->employee_id
-                )
-
-                /*
-                * 2. Currently held by this employee
-                */
-                    ->orWhere(
-                        'current_employee_id',
-                        $employee->employee_id
-                    )
-
-                /*
-                * 3. Currently inside employee's section
-                */
-                    ->orWhere(
-                        'current_section_id',
-                        $employee->section_id
-                    )
-
-                /*
-                * 4. Currently destined for employee's section
-                */
-                    ->orWhere(
-                        'destination_section_id',
-                        $employee->section_id
-                    )
-
-                /*
-                * 5. Employee's section appeared
-                *    anywhere in document history.
-                *
-                * Example:
-                *
-                * Records -> Accounting
-                * Accounting -> HR
-                * HR -> Legal
-                *
-                * Accounting can still see the document.
-                */
-                    ->orWhereHas(
-                        'trackingHistories',
-                        function ($historyQuery) use ($employee) {
-
-                            $historyQuery->where(function ($query) use ($employee) {
-
-                                $query
-                                    ->where(
-                                        'from_section_id',
-                                        $employee->section_id
-                                    )
-                                    ->orWhere(
-                                        'to_section_id',
-                                        $employee->section_id
-                                    );
-                            });
-                        }
-                    )
-
-                /*
-                * 6. Employee personally performed
-                *    a tracking action.
-                */
-                    ->orWhereHas(
-                        'trackingHistories',
-                        function ($historyQuery) use ($employee) {
-
-                            $historyQuery->where(
-                                'employee_id',
-                                $employee->employee_id
-                            );
-                        }
-                    );
-            })
+            ->where(fn ($query) => $this->applyVisibility($query, $employee))
 
             /*
             * ==========================================================
@@ -465,5 +429,34 @@ class DocumentService
         $document->update($update);
 
         return $document->fresh();
+    }
+
+    /**
+     * One document with its full movement trail, for the detail view.
+     *
+     * Returns null when the employee is not allowed to see it, so the
+     * caller can answer 404 rather than leaking that it exists.
+     */
+    public function findForEmployee(int $documentId, $employee): ?Document
+    {
+        return Document::query()
+            ->with([
+                'status',
+                'currentSection',
+                'destinationSection',
+                'currentEmployee',
+                'creator.section',
+                'detailsCompletedBy',
+                'latestTrackingHistory',
+
+                'trackingHistories' => function ($query) {
+                    $query
+                        ->with(['fromSection', 'toSection', 'employee', 'status'])
+                        ->orderBy('tracked_at', 'asc');
+                },
+            ])
+            ->where('document_id', $documentId)
+            ->where(fn ($query) => $this->applyVisibility($query, $employee))
+            ->first();
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
 use App\Models\Document;
 use App\Models\Section;
 use App\Services\DocumentService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -219,6 +220,32 @@ class DocumentController extends Controller
                 'documents' => $documents,
             ]
         );
+    }
+
+    /**
+     * One document with its full movement trail, as JSON.
+     *
+     * The history list carries only a taxpayer and a date; this is what
+     * the browser asks for when someone opens a row. Loading the trail
+     * for every row instead would mean sending most of the archive on
+     * every page of history.
+     */
+    public function detail(
+        Document $document,
+        DocumentService $documentService
+    ): JsonResponse {
+        $found = $documentService->findForEmployee(
+            $document->document_id,
+            Auth::guard('employee')->user()
+        );
+
+        /*
+        * Not visible to this employee is answered the same as not
+        * existing, so the response does not confirm it is there.
+        */
+        abort_if($found === null, 404);
+
+        return response()->json(['document' => $found]);
     }
 
     /**
