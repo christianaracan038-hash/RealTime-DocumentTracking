@@ -133,6 +133,7 @@ class DocumentTrackingController extends Controller
         $sections = Section::query()
             ->whereNotIn('section_id', array_filter([
                 $employee->section_id,
+                $document->creator?->section_id,
             ]))
             ->orderBy('section_name')
             ->get([
@@ -147,10 +148,6 @@ class DocumentTrackingController extends Controller
             'mode' => 'forward',
             'document' => $document,
             'sections' => $sections,
-            'debug' => [
-                'employee_section_id' => $employee->section_id,
-                'creator_section_id' => $document->creator?->section_id,
-            ],
         ]);
     }
 
@@ -373,15 +370,15 @@ class DocumentTrackingController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            // $originSectionId = (int) $document->creator?->section_id;
+            $originSectionId = (int) $document->creator?->section_id;
 
-            // if ($originSectionId && $originSectionId === $toSectionId) {
-            //     return [
-            //         'success' => false,
-            //         'status' => 422,
-            //         'message' => 'This document came from that section. If the work is done, mark it as completed instead.',
-            //     ];
-            // }
+            if ($originSectionId && $originSectionId === $toSectionId) {
+                return [
+                    'success' => false,
+                    'status' => 422,
+                    'message' => 'This document came from that section. If the work is done, mark it as completed instead.',
+                ];
+            }
 
             /*
             |--------------------------------------------------------------------------
@@ -502,6 +499,23 @@ class DocumentTrackingController extends Controller
                     'success' => false,
                     'status' => 409,
                     'message' => 'Only a received document can be completed.',
+                ];
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | The paperwork has to be finished first.
+            |
+            | Closing a document whose referral details were never filled
+            | in would leave a permanent hole in the record.
+            |--------------------------------------------------------------------------
+            */
+
+            if ($document->details_completed_at === null) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'message' => 'This referral is still awaiting its details. Complete them before closing the document.',
                 ];
             }
 

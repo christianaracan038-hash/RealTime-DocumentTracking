@@ -34,6 +34,8 @@ class Document extends Model
 
         'received_at',
         'completed_at',
+        'details_completed_at',
+        'details_completed_by',
 
         'qr_value',
         'qr_path',
@@ -48,12 +50,14 @@ class Document extends Model
     protected $appends = [
         'waiting_since',
         'aging',
+        'awaiting_details',
     ];
 
     protected $casts = [
         'document_date' => 'date',
         'received_at' => 'datetime',
         'completed_at' => 'datetime',
+        'details_completed_at' => 'datetime',
         'qr_generated_at' => 'datetime',
     ];
 
@@ -89,6 +93,30 @@ class Document extends Model
         return $this->belongsTo(
             EmployeeAcc::class,
             'current_employee_id',
+            'employee_id'
+        );
+    }
+
+    /**
+     * Whether step 2 - the referral's details - is still outstanding.
+     *
+     * A referral awaiting its details is still Pending and can still be
+     * received and forwarded; only the paperwork is unfinished.
+     */
+    public function getAwaitingDetailsAttribute(): bool
+    {
+        return $this->details_completed_at === null;
+    }
+
+    /**
+     * Whoever filled in the details, which is usually not the person
+     * who registered the arrival.
+     */
+    public function detailsCompletedBy(): BelongsTo
+    {
+        return $this->belongsTo(
+            EmployeeAcc::class,
+            'details_completed_by',
             'employee_id'
         );
     }

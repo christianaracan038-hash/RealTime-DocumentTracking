@@ -17,7 +17,7 @@ export default function RecentReferralsTable({
     heading = "Recent registered referrals",
     subheading = "Referrals you registered, newest first.",
     action = null,
-    onCompleteDraft = null,
+    onCompleteDetails = null,
 }) {
     const [slipFor, setSlipFor] = useState(null);
 
@@ -29,10 +29,6 @@ export default function RecentReferralsTable({
 
         router.visit(url, { preserveState: true, preserveScroll: true });
     };
-
-    const isDraft = (document) =>
-        document.status?.status_name === "Draft" ||
-        Number(document.status_id) === 0;
 
     const th =
         "px-4 py-3 text-left text-xs font-semibold tracking-wider text-muted uppercase whitespace-nowrap";
@@ -85,10 +81,8 @@ export default function RecentReferralsTable({
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         <p className="text-lg font-bold text-navy-900">
-                                            {isDraft(document)
-                                                ? "Draft referral"
-                                                : (document.taxpayer_name ??
-                                                  "No taxpayer on record")}
+                                            {document.taxpayer_name ??
+                                                "No taxpayer on record"}
                                         </p>
                                         <p className="mt-0.5 font-mono text-sm text-muted">
                                             {document.tracking_number}
@@ -105,7 +99,7 @@ export default function RecentReferralsTable({
                                     </div>
                                 </div>
 
-                                {isDraft(document) ? (
+                                {document.awaiting_details ? (
                                     <p className="mt-4 text-base text-muted">
                                         QR generated{" "}
                                         {exactTime(
@@ -175,21 +169,21 @@ export default function RecentReferralsTable({
                                     </dl>
                                 )}
 
-                                {isDraft(document) ? (
-                                    onCompleteDraft ? (
+                                {document.awaiting_details ? (
+                                    onCompleteDetails ? (
                                         <EmployeeButton
                                             variant="secondary"
                                             onClick={() =>
-                                                onCompleteDraft(document)
+                                                onCompleteDetails(document)
                                             }
                                             className="mt-4 w-full"
                                         >
                                             <Icon name="register" />
-                                            Complete referral
+                                            Complete details
                                         </EmployeeButton>
                                     ) : (
                                         <p className="mt-4 text-center text-sm text-muted">
-                                            Awaiting completion by RDO.
+                                            Awaiting details from RDO.
                                         </p>
                                     )
                                 ) : (
@@ -247,25 +241,24 @@ export default function RecentReferralsTable({
                                     >
                                         <td className={td}>
                                             <p className="font-bold text-navy-900">
-                                                {isDraft(document)
-                                                    ? "Draft referral"
-                                                    : (document.taxpayer_name ??
-                                                      "No taxpayer on record")}
+                                                {document.taxpayer_name ??
+                                                    "No taxpayer on record"}
                                             </p>
                                             <p className="mt-0.5 text-sm text-muted">
-                                                {isDraft(document)
-                                                    ? "Not yet completed"
-                                                    : longDate(
-                                                          document.document_date,
-                                                      )}
-                                            </p>
-                                            <p className="text-sm text-muted">
-                                                QR generated{" "}
-                                                {exactTime(
-                                                    document.qr_generated_at ??
-                                                        document.created_at,
+                                                {longDate(
+                                                    document.document_date,
                                                 )}
                                             </p>
+                                            <p className="text-sm text-muted">
+                                                Registered{" "}
+                                                {exactTime(document.created_at)}
+                                            </p>
+
+                                            {document.awaiting_details && (
+                                                <span className="mt-1.5 inline-block rounded-full bg-accent-400 px-2.5 py-0.5 text-xs font-bold text-navy-900">
+                                                    Awaiting details
+                                                </span>
+                                            )}
                                         </td>
 
                                         <td className={td}>
@@ -328,21 +321,21 @@ export default function RecentReferralsTable({
                                         <td
                                             className={`${td} whitespace-nowrap`}
                                         >
-                                            {isDraft(document) ? (
-                                                onCompleteDraft ? (
+                                            {document.awaiting_details ? (
+                                                onCompleteDetails ? (
                                                     <EmployeeButton
                                                         variant="secondary"
                                                         onClick={() =>
-                                                            onCompleteDraft(
+                                                            onCompleteDetails(
                                                                 document,
                                                             )
                                                         }
                                                     >
-                                                        Complete referral
+                                                        Complete details
                                                     </EmployeeButton>
                                                 ) : (
                                                     <span className="text-sm text-muted">
-                                                        Awaiting RDO
+                                                        Awaiting details
                                                     </span>
                                                 )
                                             ) : (

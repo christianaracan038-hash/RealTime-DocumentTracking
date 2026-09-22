@@ -1,147 +1,217 @@
 import { useEffect, useState } from "react";
-import { router, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
+import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import Icon from "@/Components/Employee/Icon";
+import AgeBadge from "@/Components/Employee/AgeBadge";
 import { useNotice } from "@/Components/Employee/Notice";
 
-import ReferralFormModal from "@/Components/Employee/Referrals/ReferralFormModal";
+import ArrivalFormModal from "@/Components/Employee/Referrals/ArrivalFormModal";
+import DetailsFormModal from "@/Components/Employee/Referrals/DetailsFormModal";
+import ArrivalStubModal from "@/Components/Employee/Referrals/ArrivalStubModal";
 import RecentReferralsTable from "@/Components/Employee/Referrals/RecentReferralsTable";
+import {
+    addressedTo,
+    exactTime,
+} from "@/Components/Employee/Referrals/referral";
 
 /*
- * Referrals registered by this employee, on their own screen away from
- * the receiving queue.
+ * Referrals, registered in two steps.
  *
- * Arrived at from the dashboard's "New referral" button, which passes
- * ?new=1 so the form opens straight away. Cancelling the form leaves
- * the clerk here looking at the list; saving brings them back to it
- * with the new referral at the top, ready to add another.
+ * Step 1 - "Register arrival" - is done at the counter the moment a
+ * document lands. It takes four fields, starts the clock, and produces
+ * the QR, so the document can be forwarded the same morning. Its stub
+ * is printed and attached straight away.
  *
- * Registration is now two steps:
- * 1. "Generate QR" posts to documents.quick-create, which creates a
- *    draft document (tracking number + QR, timestamped right then)
- *    and redirects back here with ?new=1&draft={id}.
- * 2. The form opens already bound to that draft (draftDocument), and
- *    completing it PATCHes documents.complete for that same document
- *    instead of creating a new one. This step can also be reopened
- *    later — for any draft still sitting in the list — by clicking
- *    "Complete referral" on its row, not only right after Step 1.
- *
- * Only employees in an RDO section may complete a draft (canCompleteDrafts,
- * computed server-side from config('referral.draft_completion_sections')).
- * Everyone else sees "Awaiting RDO" instead of the action.
+ * Step 2 - "Complete details" - is done later, usually by someone else.
+ * Everything still waiting for it is listed at the top of this page, so
+ * nothing quietly sits half-finished.
  */
 export default function Index({
     referrals = [],
+    awaitingDetails = [],
     sections = [],
     referralOptions = {},
     fromSection = null,
     filters = {},
     openForm = false,
-    draftDocument = null,
-    canCompleteDrafts = false,
+    stubDocument = null,
+    canCompleteDetails = false,
 }) {
     const [registering, setRegistering] = useState(openForm);
-    const [generatingQr, setGeneratingQr] = useState(false);
-
-    /*
-     * The draft currently open in the form. Starts as whatever the
-     * server sent (a fresh Step 1 redirect); can also be set later by
-     * clicking "Complete referral" on any draft row in the table —
-     * including one generated earlier, by this employee or another
-     * in the same RDO section.
-     */
-    const [activeDraft, setActiveDraft] = useState(draftDocument);
+    const [completing, setCompleting] = useState(null);
+    const [stubFor, setStubFor] = useState(stubDocument);
 
     const { flash } = usePage().props;
     const { notify } = useNotice();
 
     /*
-     * Keyed on flash.id, which changes every time, so registering two
-     * referrals in a row raises two notices.
+     * Keyed on flash.id, which changes every time, so two registrations
+     * in a row raise two notices.
      */
     useEffect(() => {
         if (!flash?.success) return;
 
-        const latest = referrals?.data?.[0];
+        const subject = stubDocument ?? referrals?.data?.[0];
 
         notify({
-            title: "Referral registered",
+            title: stubDocument
+                ? "Arrival registered"
+                : "Referral details completed",
             message: flash.success,
-            details: latest
+            details: subject
                 ? [
-                      ["Taxpayer", latest.taxpayer_name],
-                      ["Reference no.", latest.tracking_number],
+                      ["Taxpayer", subject.taxpayer_name],
+                      ["Reference no.", subject.tracking_number],
                   ]
                 : [],
         });
     }, [flash?.id]);
 
-    /*
-     * A fresh draft arrived from Step 1 (quick-create redirected back
-     * here with ?new=1&draft={id}). Open the form on it.
-     */
-    useEffect(() => {
-        if (openForm && draftDocument) {
-            setActiveDraft(draftDocument);
-            setRegistering(true);
-        }
-    }, [openForm, draftDocument]);
-
-    const completeDraft = (document) => {
-        setActiveDraft(document);
-        setRegistering(true);
-    };
-
-    const closeForm = () => {
-        setRegistering(false);
-        setActiveDraft(null);
-    };
-
-    const generateQr = () => {
-        setGeneratingQr(true);
-
-        router.post(
-            route("documents.quick-create"),
-            {},
-            {
-                preserveScroll: true,
-                onFinish: () => setGeneratingQr(false),
-            },
-        );
-    };
+    // A fresh arrival: offer its stub for printing straight away.
+    useEffect(() => setStubFor(stubDocument), [stubDocument]);
 
     return (
         <EmployeeLayout title="Referrals">
-            <RecentReferralsTable
-                documents={referrals}
-                filters={filters}
-                only={["referrals", "filters"]}
-                heading="Recent registered referrals"
-                subheading="Referrals you registered, newest first."
-                onCompleteDraft={canCompleteDrafts ? completeDraft : null}
-                action={
-                    <EmployeeButton
-                        size="lg"
-                        onClick={generateQr}
-                        disabled={generatingQr}
-                        className="w-full sm:w-auto"
-                    >
-                        <Icon name="add" />
-                        {generatingQr ? "Generating..." : "Generate QR"}
-                    </EmployeeButton>
-                }
-            />
+            <div className="space-y-6">
+                {/* Step 2's worklist, so nothing sits half-finished */}
+                {awaitingDetails.length > 0 && (
+                    <EmployeeCard className="border-2 border-accent-400">
+                        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-xl font-bold text-navy-900">
+                                    Awaiting details
+                                </h2>
 
-            <ReferralFormModal
+                                <p className="mt-1 text-base text-muted">
+                                    Registered at the counter. The concerns and
+                                    remarks still need filling in.
+                                </p>
+                            </div>
+
+                            <span className="rounded-full bg-accent-400 px-4 py-1.5 text-base font-bold text-navy-900">
+                                {awaitingDetails.length} waiting
+                            </span>
+                        </div>
+
+                        <ul className="space-y-3">
+                            {awaitingDetails.map((document) => (
+                                <li
+                                    key={document.document_id}
+                                    className="rounded-xl border border-line p-4"
+                                >
+                                    <div className="flex flex-wrap items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="text-lg font-bold text-navy-900">
+                                                {document.taxpayer_name ??
+                                                    "No taxpayer on record"}
+                                            </p>
+
+                                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                                                <span className="font-mono">
+                                                    {document.tracking_number}
+                                                </span>
+                                                <span>
+                                                    Registered{" "}
+                                                    {exactTime(
+                                                        document.created_at,
+                                                    )}
+                                                </span>
+                                            </div>
+
+                                            <p className="mt-1 text-sm text-muted">
+                                                To{" "}
+                                                <span className="font-semibold text-navy-800">
+                                                    {addressedTo(document) ||
+                                                        "—"}
+                                                </span>
+                                            </p>
+
+                                            <AgeBadge
+                                                document={document}
+                                                className="mt-2"
+                                            />
+                                        </div>
+
+                                        <div className="flex flex-col gap-2 sm:flex-row">
+                                            <EmployeeButton
+                                                variant="quiet"
+                                                onClick={() =>
+                                                    setStubFor(document)
+                                                }
+                                            >
+                                                <Icon name="print" />
+                                                Stub
+                                            </EmployeeButton>
+
+                                            {canCompleteDetails ? (
+                                                <EmployeeButton
+                                                    onClick={() =>
+                                                        setCompleting(document)
+                                                    }
+                                                >
+                                                    <Icon name="register" />
+                                                    Complete details
+                                                </EmployeeButton>
+                                            ) : (
+                                                <span className="self-center text-sm text-muted">
+                                                    Awaiting details from RDO
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </EmployeeCard>
+                )}
+
+                <RecentReferralsTable
+                    documents={referrals}
+                    filters={filters}
+                    only={["referrals", "filters"]}
+                    heading="Recent registered referrals"
+                    subheading="Referrals you registered, newest first."
+                    onCompleteDetails={
+                        canCompleteDetails ? setCompleting : null
+                    }
+                    action={
+                        <EmployeeButton
+                            size="lg"
+                            onClick={() => setRegistering(true)}
+                            className="w-full sm:w-auto"
+                        >
+                            <Icon name="add" />
+                            Register arrival
+                        </EmployeeButton>
+                    }
+                />
+            </div>
+
+            <ArrivalFormModal
                 open={registering}
-                onClose={closeForm}
+                onClose={() => setRegistering(false)}
                 sections={sections}
                 options={referralOptions}
                 fromSection={fromSection}
-                document={activeDraft}
             />
+
+            <DetailsFormModal
+                open={Boolean(completing)}
+                onClose={() => setCompleting(null)}
+                document={completing}
+                sections={sections}
+                options={referralOptions}
+            />
+
+            {stubFor && (
+                <ArrivalStubModal
+                    document={stubFor}
+                    onClose={() => setStubFor(null)}
+                />
+            )}
         </EmployeeLayout>
     );
 }

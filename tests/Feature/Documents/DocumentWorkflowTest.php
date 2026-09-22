@@ -85,6 +85,14 @@ class DocumentWorkflowTest extends TestCase
             'current_employee_id' => $this->rdoStaff->employee_id,
             'destination_section_id' => $this->assessment->section_id,
             'created_by' => $this->rdoStaff->employee_id,
+
+            /*
+            * Registered and completed in one go. The two-step flow is
+            * covered in ReferralRegistrationTest; these tests are about
+            * movement, so the paperwork is already done.
+            */
+            'details_completed_at' => now(),
+            'details_completed_by' => $this->rdoStaff->employee_id,
         ]);
     }
 
