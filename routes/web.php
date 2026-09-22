@@ -98,6 +98,12 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::patch('/documents/{document}/complete', [DocumentController::class, 'complete'])
         ->name('documents.complete');
 
+    /*
+    * One document's full detail, fetched when a history row is opened.
+    */
+    Route::get('/documents/{document}/detail', [DocumentController::class, 'detail'])
+        ->name('documents.detail');
+
 });
 
 require __DIR__.'/auth.php';
