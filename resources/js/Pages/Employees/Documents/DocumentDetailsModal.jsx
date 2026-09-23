@@ -10,6 +10,9 @@ import {
 import AgeBadge from "@/Components/Employee/AgeBadge";
 import Icon from "@/Components/Employee/Icon";
 import { useNotice } from "@/Components/Employee/Notice";
+import EmployeeButton from "@/Components/Employee/EmployeeButton";
+import { urgencyOf } from "@/Components/Employee/urgency";
+import { waitedFor } from "@/Components/Employee/Referrals/referral";
 import { sectionLabel } from "@/Components/Employee/Referrals/referral";
 
 export default function DocumentDetailsModal({ document, onClose }) {
@@ -95,50 +98,75 @@ export default function DocumentDetailsModal({ document, onClose }) {
     const isReceived = status === "Received";
     const isPending = status === "Pending";
 
+    const urgency = urgencyOf(document);
+
     return (
         <>
             <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center">
-                <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b px-6 py-4">
-                        <h2 className="text-lg font-semibold text-slate-800">
-                            Document Details
-                        </h2>
-
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            aria-label="Close"
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-paper hover:text-slate-700"
-                        >
-                            <Icon name="close" />
-                        </button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="space-y-4 px-6 py-5">
-                        <div>
-                            <p className="text-xs font-medium text-slate-400">
-                                Taxpayer
-                            </p>
-
-                            <p className="text-lg font-semibold text-slate-900">
-                                {document.taxpayer_name ??
-                                    "No taxpayer on record"}
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-xs font-medium text-slate-400">
-                                    Reference No.
+                <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+                    {/*
+                     * The header states what this document needs, in the
+                     * colour of how urgent it is - so the dialog itself
+                     * carries the message rather than a badge inside it.
+                     */}
+                    <div
+                        className={`px-6 py-5 text-white ${
+                            isPending
+                                ? (urgency?.band ?? "bg-navy-900")
+                                : "bg-navy-900"
+                        }`}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold tracking-widest uppercase opacity-90">
+                                    {isPending
+                                        ? "Waiting for you to receive"
+                                        : isReceived
+                                          ? "On your desk"
+                                          : "Document"}
                                 </p>
 
-                                <p className="font-semibold text-slate-800">
+                                <h2 className="mt-1 text-2xl font-bold">
+                                    {document.taxpayer_name ??
+                                        "No taxpayer on record"}
+                                </h2>
+
+                                <p className="mt-1 font-mono text-sm opacity-90">
                                     {document.tracking_number}
                                 </p>
                             </div>
 
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                aria-label="Close"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white/80 transition hover:bg-white/15 hover:text-white"
+                            >
+                                <Icon name="close" />
+                            </button>
+                        </div>
+
+                        {/* How long it has been sitting there */}
+                        {isPending && document.aging && (
+                            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-white/15 px-4 py-3">
+                                <Icon
+                                    name={urgency?.icon ?? "date"}
+                                    className="text-xl"
+                                />
+
+                                <p className="text-base font-semibold">
+                                    Waiting {waitedFor(document.aging.hours)}
+                                    {document.aging.overdue
+                                        ? " - past the two-day limit"
+                                        : ""}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="space-y-4 px-6 py-5">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <p className="text-xs font-medium text-slate-400">
                                     Concern
@@ -253,51 +281,67 @@ export default function DocumentDetailsModal({ document, onClose }) {
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 border-t px-6 py-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                            Cancel
-                        </button>
-
-                        {/* Pending */}
-                        {isPending && (
-                            <button
-                                type="button"
+                    {/*
+                     * Pending: receiving is the only thing worth doing
+                     * here, so it is one large button across the dialog
+                     * rather than a small one competing in a row.
+                     */}
+                    {isPending && (
+                        <div className="border-t border-line bg-paper px-6 py-5">
+                            <EmployeeButton
+                                size="lg"
                                 onClick={() => setShowScanner(true)}
-                                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                                className="w-full"
                             >
                                 <Icon name="scan" />
-                                Receive Document
+                                Scan QR to receive this document
+                            </EmployeeButton>
+
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="mt-3 w-full text-base font-medium text-muted transition hover:text-navy-900"
+                            >
+                                Not now
                             </button>
-                        )}
+                        </div>
+                    )}
 
-                        {/* Received: forward it on, or end its journey here */}
-                        {isReceived && !confirmingComplete && (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={() => setConfirmingComplete(true)}
-                                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50"
-                                >
-                                    <Icon name="complete" />
-                                    Mark as Completed
-                                </button>
+                    {/* Received: forward it on, or end its journey here */}
+                    {isReceived && !confirmingComplete && (
+                        <div className="flex flex-col-reverse gap-3 border-t border-line bg-paper px-6 py-5 sm:flex-row sm:justify-end">
+                            <EmployeeButton variant="quiet" onClick={onClose}>
+                                Close
+                            </EmployeeButton>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setShowForwardModal(true)}
-                                    className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                                >
-                                    <Icon name="forward" />
-                                    Forward Document
-                                </button>
-                            </>
-                        )}
-                    </div>
+                            <EmployeeButton
+                                variant="secondary"
+                                onClick={() => setConfirmingComplete(true)}
+                            >
+                                <Icon name="complete" />
+                                Mark as completed
+                            </EmployeeButton>
+
+                            <EmployeeButton
+                                onClick={() => setShowForwardModal(true)}
+                            >
+                                <Icon name="forward" />
+                                Forward
+                            </EmployeeButton>
+                        </div>
+                    )}
+
+                    {isCompleted && (
+                        <div className="border-t border-line bg-paper px-6 py-5">
+                            <EmployeeButton
+                                variant="quiet"
+                                onClick={onClose}
+                                className="w-full"
+                            >
+                                Close
+                            </EmployeeButton>
+                        </div>
+                    )}
 
                     {/* Confirm before completing - there is no undo */}
                     {isReceived && confirmingComplete && (

@@ -43,14 +43,22 @@
     --color-accent-100: #f7ffb8;
 
     /* Neutrals, biased slightly blue so they sit with the navy */
-    --color-paper: #f4f6fc;
+    --color-paper: #eef2fa;
     --color-line: #e0e5f2;
     --color-muted: #626d8f;
 
     /* Status. Kept separate from the brand colours on purpose. */
+    --color-warn-700: #92400e;
+    --color-warn-600: #b45309;
+    --color-warn-500: #f59e0b;
+    --color-warn-100: #fef3c7;
+    --color-warn-50: #fffbeb;
+
     --color-ok-600: #0b8a5c;
     --color-ok-100: #d8f3e7;
+    --color-ok-50: #f1faf6;
     --color-stop-600: #c62828;
+    --color-stop-50: #fef4f4;
     --color-stop-100: #fbe2e2;
 
     --font-sans:
@@ -75,6 +83,24 @@
 
     body {
         background-color: var(--color-paper);
+
+        /*
+        * Two very faint washes of the brand colours, fixed so they do
+        * not travel with the scroll. Enough to give the page some depth
+        * without becoming a pattern anyone notices.
+        */
+        background-image:
+            radial-gradient(
+                1100px 600px at 100% -10%,
+                rgba(20, 0, 255, 0.07),
+                transparent 60%
+            ),
+            radial-gradient(
+                900px 500px at -10% 110%,
+                rgba(10, 17, 64, 0.06),
+                transparent 60%
+            );
+        background-attachment: fixed;
         color: var(--color-navy-900);
         font-size: 1rem;
         line-height: 1.6;
