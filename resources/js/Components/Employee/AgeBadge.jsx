@@ -1,61 +1,58 @@
+import Icon from "./Icon";
+import { urgencyOf } from "./urgency";
 import { exactTime, waitedFor } from "./Referrals/referral";
 
 /*
- * How long a document has been waiting, coloured against the office's
- * two-day target. Green under six hours, yellow up to a day, red past
- * that, and "Overdue" once it crosses the line.
+ * How long a document has been waiting, and whether that is a problem.
  *
- * Colour is never the only signal: the badge always carries the time
- * waited and, in the fuller form, the exact moment the wait began.
+ * Reads as a status, not a note: an icon, the word, and the time waited,
+ * on a filled pill. Overdue is filled solid with a pulsing dot, because
+ * it is the one state someone must not scroll past.
  *
- * `aging` and `waiting_since` come from the Document model, so every
- * screen agrees on the numbers.
+ * The colours come from urgency.js, so the badge, the queue card and the
+ * receive dialog all agree about what "late" looks like.
  */
 
-const BANDS = {
-    fresh: {
-        dot: "bg-ok-600",
-        pill: "bg-ok-100 text-ok-600",
-        label: "On time",
-    },
-    aging: {
-        dot: "bg-accent-600",
-        pill: "bg-accent-100 text-navy-900",
-        label: "Getting late",
-    },
-    late: {
-        dot: "bg-stop-600",
-        pill: "bg-stop-100 text-stop-600",
-        label: "Late",
-    },
+const SIZES = {
+    sm: "px-2.5 py-1 text-sm gap-1.5",
+    md: "px-3 py-1.5 text-base gap-2",
 };
 
 export default function AgeBadge({
     document,
     showSince = false,
+    size = "sm",
     className = "",
 }) {
-    const aging = document?.aging;
+    const urgency = urgencyOf(document);
 
-    if (!aging) return null;
+    if (!urgency) return null;
 
-    const band = BANDS[aging.band] ?? BANDS.fresh;
-    const label = aging.overdue ? "Overdue" : band.label;
+    const isOverdue = document.aging.overdue;
 
     return (
         <span
             className={`inline-flex flex-wrap items-center gap-x-2 gap-y-1 ${className}`}
         >
             <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold whitespace-nowrap ${band.pill} ${
-                    aging.overdue ? "ring-2 ring-stop-600" : ""
+                className={`inline-flex items-center rounded-full font-bold whitespace-nowrap ${
+                    urgency.pill
+                } ${SIZES[size] ?? SIZES.sm} ${
+                    isOverdue ? "ring-2 ring-stop-600 ring-offset-1" : ""
                 }`}
             >
-                <span
-                    aria-hidden="true"
-                    className={`h-2 w-2 rounded-full ${band.dot}`}
-                />
-                {label} &middot; {waitedFor(aging.hours)}
+                {isOverdue ? (
+                    <span
+                        className="relative flex h-2.5 w-2.5"
+                        aria-hidden="true"
+                    >
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                    </span>
+                ) : (
+                    <Icon name={urgency.icon} />
+                )}
+                {urgency.label} &middot; {waitedFor(document.aging.hours)}
             </span>
 
             {showSince && document.waiting_since && (
