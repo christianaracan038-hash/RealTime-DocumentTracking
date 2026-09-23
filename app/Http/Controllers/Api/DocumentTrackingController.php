@@ -14,6 +14,28 @@ use Illuminate\Support\Facades\DB;
 class DocumentTrackingController extends Controller
 {
     /**
+     * Terminal statuses — nothing can be received or forwarded once a
+     * document reaches one of these.
+     *
+     * 3 = Completed (requested action carried out)
+     * 4 = Archived (taxpayer unresponsive, closed out by Admin)
+     */
+    private const TERMINAL_STATUSES = [3, 4];
+
+    /**
+     * A short message for whichever terminal status a document is in,
+     * used wherever an action is blocked because of it.
+     */
+    private function terminalMessage(Document $document): string
+    {
+        return match ((int) $document->status_id) {
+            3 => 'This document has been completed. Nothing more to do.',
+            4 => 'This document has been archived. Nothing more to do.',
+            default => 'This document can no longer be moved.',
+        };
+    }
+
+    /**
      * Scan a document QR code.
      *
      * RECEIVE:
@@ -53,6 +75,13 @@ class DocumentTrackingController extends Controller
             ], 404);
         }
 
+        if (in_array((int) $document->status_id, self::TERMINAL_STATUSES, true)) {
+            return response()->json([
+                'message' => $this->terminalMessage($document),
+                'status' => $document->status?->status_name,
+            ], 409);
+        }
+
         /*
         |--------------------------------------------------------------------------
         | RECEIVE MODE
@@ -73,9 +102,7 @@ class DocumentTrackingController extends Controller
             // Pending = status_id 1
             if ((int) $document->status_id !== 1) {
                 return response()->json([
-                    'message' => (int) $document->status_id === 3
-                        ? 'This document has been completed. Nothing more to do.'
-                        : 'This document has already been received.',
+                    'message' => 'This document has already been received.',
                     'status' => $document->status?->status_name,
                 ], 409);
             }
@@ -97,9 +124,7 @@ class DocumentTrackingController extends Controller
         // Forwarding is only allowed if document is already received.
         if ((int) $document->status_id !== 2) {
             return response()->json([
-                'message' => (int) $document->status_id === 3
-                    ? 'This document has been completed. Nothing more to do.'
-                    : 'This document must be received before it can be forwarded.',
+                'message' => 'This document must be received before it can be forwarded.',
                 'status' => $document->status?->status_name,
             ], 409);
         }
@@ -123,17 +148,16 @@ class DocumentTrackingController extends Controller
         |--------------------------------------------------------------------------
         | Get sections available for forwarding.
         |
-        | Exclude:
-        | - the employee's own section (it is already here)
-        | - the section that registered it. A document does not go back
-        |   where it came from; once the work is done it is completed.
+        | Documents may travel back and forth freely — e.g. RDO to
+        | Assessment and back to RDO — so the only section excluded is
+        | the employee's own (a document cannot be "forwarded" to the
+        | section that already has it).
         |--------------------------------------------------------------------------
         */
 
         $sections = Section::query()
             ->whereNotIn('section_id', array_filter([
                 $employee->section_id,
-                $document->creator?->section_id,
             ]))
             ->orderBy('section_name')
             ->get([
@@ -179,6 +203,14 @@ class DocumentTrackingController extends Controller
                     'success' => false,
                     'status' => 404,
                     'message' => 'Document not found.',
+                ];
+            }
+
+            if (in_array((int) $document->status_id, self::TERMINAL_STATUSES, true)) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'message' => $this->terminalMessage($document),
                 ];
             }
 
@@ -267,6 +299,13 @@ class DocumentTrackingController extends Controller
 
     /**
      * Forward a received document to another section.
+     *
+     * A forward to Admin may instead archive the document outright
+     * (`archive: true`) when the taxpayer has gone unresponsive and
+     * there is nowhere further to route it — this closes the document
+     * out the same way Completed does, with no further movement.
+     * Otherwise, an optional `addressee` (e.g. "Chief", "Authorized &
+     * Chief") records who at the destination it is filed to.
      */
     public function forward(
         Request $request,
@@ -278,14 +317,25 @@ class DocumentTrackingController extends Controller
                 'integer',
                 'exists:sections,section_id',
             ],
+            'addressee' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'archive' => [
+                'nullable',
+                'boolean',
+            ],
         ]);
 
         $employee = Auth::guard('employee')->user();
+        $archiving = (bool) ($validated['archive'] ?? false);
 
         $result = DB::transaction(function () use (
             $document,
             $employee,
-            $validated
+            $validated,
+            $archiving
         ) {
 
             /*
@@ -310,6 +360,14 @@ class DocumentTrackingController extends Controller
                     'success' => false,
                     'status' => 404,
                     'message' => 'Document not found.',
+                ];
+            }
+
+            if (in_array((int) $document->status_id, self::TERMINAL_STATUSES, true)) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'message' => $this->terminalMessage($document),
                 ];
             }
 
@@ -363,26 +421,11 @@ class DocumentTrackingController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Cannot forward back to the section that registered it.
-            |
-            | The scan step already hides that section, but the rule is
-            | enforced here under the lock so it cannot be bypassed.
-            |--------------------------------------------------------------------------
-            */
-
-            $originSectionId = (int) $document->creator?->section_id;
-
-            if ($originSectionId && $originSectionId === $toSectionId) {
-                return [
-                    'success' => false,
-                    'status' => 422,
-                    'message' => 'This document came from that section. If the work is done, mark it as completed instead.',
-                ];
-            }
-
-            /*
-            |--------------------------------------------------------------------------
             | Get destination section.
+            |
+            | Documents may travel back and forth freely — e.g. RDO to
+            | Assessment and back to RDO — so there is no check here
+            | against the section that originally registered it.
             |--------------------------------------------------------------------------
             */
 
@@ -393,6 +436,53 @@ class DocumentTrackingController extends Controller
                     'success' => false,
                     'status' => 404,
                     'message' => 'Destination section not found.',
+                ];
+            }
+
+            if ($archiving) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Archive.
+                |
+                | Terminal, like Completed: the document is considered
+                | closed out right here — it does not need to be
+                | "received" by Admin first, since there is nothing more
+                | to do with it.
+                |--------------------------------------------------------------------------
+                */
+
+                $document->update([
+                    'current_section_id' => $toSectionId,
+                    'current_employee_id' => $employee->employee_id,
+                    'destination_section_id' => $toSectionId,
+                    'addressee' => 'Archived',
+                    'status_id' => 4,
+                    'received_at' => null,
+                ]);
+
+                TrackingHistory::create([
+                    'document_id' => $document->document_id,
+                    'from_section_id' => $fromSectionId,
+                    'to_section_id' => $toSectionId,
+                    'employee_id' => $employee->employee_id,
+                    'status_id' => 4,
+                    'action' => 'ARCHIVED',
+                    'remarks' => 'Taxpayer unresponsive. Document archived by '.
+                        $destinationSection->section_name.'.',
+                    'tracked_at' => now(),
+                ]);
+
+                return [
+                    'success' => true,
+                    'status' => 200,
+                    'message' => 'Document archived successfully.',
+                    'document' => $document->fresh([
+                        'status',
+                        'currentSection',
+                        'destinationSection',
+                        'currentEmployee',
+                    ]),
                 ];
             }
 
@@ -410,6 +500,7 @@ class DocumentTrackingController extends Controller
                 'current_section_id' => $fromSectionId,
                 'current_employee_id' => $employee->employee_id,
                 'destination_section_id' => $toSectionId,
+                'addressee' => $validated['addressee'] ?? $document->addressee,
                 'status_id' => 1,
                 'received_at' => null,
             ]);
@@ -486,11 +577,11 @@ class DocumentTrackingController extends Controller
                 ];
             }
 
-            if ((int) $document->status_id === 3) {
+            if (in_array((int) $document->status_id, self::TERMINAL_STATUSES, true)) {
                 return [
                     'success' => false,
                     'status' => 409,
-                    'message' => 'This document has already been completed.',
+                    'message' => $this->terminalMessage($document),
                 ];
             }
 

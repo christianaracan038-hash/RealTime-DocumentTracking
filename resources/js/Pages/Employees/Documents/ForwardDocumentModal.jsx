@@ -1,6 +1,16 @@
 import { useState } from "react";
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 
+/*
+ * Forwarding to Admin is a special case: a document lands there when
+ * the taxpayer has gone unresponsive and there is nowhere further to
+ * route it. Instead of the usual "who receives it" addressee, Admin
+ * needs to say whether this is being filed to a person (Chief /
+ * Authorized & Chief) or being archived outright — closed out, no
+ * further movement.
+ */
+const ADMIN_ACTIONS = ["Chief", "Authorized & Chief", "Archive"];
+
 export default function ForwardDocumentModal({
     document,
     onClose,
@@ -11,6 +21,7 @@ export default function ForwardDocumentModal({
     const [verifiedDocument, setVerifiedDocument] = useState(null);
     const [sections, setSections] = useState([]);
     const [selectedSectionId, setSelectedSectionId] = useState("");
+    const [adminAction, setAdminAction] = useState("");
 
     const [forwarding, setForwarding] = useState(false);
     const [error, setError] = useState(null);
@@ -19,6 +30,18 @@ export default function ForwardDocumentModal({
     if (!document) {
         return null;
     }
+
+    const selectedSection = sections.find(
+        (s) => String(s.section_id) === String(selectedSectionId),
+    );
+
+    const isAdminDestination =
+        selectedSection?.section_name?.toUpperCase() === "ADMIN";
+
+    const handleSectionChange = (value) => {
+        setSelectedSectionId(value);
+        setAdminAction("");
+    };
 
     const handleForward = async () => {
         if (!verifiedDocument) {
@@ -31,6 +54,11 @@ export default function ForwardDocumentModal({
             return;
         }
 
+        if (isAdminDestination && !adminAction) {
+            setError("Please choose Chief, Authorized & Chief, or Archive.");
+            return;
+        }
+
         try {
             setForwarding(true);
             setError(null);
@@ -38,6 +66,8 @@ export default function ForwardDocumentModal({
             const csrfToken = window.document
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content");
+
+            const isArchiving = isAdminDestination && adminAction === "Archive";
 
             const response = await fetch(
                 `/api/documents/${verifiedDocument.document_id}/forward`,
@@ -56,6 +86,12 @@ export default function ForwardDocumentModal({
                     },
                     body: JSON.stringify({
                         destination_section_id: selectedSectionId,
+                        addressee: isAdminDestination
+                            ? isArchiving
+                                ? null
+                                : adminAction
+                            : null,
+                        archive: isArchiving,
                     }),
                 },
             );
@@ -251,7 +287,7 @@ export default function ForwardDocumentModal({
                                     id="destination-section"
                                     value={selectedSectionId}
                                     onChange={(e) =>
-                                        setSelectedSectionId(e.target.value)
+                                        handleSectionChange(e.target.value)
                                     }
                                     disabled={forwarding}
                                     className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -278,6 +314,56 @@ export default function ForwardDocumentModal({
                             </div>
                         )}
 
+                        {/*
+                         * Admin-only follow-up: file to a person, or
+                         * archive outright because the taxpayer has
+                         * gone unresponsive and processing has stalled.
+                         */}
+                        {verifiedDocument && !success && isAdminDestination && (
+                            <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-4">
+                                <p className="text-sm font-semibold text-slate-800">
+                                    What should Admin do with this?
+                                </p>
+
+                                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                    {ADMIN_ACTIONS.map((option) => {
+                                        const selected = adminAction === option;
+
+                                        return (
+                                            <label
+                                                key={option}
+                                                className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 bg-white px-3 py-2 text-sm font-medium transition ${
+                                                    selected
+                                                        ? "border-blue-600 text-blue-700"
+                                                        : "border-slate-200 text-slate-700 hover:border-blue-200"
+                                                }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="admin-action"
+                                                    value={option}
+                                                    checked={selected}
+                                                    onChange={() =>
+                                                        setAdminAction(option)
+                                                    }
+                                                    className="h-4 w-4 text-blue-600"
+                                                />
+                                                {option}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+
+                                {adminAction === "Archive" && (
+                                    <p className="mt-3 text-sm text-amber-700">
+                                        Archiving closes this document out — no
+                                        further receiving or forwarding will be
+                                        possible.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* Error */}
                         {error && (
                             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -291,11 +377,15 @@ export default function ForwardDocumentModal({
                                 <div className="text-4xl">✓</div>
 
                                 <p className="mt-2 font-semibold text-green-700">
-                                    Document Forwarded Successfully
+                                    {adminAction === "Archive"
+                                        ? "Document Archived"
+                                        : "Document Forwarded Successfully"}
                                 </p>
 
                                 <p className="mt-1 text-sm text-green-600">
-                                    Tracking history has been recorded.
+                                    {adminAction === "Archive"
+                                        ? "This document is now closed out."
+                                        : "Tracking history has been recorded."}
                                 </p>
                             </div>
                         )}
@@ -317,12 +407,18 @@ export default function ForwardDocumentModal({
                                 <button
                                     type="button"
                                     onClick={handleForward}
-                                    disabled={forwarding || !selectedSectionId}
+                                    disabled={
+                                        forwarding ||
+                                        !selectedSectionId ||
+                                        (isAdminDestination && !adminAction)
+                                    }
                                     className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {forwarding
                                         ? "Forwarding..."
-                                        : "Forward Document"}
+                                        : adminAction === "Archive"
+                                          ? "Archive Document"
+                                          : "Forward Document"}
                                 </button>
                             )}
                         </div>
@@ -346,6 +442,7 @@ export default function ForwardDocumentModal({
                         setSections(availableSections || []);
 
                         setSelectedSectionId("");
+                        setAdminAction("");
                         setShowScanner(false);
                         setError(null);
                     }}
