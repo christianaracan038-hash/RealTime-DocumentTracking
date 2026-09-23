@@ -90,8 +90,8 @@ return [
     * spacing and all), since the check is a strict comparison. Add
     * more entries here if there is more than one RDO/ARDO section.
     */
-    'draft_completion_sections' => [
-        "RDO",
+    'details_completion_sections' => [
+        'RDO',
     ],
 
 ];

@@ -3,70 +3,12 @@
 namespace App\Services;
 
 use App\Models\Document;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DocumentService
 {
-    /**
-     * Register a new document.
-     */
-    public function register(array $data): Document
-    {
-        return DB::transaction(function () use ($data) {
-
-            $employee = Auth::guard('employee')->user();
-
-            $document = Document::create([
-
-                'tracking_number' => $this->generateTrackingNumber(),
-
-                'document_date' => $data['document_date'],
-
-                'taxpayer_name' => $data['taxpayer_name'],
-
-                'concern' => $this->joinChoices(
-                    $data['concerns'],
-                    $data['concern_other'] ?? null
-                ),
-
-                'referred_for' => $this->joinChoices(
-                    $data['referred_for'],
-                    $data['referred_for_other'] ?? null
-                ),
-
-                'remarks' => $data['remarks'] === 'Other'
-                    ? trim($data['remarks_other'])
-                    : $data['remarks'],
-
-                'status_id' => 1,
-
-                'current_section_id' => $employee->section_id,
-
-                'current_employee_id' => $employee->employee_id,
-
-                'destination_section_id' => $data['destination_section_id'],
-
-                'addressee' => $data['addressee'],
-
-                'created_by' => $employee->employee_id,
-
-                /*
-                * Copied from the sending section now, so the printed
-                * slip is unchanged if the section is recoded later.
-                */
-                'office_code' => $employee->section?->section_code,
-
-            ]);
-
-            $this->generateQrCode($document);
-
-            return $document;
-        });
-    }
-
     /**
      * Turn a list of ticked options into one line for the slip.
      *
@@ -169,37 +111,80 @@ class DocumentService
             ->withQueryString();
     }
 
+    /**
+     * Which documents an employee may see.
+     *
+     * Deliberately broad: anything they created, hold, or that is in or
+     * headed for their section, plus anything their section or they
+     * personally ever touched. A section that once handled a document
+     * keeps seeing it after it moves on.
+     *
+     * Shared by the history list and the detail endpoint, so opening a
+     * document can never show more than the list would.
+     */
+    public function applyVisibility($query, $employee)
+    {
+        return $query
+            /*
+            * 1. Created by this employee
+            */
+            ->where('created_by', $employee->employee_id)
+
+            /*
+            * 2. Currently held by this employee
+            */
+            ->orWhere('current_employee_id', $employee->employee_id)
+
+            /*
+            * 3. Currently inside employee's section
+            */
+            ->orWhere('current_section_id', $employee->section_id)
+
+            /*
+            * 4. Currently destined for employee's section
+            */
+            ->orWhere('destination_section_id', $employee->section_id)
+
+            /*
+            * 5. Employee's section appeared anywhere in the history.
+            *
+            * Records -> Accounting -> HR -> Legal: Accounting can
+            * still see the document.
+            */
+            ->orWhereHas('trackingHistories', function ($historyQuery) use ($employee) {
+                $historyQuery->where(function ($query) use ($employee) {
+                    $query
+                        ->where('from_section_id', $employee->section_id)
+                        ->orWhere('to_section_id', $employee->section_id);
+                });
+            })
+
+            /*
+            * 6. Employee personally performed a tracking action.
+            */
+            ->orWhereHas('trackingHistories', function ($historyQuery) use ($employee) {
+                $historyQuery->where('employee_id', $employee->employee_id);
+            });
+    }
+
     public function getHistoryDocuments($employee, ?string $search = null)
     {
         return Document::query()
+            /*
+            * Only what a row shows. The movement trail used to be
+            * loaded here for every document on the page, with four
+            * relations per trail row - most of it never looked at.
+            * It is fetched one document at a time now, by
+            * findForEmployee(), when someone opens that document.
+            */
             ->with([
-                /*
-                * Current document information
-                */
                 'status',
-                'currentSection',
-                'destinationSection',
-                'currentEmployee',
+
+                /*
+                * The aging accessor reads the last move; without this
+                * it would cost a query per row.
+                */
                 'latestTrackingHistory',
-
-                /*
-                * Original creator
-                */
-                'creator.section',
-
-                /*
-                * Complete movement history
-                */
-                'trackingHistories' => function ($query) {
-                    $query
-                        ->with([
-                            'fromSection',
-                            'toSection',
-                            'employee',
-                            'status',
-                        ])
-                        ->orderBy('tracked_at', 'asc');
-                },
             ])
 
             /*
@@ -207,86 +192,7 @@ class DocumentService
             * DOCUMENT VISIBILITY
             * ==========================================================
             */
-            ->where(function ($query) use ($employee) {
-
-                /*
-                * 1. Created by this employee
-                */
-                $query->where(
-                    'created_by',
-                    $employee->employee_id
-                )
-
-                /*
-                * 2. Currently held by this employee
-                */
-                    ->orWhere(
-                        'current_employee_id',
-                        $employee->employee_id
-                    )
-
-                /*
-                * 3. Currently inside employee's section
-                */
-                    ->orWhere(
-                        'current_section_id',
-                        $employee->section_id
-                    )
-
-                /*
-                * 4. Currently destined for employee's section
-                */
-                    ->orWhere(
-                        'destination_section_id',
-                        $employee->section_id
-                    )
-
-                /*
-                * 5. Employee's section appeared
-                *    anywhere in document history.
-                *
-                * Example:
-                *
-                * Records -> Accounting
-                * Accounting -> HR
-                * HR -> Legal
-                *
-                * Accounting can still see the document.
-                */
-                    ->orWhereHas(
-                        'trackingHistories',
-                        function ($historyQuery) use ($employee) {
-
-                            $historyQuery->where(function ($query) use ($employee) {
-
-                                $query
-                                    ->where(
-                                        'from_section_id',
-                                        $employee->section_id
-                                    )
-                                    ->orWhere(
-                                        'to_section_id',
-                                        $employee->section_id
-                                    );
-                            });
-                        }
-                    )
-
-                /*
-                * 6. Employee personally performed
-                *    a tracking action.
-                */
-                    ->orWhereHas(
-                        'trackingHistories',
-                        function ($historyQuery) use ($employee) {
-
-                            $historyQuery->where(
-                                'employee_id',
-                                $employee->employee_id
-                            );
-                        }
-                    );
-            })
+            ->where(fn ($query) => $this->applyVisibility($query, $employee))
 
             /*
             * ==========================================================
@@ -437,49 +343,62 @@ class DocumentService
         });
     }
 
-
-        /**
-     * Step 1 — create a draft document and generate its QR immediately.
+    /**
+     * Step 1 - register a document's arrival.
      *
-     * This is the moment the office's timer starts: tracking_number and
-     * qr_generated_at are produced here, before any of the referral's
-     * details (taxpayer, concerns, destination, etc.) are known. The
-     * draft is completed later via completeDraft(), which never touches
-     * qr_generated_at.
+     * This is the moment the office's clock starts. The tracking number
+     * and QR are produced here, with the routing facts read off the
+     * paper, so the document can be forwarded the same morning. The
+     * descriptive fields are filled in later by completeDetails(),
+     * which never touches the tracking number, the QR, or created_at.
      */
-    public function createDraft($employee): Document
+    public function register(array $data, $employee): Document
     {
-        return DB::transaction(function () use ($employee) {
+        return DB::transaction(function () use ($data, $employee) {
 
             $document = Document::create([
                 'tracking_number' => $this->generateTrackingNumber(),
-                'status_id' => 0, // Draft
+
+                'document_date' => $data['document_date'],
+                'taxpayer_name' => $data['taxpayer_name'],
+
+                'status_id' => 1, // Pending - routable straight away
+
                 'current_section_id' => $employee->section_id,
                 'current_employee_id' => $employee->employee_id,
+
+                'destination_section_id' => $data['destination_section_id'],
+                'addressee' => $data['addressee'],
+
                 'created_by' => $employee->employee_id,
+
+                /*
+                * Copied from the sending section now, so the printed
+                * slip is unchanged if the section is recoded later.
+                */
                 'office_code' => $employee->section?->section_code,
             ]);
 
             $this->generateQrCode($document);
 
-            return $document;
+            return $document->fresh();
         });
     }
 
     /**
-     * Step 2 — fill in a draft's referral details and register it.
+     * Step 2 - fill in a referral's details.
      *
-     * qr_generated_at (and the tracking number/QR themselves) are left
-     * exactly as Step 1 produced them — completing the form never resets
-     * the clock.
+     * Records who completed them and when, so the two halves of the
+     * work are both attributable. Any routing field that step 1 did
+     * not set is accepted here too, for referrals created by the
+     * earlier draft flow.
      */
-    public function completeDraft(Document $document, array $data): Document
-    {
-        $document->update([
-            'document_date' => $data['document_date'],
-
-            'taxpayer_name' => $data['taxpayer_name'],
-
+    public function completeDetails(
+        Document $document,
+        array $data,
+        $employee
+    ): Document {
+        $update = [
             'concern' => $this->joinChoices(
                 $data['concerns'],
                 $data['concern_other'] ?? null
@@ -494,12 +413,50 @@ class DocumentService
                 ? trim($data['remarks_other'])
                 : $data['remarks'],
 
-            'destination_section_id' => $data['destination_section_id'],
-            'addressee' => $data['addressee'],
+            'details_completed_at' => now(),
+            'details_completed_by' => $employee->employee_id,
+        ];
 
-            'status_id' => 1, // Pending
-        ]);
+        /*
+        * Catching up a referral the draft flow left bare.
+        */
+        foreach (['taxpayer_name', 'document_date', 'destination_section_id', 'addressee'] as $field) {
+            if (blank($document->{$field}) && filled($data[$field] ?? null)) {
+                $update[$field] = $data[$field];
+            }
+        }
+
+        $document->update($update);
 
         return $document->fresh();
+    }
+
+    /**
+     * One document with its full movement trail, for the detail view.
+     *
+     * Returns null when the employee is not allowed to see it, so the
+     * caller can answer 404 rather than leaking that it exists.
+     */
+    public function findForEmployee(int $documentId, $employee): ?Document
+    {
+        return Document::query()
+            ->with([
+                'status',
+                'currentSection',
+                'destinationSection',
+                'currentEmployee',
+                'creator.section',
+                'detailsCompletedBy',
+                'latestTrackingHistory',
+
+                'trackingHistories' => function ($query) {
+                    $query
+                        ->with(['fromSection', 'toSection', 'employee', 'status'])
+                        ->orderBy('tracked_at', 'asc');
+                },
+            ])
+            ->where('document_id', $documentId)
+            ->where(fn ($query) => $this->applyVisibility($query, $employee))
+            ->first();
     }
 }

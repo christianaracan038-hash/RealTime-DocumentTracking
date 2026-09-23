@@ -8,6 +8,7 @@ use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
 use App\Models\Document;
 use App\Models\Section;
 use App\Services\DocumentService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,13 +42,27 @@ class DocumentController extends Controller
 
         $search = $request->string('search')->toString();
 
-        $draftId = $request->integer('draft');
+        /*
+        * Arrivals whose details are still outstanding - the worklist
+        * for whoever does step 2.
+        */
+        $awaitingDetails = Document::query()
+            ->with(['destinationSection', 'creator.section', 'status'])
+            ->whereNull('details_completed_at')
+            ->where('current_section_id', $employee->section_id)
+            ->latest('created_at')
+            ->get();
 
-        $draftDocument = $draftId
+        /*
+        * A referral just registered, so its stub can be printed.
+        */
+        $stubId = $request->integer('stub');
+
+        $stubDocument = $stubId
             ? Document::query()
-                ->where('document_id', $draftId)
+                ->with(['destinationSection', 'creator.section'])
+                ->where('document_id', $stubId)
                 ->where('created_by', $employee->employee_id)
-                ->where('status_id', 0)
                 ->first()
             : null;
 
@@ -88,17 +103,18 @@ class DocumentController extends Controller
             */
             'openForm' => $request->boolean('new'),
 
-            'draftDocument' => $draftDocument,
+            'awaitingDetails' => $awaitingDetails,
+
+            'stubDocument' => $stubDocument,
 
             /*
-            * Only RDO-section employees may complete a draft's
-            * referral details. The frontend uses this to hide the
-            * "Complete referral" action for everyone else, instead
-            * of letting them hit a 403 after clicking it.
+            * Which sections may do step 2. The frontend uses this to
+            * hide the action for everyone else, rather than letting
+            * them hit a 403 after clicking it.
             */
-            'canCompleteDrafts' => in_array(
+            'canCompleteDetails' => in_array(
                 $employee->section?->section_name,
-                config('referral.draft_completion_sections', ['RDO']),
+                config('referral.details_completion_sections', ['RDO']),
                 true
             ),
         ]);
@@ -119,17 +135,18 @@ class DocumentController extends Controller
         StoreDocumentRequest $request,
         DocumentService $documentService
     ): RedirectResponse {
-        $documentService->register(
-            $request->validated()
+        $document = $documentService->register(
+            $request->validated(),
+            Auth::guard('employee')->user()
         );
 
         /*
-        * Back to the referrals list, where the new row is now at the
-        * top and another can be added.
+        * Back to the referrals list, where the new arrival is at the
+        * top waiting for its details, and its stub can be printed.
         */
         return redirect()
-            ->route('referrals.index')
-            ->with('success', 'Referral registered.');
+            ->route('referrals.index', ['stub' => $document->document_id])
+            ->with('success', 'Arrival registered. The clock has started.');
     }
 
     /**
@@ -206,34 +223,47 @@ class DocumentController extends Controller
     }
 
     /**
-     * Step 1 — generate a draft document with its tracking number and
-     * QR code. The referral's details are filled in afterward, via
-     * complete().
+     * One document with its full movement trail, as JSON.
+     *
+     * The history list carries only a taxpayer and a date; this is what
+     * the browser asks for when someone opens a row. Loading the trail
+     * for every row instead would mean sending most of the archive on
+     * every page of history.
      */
-    public function quickCreate(DocumentService $documentService): RedirectResponse
-    {
-        $employee = Auth::guard('employee')->user();
+    public function detail(
+        Document $document,
+        DocumentService $documentService
+    ): JsonResponse {
+        $found = $documentService->findForEmployee(
+            $document->document_id,
+            Auth::guard('employee')->user()
+        );
 
-        $document = $documentService->createDraft($employee);
+        /*
+        * Not visible to this employee is answered the same as not
+        * existing, so the response does not confirm it is there.
+        */
+        abort_if($found === null, 404);
 
-        return redirect()->route('referrals.index', [
-            'new' => 1,
-            'draft' => $document->document_id,
-        ]);
+        return response()->json(['document' => $found]);
     }
 
     /**
-     * Step 2 — complete a draft document's referral details.
+     * Step 2 - fill in a referral's details.
      */
     public function complete(
         CompleteDocumentRequest $request,
         Document $document,
         DocumentService $documentService
     ): RedirectResponse {
-        $documentService->completeDraft($document, $request->validated());
+        $documentService->completeDetails(
+            $document,
+            $request->validated(),
+            Auth::guard('employee')->user()
+        );
 
         return redirect()
             ->route('referrals.index')
-            ->with('success', 'Referral registered.');
+            ->with('success', 'Referral details completed.');
     }
 }

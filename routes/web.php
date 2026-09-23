@@ -95,11 +95,14 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::get('/documents/{document}/qr', [DocumentQrController::class, 'show'])
         ->name('documents.qr');
 
-    Route::post('/documents/quick-create', [DocumentController::class, 'quickCreate'])
-        ->name('documents.quick-create');
-
     Route::patch('/documents/{document}/complete', [DocumentController::class, 'complete'])
         ->name('documents.complete');
+
+    /*
+    * One document's full detail, fetched when a history row is opened.
+    */
+    Route::get('/documents/{document}/detail', [DocumentController::class, 'detail'])
+        ->name('documents.detail');
 
 });
 

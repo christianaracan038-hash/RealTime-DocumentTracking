@@ -422,6 +422,10 @@ class DocumentTrackingController extends Controller
             /*
             |--------------------------------------------------------------------------
             | Get destination section.
+            |
+            | Documents may travel back and forth freely — e.g. RDO to
+            | Assessment and back to RDO — so there is no check here
+            | against the section that originally registered it.
             |--------------------------------------------------------------------------
             */
 
@@ -586,6 +590,23 @@ class DocumentTrackingController extends Controller
                     'success' => false,
                     'status' => 409,
                     'message' => 'Only a received document can be completed.',
+                ];
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | The paperwork has to be finished first.
+            |
+            | Closing a document whose referral details were never filled
+            | in would leave a permanent hole in the record.
+            |--------------------------------------------------------------------------
+            */
+
+            if ($document->details_completed_at === null) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'message' => 'This referral is still awaiting its details. Complete them before closing the document.',
                 ];
             }
 

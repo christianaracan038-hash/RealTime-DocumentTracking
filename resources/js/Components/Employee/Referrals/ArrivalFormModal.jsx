@@ -4,39 +4,28 @@ import { useForm } from "@inertiajs/react";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import Icon from "@/Components/Employee/Icon";
 import DateField, { today } from "@/Components/Employee/DateField";
-import ChoiceGroup from "@/Components/Employee/ChoiceGroup";
 import { sectionLabel } from "./referral";
 
 /*
- * Referral registration - BIR Form 2309, Reference Slip.
+ * Step 1 - registering a document's arrival.
  *
- * A standalone modal. Fields follow the order a clerk reads them off the
- * paper. The reference number, QR code, sending section and office code
- * are produced by the system and shown read-only, so the clerk can see
- * them but never has to type them.
+ * Deliberately short. Four fields, all readable off the paper in
+ * seconds, so it can be done at the counter the moment the document
+ * lands instead of in the evening. Saving starts the clock and produces
+ * the tracking number and QR.
  *
- * Two ways this modal is used:
- * - `document` is null: a brand-new referral. Submitting POSTs to
- *   documents.store and creates the row from scratch.
- * - `document` is a draft (Step 1 already ran: it has a tracking_number
- *   and QR, status is "Draft"): this form only fills in the remaining
- *   details. Submitting PATCHes documents.complete for that document's
- *   id, and qr_generated_at is never touched.
+ * The descriptive fields - concerns, what is being asked for, remarks -
+ * are step 2, in DetailsFormModal.
  */
 
 const FIELD =
     "min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-navy-900 placeholder:text-muted focus:border-brand-600";
 
-function Field({ label, hint, error, required = false, children }) {
+function Field({ label, hint, error, children }) {
     return (
         <div>
             <label className="mb-1.5 block text-base font-semibold text-navy-800">
                 {label}
-                {!required && (
-                    <span className="ml-2 text-sm font-normal text-muted">
-                        optional
-                    </span>
-                )}
             </label>
 
             {hint && <p className="mb-2 text-sm text-muted">{hint}</p>}
@@ -52,51 +41,21 @@ function Field({ label, hint, error, required = false, children }) {
     );
 }
 
-function ReadOnly({ label, value }) {
-    return (
-        <div className="rounded-xl bg-paper px-4 py-3">
-            <p className="text-xs font-semibold tracking-wide text-muted uppercase">
-                {label}
-            </p>
-
-            <p className="mt-0.5 text-base font-semibold text-navy-900">
-                {value}
-            </p>
-        </div>
-    );
-}
-
-export default function ReferralFormModal({
+export default function ArrivalFormModal({
     open,
     onClose,
     sections = [],
     options = {},
     fromSection = null,
-    document = null,
 }) {
-    const {
-        data,
-        setData,
-        post,
-        patch,
-        processing,
-        errors,
-        reset,
-        clearErrors,
-    } = useForm({
-        document_date: document?.document_date ?? today(),
-        taxpayer_name: document?.taxpayer_name ?? "",
-        concerns: [],
-        concern_other: "",
-        referred_for: [],
-        referred_for_other: "",
-        remarks: "",
-        remarks_other: "",
-        destination_section_id: "",
-        addressee: "",
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            document_date: today(),
+            taxpayer_name: "",
+            destination_section_id: "",
+            addressee: "",
+        });
 
-    // Escape closes, like every other dialog.
     useEffect(() => {
         if (!open) return;
 
@@ -115,20 +74,14 @@ export default function ReferralFormModal({
     const submit = (e) => {
         e.preventDefault();
 
-        const opts = {
+        post(route("documents.store"), {
             preserveScroll: true,
             onSuccess: () => {
                 reset();
                 clearErrors();
                 onClose();
             },
-        };
-
-        if (document) {
-            patch(route("documents.complete", document.document_id), opts);
-        } else {
-            post(route("documents.store"), opts);
-        }
+        });
     };
 
     return (
@@ -136,22 +89,26 @@ export default function ReferralFormModal({
             className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:p-8"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="referral-form-title"
+            aria-labelledby="arrival-form-title"
         >
-            <div className="w-full max-w-2xl rounded-2xl bg-white">
-                {/* Header */}
+            <div className="w-full max-w-xl rounded-2xl bg-white">
                 <div className="flex items-start justify-between gap-4 border-b border-line px-7 py-5">
                     <div>
                         <p className="text-xs font-semibold tracking-widest text-brand-700 uppercase">
-                            BIR Form 2309 &middot; Reference Slip
+                            Step 1 of 2
                         </p>
 
                         <h2
-                            id="referral-form-title"
+                            id="arrival-form-title"
                             className="mt-1 text-2xl font-bold text-navy-900"
                         >
-                            Referral registration
+                            Register arrival
                         </h2>
+
+                        <p className="mt-1 text-base text-muted">
+                            Saving starts the clock and creates the QR code. The
+                            concerns and remarks can be filled in later.
+                        </p>
                     </div>
 
                     <button
@@ -166,36 +123,7 @@ export default function ReferralFormModal({
                 </div>
 
                 <form onSubmit={submit} className="space-y-6 px-7 py-6">
-                    {/* Produced by the system */}
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <ReadOnly
-                            label="Reference No."
-                            value={
-                                document?.tracking_number ?? "Assigned on save"
-                            }
-                        />
-
-                        {document?.qr_path ? (
-                            <div className="rounded-xl bg-paper px-4 py-3">
-                                <p className="text-xs font-semibold tracking-wide text-muted uppercase">
-                                    QR code
-                                </p>
-                                <img
-                                    src={`/${document.qr_path}`}
-                                    alt="Document QR code"
-                                    className="mt-1 h-14 w-14"
-                                />
-                            </div>
-                        ) : (
-                            <ReadOnly label="QR code" value="Created on save" />
-                        )}
-                    </div>
-
-                    <Field
-                        label="Taxpayer's Name"
-                        error={errors.taxpayer_name}
-                        required
-                    >
+                    <Field label="Taxpayer's Name" error={errors.taxpayer_name}>
                         <input
                             type="text"
                             value={data.taxpayer_name}
@@ -203,55 +131,12 @@ export default function ReferralFormModal({
                                 setData("taxpayer_name", e.target.value)
                             }
                             placeholder="e.g. Juan Dela Cruz"
+                            autoFocus
                             className={FIELD}
                         />
                     </Field>
 
-                    <Field
-                        label="Concerns"
-                        hint="Tick all that apply."
-                        error={errors.concerns}
-                        required
-                    >
-                        <ChoiceGroup
-                            name="concerns"
-                            multiple
-                            options={options.concerns ?? []}
-                            value={data.concerns}
-                            onChange={(v) => setData("concerns", v)}
-                            otherValue={data.concern_other}
-                            onOtherChange={(v) => setData("concern_other", v)}
-                            otherPlaceholder="What is the other concern?"
-                            otherError={errors.concern_other}
-                        />
-                    </Field>
-
-                    <Field
-                        label="For"
-                        hint="Action requested of the receiving office. Tick all that apply."
-                        error={errors.referred_for}
-                        required
-                    >
-                        <ChoiceGroup
-                            name="referred_for"
-                            multiple
-                            options={options.referred_for ?? []}
-                            value={data.referred_for}
-                            onChange={(v) => setData("referred_for", v)}
-                            otherValue={data.referred_for_other}
-                            onOtherChange={(v) =>
-                                setData("referred_for_other", v)
-                            }
-                            otherPlaceholder="What is the other action?"
-                            otherError={errors.referred_for_other}
-                        />
-                    </Field>
-
-                    <Field
-                        label="Date Issued"
-                        error={errors.document_date}
-                        required
-                    >
+                    <Field label="Date Issued" error={errors.document_date}>
                         <DateField
                             id="document_date"
                             value={data.document_date}
@@ -261,11 +146,9 @@ export default function ReferralFormModal({
                         />
                     </Field>
 
-                    {/* Where it goes, and to whom */}
                     <Field
                         label="Receiving Section"
                         error={errors.destination_section_id}
-                        required
                     >
                         <select
                             value={data.destination_section_id}
@@ -343,28 +226,14 @@ export default function ReferralFormModal({
                         </div>
                     )}
 
-                    <Field
-                        label="Remarks"
-                        hint="Where the document stands right now."
-                        error={errors.remarks}
-                        required
-                    >
-                        <ChoiceGroup
-                            name="remarks"
-                            options={options.remarks ?? []}
-                            value={data.remarks}
-                            onChange={(v) => setData("remarks", v)}
-                            otherValue={data.remarks_other}
-                            onOtherChange={(v) => setData("remarks_other", v)}
-                            otherPlaceholder="Describe the status"
-                            otherError={errors.remarks_other}
-                        />
-                    </Field>
-
-                    <ReadOnly
-                        label="From"
-                        value={fromSection ? sectionLabel(fromSection) : "—"}
-                    />
+                    <div className="rounded-xl bg-paper px-4 py-3">
+                        <p className="text-xs font-semibold tracking-wide text-muted uppercase">
+                            From
+                        </p>
+                        <p className="mt-0.5 text-base font-semibold text-navy-900">
+                            {fromSection ? sectionLabel(fromSection) : "—"}
+                        </p>
+                    </div>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-end">
                         <EmployeeButton
@@ -382,9 +251,7 @@ export default function ReferralFormModal({
                             disabled={processing}
                         >
                             <Icon name="register" />
-                            {processing
-                                ? "Registering..."
-                                : "Register referral"}
+                            {processing ? "Registering..." : "Register arrival"}
                         </EmployeeButton>
                     </div>
                 </form>
