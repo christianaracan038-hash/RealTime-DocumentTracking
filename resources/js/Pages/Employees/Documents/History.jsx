@@ -20,6 +20,12 @@ const formatPhilippineDateTime = (date) => {
     }).format(new Date(date));
 };
 
+/*
+ * Draft and Archived are stored as "gray"/"slate" in document_statuses
+ * so they read as neutral, not urgent — Draft hasn't started yet,
+ * Archived is deliberately closed out, neither is "waiting on someone"
+ * the way Pending is.
+ */
 const getStatusClasses = (color) => {
     switch (color) {
         case "green":
@@ -30,6 +36,10 @@ const getStatusClasses = (color) => {
 
         case "red":
             return "bg-red-100 text-red-700";
+
+        case "gray":
+        case "slate":
+            return "bg-slate-200 text-slate-600";
 
         default:
             return "bg-yellow-100 text-yellow-700";

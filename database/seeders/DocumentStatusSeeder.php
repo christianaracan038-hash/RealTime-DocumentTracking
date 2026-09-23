@@ -75,5 +75,24 @@ class DocumentStatusSeeder extends Seeder
             );
 
         }
+
+        /*
+        * Archived (status_id 4) — a taxpayer went unresponsive and the
+        * document has stalled with Admin. Like Completed, this is
+        * terminal: nothing can be received or forwarded after this.
+        * Inserted with an explicit status_id for the same reason as
+        * Draft above.
+        */
+        DB::table('document_statuses')->updateOrInsert(
+            [
+                'status_id' => 4,
+            ],
+            [
+                'status_name' => 'Archived',
+                'status_color' => 'slate',
+                'description' => 'Closed out by Admin — taxpayer unresponsive, no further movement.',
+                'sort_order' => 4,
+            ]
+        );
     }
 }
