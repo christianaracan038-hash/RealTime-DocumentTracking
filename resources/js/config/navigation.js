@@ -27,6 +27,14 @@ const sectionMenu = (dashboardRoute, extras = []) => [
     },
     ...extras,
     {
+        label: "Comments",
+        route: "comments.inbox",
+        icon: "comment",
+
+        // The number of notes nobody here has read yet.
+        badge: "unreadComments",
+    },
+    {
         label: "History",
         route: "documents.history",
         icon: "history",
@@ -53,8 +61,15 @@ const oversight = [
     },
 ];
 
+/*
+ * The RDO sends the notes rather than receiving them, so it gets the
+ * oversight screen in place of an inbox.
+ */
+const withoutInbox = (items) =>
+    items.filter((item) => item.route !== "comments.inbox");
+
 const navigation = {
-    RDO: sectionMenu("rdo.dashboard", oversight),
+    RDO: withoutInbox(sectionMenu("rdo.dashboard", oversight)),
     ASSESSMENT: sectionMenu("assessment.dashboard"),
     CSS: sectionMenu("css.dashboard"),
     COLLECTION: sectionMenu("collection.dashboard"),

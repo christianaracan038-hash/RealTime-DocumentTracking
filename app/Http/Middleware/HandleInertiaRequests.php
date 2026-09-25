@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\DocumentComment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -66,6 +67,18 @@ class HandleInertiaRequests extends Middleware
             'backgroundImage' => fn () => file_exists(public_path('images/login-bg.jpg'))
                 ? '/images/login-bg.jpg'
                 : null,
+
+            /*
+            * Notes addressed to this section that nobody has marked as
+            * read yet, for the count on the sidebar. One indexed count,
+            * and only while an employee is signed in.
+            */
+            'unreadComments' => fn () => $employee
+                ? DocumentComment::query()
+                    ->where('to_section_id', $employee->section_id)
+                    ->whereNull('acknowledged_at')
+                    ->count()
+                : 0,
 
             'auth' => [
                 'user' => $request->user(),

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\EmployeeAccountController;
 use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\Admin\Sections\SectionController;
+use App\Http\Controllers\Employee\Documents\CommentInboxController;
 use App\Http\Controllers\Employee\Documents\DocumentController;
 use App\Http\Controllers\Employee\Documents\DocumentQrController;
 use App\Http\Controllers\Employee\Documents\OversightController;
@@ -97,10 +98,14 @@ Route::middleware(['auth:employee'])->group(function () {
         ->name('archive.index');
 
     /*
-    * The other half of the conversation - the section that received a
-    * comment saying it has seen it.
+    * The other half of the conversation, and the one every section has:
+    * the notes addressed to your own section, and saying you have read
+    * one.
     */
-    Route::patch('/comments/{comment}/acknowledge', [OversightController::class, 'acknowledgeComment'])
+    Route::get('/comments/inbox', [CommentInboxController::class, 'index'])
+        ->name('comments.inbox');
+
+    Route::patch('/comments/{comment}/acknowledge', [CommentInboxController::class, 'acknowledge'])
         ->name('comments.acknowledge');
 
     Route::get('/documents/history', [DocumentController::class, 'history'])
