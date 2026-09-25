@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\Admin\Sections\SectionController;
 use App\Http\Controllers\Employee\Documents\DocumentController;
 use App\Http\Controllers\Employee\Documents\DocumentQrController;
+use App\Http\Controllers\Employee\Documents\OversightController;
 use App\Http\Controllers\Employee\SectionDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -81,6 +82,26 @@ Route::middleware(['auth:employee'])->group(function () {
     */
     Route::get('/referrals', [DocumentController::class, 'referrals'])
         ->name('referrals.index');
+
+    /*
+    * The RDO's oversight screens. Both check the section themselves,
+    * from config('referral.oversight_sections').
+    */
+    Route::get('/comments', [OversightController::class, 'comments'])
+        ->name('comments.index');
+
+    Route::post('/documents/{document}/comments', [OversightController::class, 'storeComment'])
+        ->name('comments.store');
+
+    Route::get('/archive', [OversightController::class, 'archive'])
+        ->name('archive.index');
+
+    /*
+    * The other half of the conversation - the section that received a
+    * comment saying it has seen it.
+    */
+    Route::patch('/comments/{comment}/acknowledge', [OversightController::class, 'acknowledgeComment'])
+        ->name('comments.acknowledge');
 
     Route::get('/documents/history', [DocumentController::class, 'history'])
         ->name('documents.history');

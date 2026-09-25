@@ -38,6 +38,12 @@ class SectionDashboardController extends Controller
                 'destinationSection',
                 'creator.section',
                 'latestTrackingHistory',
+
+                /*
+                * Notes the RDO has left about this document, so the
+                * section holding it can see why it is being chased.
+                */
+                'comments.author',
             ])
             ->where('destination_section_id', $employee->section_id)
             ->where('status_id', 1)

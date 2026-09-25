@@ -437,6 +437,27 @@ class DocumentService
      * Returns null when the employee is not allowed to see it, so the
      * caller can answer 404 rather than leaking that it exists.
      */
+    /**
+     * Documents closed out as archived - status_id 4.
+     *
+     * Same light shape as the history list: a row shows a taxpayer and
+     * a date, and the rest is fetched when one is opened.
+     */
+    public function getArchivedDocuments($employee, ?string $search = null)
+    {
+        return Document::query()
+            ->with(['status', 'latestTrackingHistory'])
+            ->where('status_id', 4)
+            ->where(fn ($query) => $this->applyVisibility($query, $employee))
+            ->when(
+                filled($search),
+                fn ($query) => $this->applySearch($query, $search)
+            )
+            ->latest('updated_at')
+            ->paginate(10)
+            ->withQueryString();
+    }
+
     public function findForEmployee(int $documentId, $employee): ?Document
     {
         return Document::query()
@@ -448,6 +469,8 @@ class DocumentService
                 'creator.section',
                 'detailsCompletedBy',
                 'latestTrackingHistory',
+                'comments.author',
+                'comments.toSection',
 
                 'trackingHistories' => function ($query) {
                     $query
