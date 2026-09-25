@@ -3,6 +3,7 @@ import { router } from "@inertiajs/react";
 
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 import ForwardDocumentModal from "./ForwardDocumentModal";
+import DocumentComments from "@/Components/Employee/Referrals/DocumentComments";
 import {
     addressedTo,
     exactTime,
@@ -166,6 +167,13 @@ export default function DocumentDetailsModal({ document, onClose }) {
 
                     {/* Content */}
                     <div className="space-y-4 px-6 py-5">
+                        {/*
+                         * Anything the RDO has said about this document
+                         * comes before the details - it is the reason
+                         * someone is looking at it.
+                         */}
+                        <DocumentComments document={document} />
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <p className="text-xs font-medium text-slate-400">

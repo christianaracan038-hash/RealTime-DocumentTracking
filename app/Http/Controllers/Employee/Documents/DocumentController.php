@@ -200,6 +200,7 @@ class DocumentController extends Controller
                 'currentEmployee',
                 'creator.section',
                 'latestTrackingHistory',
+                'comments.author',
             ])
             ->where(
                 'current_employee_id',

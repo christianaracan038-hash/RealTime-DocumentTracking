@@ -90,6 +90,15 @@ return [
     * spacing and all), since the check is a strict comparison. Add
     * more entries here if there is more than one RDO/ARDO section.
     */
+    /*
+    * Sections that may leave comments on documents held elsewhere, and
+    * see the archive. Most transactions start and end at the RDO, so it
+    * is the office that notices when something has stopped moving.
+    */
+    'oversight_sections' => [
+        'RDO',
+    ],
+
     'details_completion_sections' => [
         'RDO',
     ],

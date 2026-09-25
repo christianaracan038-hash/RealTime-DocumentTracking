@@ -2,12 +2,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faArrowRightArrowLeft,
     faBars,
+    faBoxArchive,
     faCalendarDays,
     faCheck,
     faChevronLeft,
     faChevronRight,
     faCircleCheck,
     faCircleInfo,
+    faCommentDots,
     faClipboardList,
     faClockRotateLeft,
     faFileLines,
@@ -44,6 +46,8 @@ const ICONS = {
     documents: faFileLines,
     referrals: faClipboardList,
     history: faClockRotateLeft,
+    archive: faBoxArchive,
+    comment: faCommentDots,
     menu: faBars,
 
     // Actions

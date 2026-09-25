@@ -9,7 +9,7 @@
  * there cannot log in, and one missing from here gets an empty sidebar.
  */
 
-const sectionMenu = (dashboardRoute) => [
+const sectionMenu = (dashboardRoute, extras = []) => [
     {
         label: "Dashboard",
         route: dashboardRoute,
@@ -25,6 +25,7 @@ const sectionMenu = (dashboardRoute) => [
         route: "documents.index",
         icon: "documents",
     },
+    ...extras,
     {
         label: "History",
         route: "documents.history",
@@ -32,8 +33,28 @@ const sectionMenu = (dashboardRoute) => [
     },
 ];
 
+/*
+ * The RDO's oversight screens, slotted in before History. Most
+ * transactions start and end there, so it is the office that chases
+ * documents stuck elsewhere and keeps the archive. Both routes check
+ * the section server-side too; this only keeps them out of everyone
+ * else's sidebar.
+ */
+const oversight = [
+    {
+        label: "Comments",
+        route: "comments.index",
+        icon: "comment",
+    },
+    {
+        label: "Archive",
+        route: "archive.index",
+        icon: "archive",
+    },
+];
+
 const navigation = {
-    RDO: sectionMenu("rdo.dashboard"),
+    RDO: sectionMenu("rdo.dashboard", oversight),
     ASSESSMENT: sectionMenu("assessment.dashboard"),
     CSS: sectionMenu("css.dashboard"),
     COLLECTION: sectionMenu("collection.dashboard"),

@@ -130,6 +130,18 @@ class Document extends Model
         );
     }
 
+    /**
+     * Notes the RDO has left about this document.
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(
+            DocumentComment::class,
+            'document_id',
+            'document_id'
+        )->latest('created_at');
+    }
+
     public function trackingHistories(): HasMany
     {
         return $this->hasMany(
