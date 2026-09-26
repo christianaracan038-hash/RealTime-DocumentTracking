@@ -7,6 +7,7 @@ use App\Http\Controllers\Employee\Documents\CommentInboxController;
 use App\Http\Controllers\Employee\Documents\DocumentController;
 use App\Http\Controllers\Employee\Documents\DocumentQrController;
 use App\Http\Controllers\Employee\Documents\OversightController;
+use App\Http\Controllers\Employee\Documents\RegistrationDeskController;
 use App\Http\Controllers\Employee\SectionDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -61,14 +62,22 @@ Route::middleware('auth')->group(function () {
 
 foreach (config('section') as $sectionName => $dashboard) {
 
-    Route::middleware(['auth:employee', 'section:'.$sectionName])
+    Route::middleware(['auth:employee', 'desk', 'section:'.$sectionName])
         ->get($dashboard['path'], [SectionDashboardController::class, 'index'])
         ->defaults('page', $dashboard['page'])
         ->name($dashboard['route']);
 
 }
 
-Route::middleware(['auth:employee'])->group(function () {
+Route::middleware(['auth:employee', 'desk'])->group(function () {
+
+    /*
+    * Step 1, on its own screen for the account that does nothing else.
+    * The 'desk' middleware sends a counter account back here from
+    * anywhere else in the portal.
+    */
+    Route::get('/registration', [RegistrationDeskController::class, 'index'])
+        ->name('registration.index');
 
     Route::get('/documents/create', [DocumentController::class, 'create'])
         ->name('documents.create');

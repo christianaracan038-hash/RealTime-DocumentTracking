@@ -2,11 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Section;
-use App\Models\Role;
 
 class EmployeeAcc extends Authenticatable
 {
@@ -47,7 +45,7 @@ class EmployeeAcc extends Authenticatable
 
     public function section()
     {
-        return $this->belongsTo(Section::class, 'section_id','section_id');
+        return $this->belongsTo(Section::class, 'section_id', 'section_id');
     }
 
     public function role()
@@ -55,5 +53,21 @@ class EmployeeAcc extends Authenticatable
         return $this->belongsTo(Role::class, 'role_id', 'role_id');
     }
 
-    
+    /**
+     * Whether this account only registers arrivals (step 1).
+     *
+     * The RDO counter runs on two accounts: one registers a document as
+     * the taxpayer hands it over, the other fills in the referral
+     * details afterwards. A counter account is given one of the roles in
+     * config('referral.registration_roles') and sees nothing but the
+     * registration desk.
+     */
+    public function registersOnly(): bool
+    {
+        return in_array(
+            $this->role?->role_name,
+            config('referral.registration_roles', []),
+            true
+        );
+    }
 }

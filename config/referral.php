@@ -103,4 +103,21 @@ return [
         'RDO',
     ],
 
+    /*
+    * Roles whose accounts do step 1 and nothing else.
+    *
+    * The RDO runs the counter with two accounts: one registers arrivals
+    * as taxpayers walk in, the other fills in the referral details
+    * later. An account with one of these roles sees only the
+    * registration desk - no dashboard, no queue, no history of other
+    * sections' work - because at the counter there is no time to read
+    * any of it.
+    *
+    * Must match `roles.role_name` exactly. The admin assigns the role
+    * when creating the account; RoleSeeder creates the role itself.
+    */
+    'registration_roles' => [
+        'Registration',
+    ],
+
 ];

@@ -3,7 +3,7 @@ import { Link, usePage } from "@inertiajs/react";
 import UserInfo from "./UserInfo";
 import Logos from "./Logos";
 import Icon from "./Icon";
-import navigation from "@/config/navigation";
+import navigation, { registrationMenu } from "@/config/navigation";
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
     const props = usePage().props;
@@ -17,9 +17,11 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
      * been built yet. Ziggy's route() throws on an unregistered name, so
      * those entries are dropped rather than crashing the whole sidebar.
      */
-    const menuItems = (navigation[sectionName] ?? []).filter((item) =>
-        route().has(item.route),
-    );
+    const menuItems = (
+        auth?.employee?.registers_only
+            ? registrationMenu
+            : (navigation[sectionName] ?? [])
+    ).filter((item) => route().has(item.route));
 
     return (
         <>

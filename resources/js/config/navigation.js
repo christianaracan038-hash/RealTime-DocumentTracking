@@ -19,6 +19,9 @@ const sectionMenu = (dashboardRoute, extras = []) => [
         label: "Referrals",
         route: "referrals.index",
         icon: "referrals",
+
+        // Arrivals registered at the counter, still to be completed.
+        badge: "awaitingDetailsCount",
     },
     {
         label: "Documents",
@@ -67,6 +70,18 @@ const oversight = [
  */
 const withoutInbox = (items) =>
     items.filter((item) => item.route !== "comments.inbox");
+
+/*
+ * A counter account's whole menu. Registering an arrival is all it does,
+ * so there is one entry and nothing to choose between.
+ */
+export const registrationMenu = [
+    {
+        label: "Register a referral",
+        route: "registration.index",
+        icon: "register",
+    },
+];
 
 const navigation = {
     RDO: withoutInbox(sectionMenu("rdo.dashboard", oversight)),

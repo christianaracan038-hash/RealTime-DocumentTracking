@@ -43,35 +43,27 @@ class DocumentController extends Controller
         $search = $request->string('search')->toString();
 
         /*
-        * Arrivals whose details are still outstanding - the worklist
-        * for whoever does step 2.
+        * The whole of this page: arrivals registered at the counter
+        * whose details are still outstanding. Everything else a section
+        * has registered is in History - here there is only work that is
+        * not finished.
+        *
+        * Paginated, because a referral only leaves this list when
+        * somebody completes it, and a bad week can leave a lot of them.
         */
         $awaitingDetails = Document::query()
-            ->with(['destinationSection', 'creator.section', 'status'])
+            ->with(['destinationSection', 'creator.section', 'status', 'latestTrackingHistory'])
             ->whereNull('details_completed_at')
             ->where('current_section_id', $employee->section_id)
-            ->latest('created_at')
-            ->get();
-
-        /*
-        * A referral just registered, so its stub can be printed.
-        */
-        $stubId = $request->integer('stub');
-
-        $stubDocument = $stubId
-            ? Document::query()
-                ->with(['destinationSection', 'creator.section'])
-                ->where('document_id', $stubId)
-                ->where('created_by', $employee->employee_id)
-                ->first()
-            : null;
+            ->when(
+                filled($search),
+                fn ($query) => $documentService->applySearch($query, $search)
+            )
+            ->oldest('created_at')
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Employees/Referrals/Index', [
-            'referrals' => $documentService->getRegisteredDocuments(
-                $employee,
-                $search
-            ),
-
             /*
             * A referral cannot be addressed to the section sending it.
             */
@@ -104,8 +96,6 @@ class DocumentController extends Controller
             'openForm' => $request->boolean('new'),
 
             'awaitingDetails' => $awaitingDetails,
-
-            'stubDocument' => $stubDocument,
 
             /*
             * Which sections may do step 2. The frontend uses this to
@@ -141,12 +131,18 @@ class DocumentController extends Controller
         );
 
         /*
-        * Back to the referrals list, where the new arrival is at the
-        * top waiting for its details, and its stub can be printed.
+        * Straight back where they were - the desk for a counter
+        * account, the referrals list for everyone else - with the new
+        * arrival at the top of it.
+        *
+        * Nothing is printed here. Step 1 has not decided where the
+        * document goes, so there is no slip to attach yet; the QR
+        * leaves on the reference slip once step 2 is done.
         */
-        return redirect()
-            ->route('referrals.index', ['stub' => $document->document_id])
-            ->with('success', 'Arrival registered. The clock has started.');
+        return back()->with(
+            'success',
+            'Arrival registered. The clock has started.'
+        );
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Document;
 use App\Models\DocumentComment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -80,6 +81,19 @@ class HandleInertiaRequests extends Middleware
                     ->count()
                 : 0,
 
+            /*
+            * Arrivals registered at the counter that still need their
+            * details, for the count on the Referrals menu entry. The
+            * name is not 'awaitingDetails': the referrals page sends a
+            * list under that key, and a page prop would win over this.
+            */
+            'awaitingDetailsCount' => fn () => $employee
+                ? Document::query()
+                    ->whereNull('details_completed_at')
+                    ->where('current_section_id', $employee->section_id)
+                    ->count()
+                : 0,
+
             'auth' => [
                 'user' => $request->user(),
 
@@ -89,6 +103,12 @@ class HandleInertiaRequests extends Middleware
                         'username' => $employee->username,
                         'section_id' => $employee->section_id,
                         'section_name' => $employee->section?->section_name,
+
+                        /*
+                        * A counter account gets the registration desk in
+                        * place of the rest of the portal.
+                        */
+                        'registers_only' => $employee->registersOnly(),
                     ]
                     : null,
             ],
