@@ -105,6 +105,14 @@ class HandleInertiaRequests extends Middleware
                         'section_name' => $employee->section?->section_name,
 
                         /*
+                        * Your own name and title - "Atty. John Dela
+                        * Cruz" - so the portal can say who is signed in
+                        * rather than showing a username back at them.
+                        */
+                        'display_name' => $employee->display_name,
+                        'position' => $employee->position,
+
+                        /*
                         * A counter account gets the registration desk in
                         * place of the rest of the portal.
                         */

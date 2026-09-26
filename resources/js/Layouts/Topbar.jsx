@@ -56,6 +56,14 @@ export default function Topbar() {
                             >
                                 Roles
                             </NavLink>
+                            <NavLink
+                                href={route("admin.administrators.index")}
+                                active={route().current(
+                                    "admin.administrators.*",
+                                )}
+                            >
+                                Administrators
+                            </NavLink>
                         </div>
                     </div>
 
@@ -173,6 +181,12 @@ export default function Topbar() {
                         active={route().current("roles.*")}
                     >
                         Roles
+                    </ResponsiveNavLink>
+                    <ResponsiveNavLink
+                        href={route("admin.administrators.index")}
+                        active={route().current("admin.administrators.*")}
+                    >
+                        Administrators
                     </ResponsiveNavLink>
                 </div>
 

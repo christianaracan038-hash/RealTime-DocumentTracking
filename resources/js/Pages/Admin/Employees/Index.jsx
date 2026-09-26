@@ -1,62 +1,90 @@
+import { useEffect, useRef, useState } from "react";
+import { Head, router, useForm, usePage } from "@inertiajs/react";
+
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, usePage, router } from "@inertiajs/react";
-import { useState } from "react";
 import EmployeeForm from "./Components/EmployeeForm";
 import EmployeeTable from "./Components/EmployeeTable";
+import EditEmployeeModal from "./Components/EditEmployeeModal";
+import PasswordModal from "../Components/PasswordModal";
 
-const createEmployeeForm = () => ({
-    username: "",
-    password: "",
-    password_confirmation: "",
-    section_id: "",
-    role_id: "",
-    is_active: true,
-});
+/*
+ * Employee accounts.
+ *
+ * Creating one was all this page could do. An account could not be
+ * corrected, switched off, or given a new password - so a forgotten
+ * password had no remedy at all, and somebody who left the office kept
+ * their access.
+ */
+export default function Index() {
+    const { employees, sections, roles, filters, flash } = usePage().props;
 
-function FormCard({ title, description, badge, children }) {
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-center justify-between gap-3">
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-900">
-                        {title}
-                    </h3>
-                    <p className="text-sm text-slate-500">{description}</p>
-                </div>
-                <div className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
-                    {badge}
-                </div>
-            </div>
-            {children}
-        </div>
-    );
-}
+    const [editing, setEditing] = useState(null);
+    const [changingPassword, setChangingPassword] = useState(null);
+    const [search, setSearch] = useState(filters?.search ?? "");
 
-export default function Dashboard() {
-    const { employees, sections, roles, flash, errors } = usePage().props;
-    const [employeeForm, setEmployeeForm] = useState(createEmployeeForm);
-    const [feedback, setFeedback] = useState(null);
+    const createForm = useForm({
+        username: "",
+        full_name: "",
+        position: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
+        section_id: "",
+        role_id: "",
+        is_active: true,
+    });
 
-    const handleFieldChange = (setter) => (event) => {
+    // Search runs in the database, so a match is found whatever it matches on.
+    const firstRender = useRef(true);
+
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            router.get(
+                route("admin.dashboard"),
+                { search: search || undefined },
+                { preserveState: true, preserveScroll: true, replace: true },
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    const handleFieldChange = (event) => {
         const { name, value, type, checked } = event.target;
-        setter((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
+
+        createForm.setData(name, type === "checkbox" ? checked : value);
     };
 
     const handleSubmit = (event) => {
         event.preventDefault();
 
-        console.log("handleSubmit");
-
-        router.post(route("admin.employees.store"), employeeForm, {
-            onSuccess: () => {
-                setEmployeeForm(createEmployeeForm());
-                setFeedback(null);
-            },
+        createForm.post(route("admin.employees.store"), {
+            preserveScroll: true,
+            onSuccess: () => createForm.reset(),
         });
     };
+
+    const setActive = (employee, isActive) => {
+        const verb = isActive ? "let back in" : "stop from signing in";
+
+        if (!window.confirm(`${employee.display_name} will be ${verb}.`)) {
+            return;
+        }
+
+        router.patch(
+            route("admin.employees.active", employee.employee_id),
+            { is_active: isActive },
+            { preserveScroll: true },
+        );
+    };
+
+    const withoutName = employees.filter((e) => !e.full_name).length;
 
     return (
         <AuthenticatedLayout
@@ -64,20 +92,22 @@ export default function Dashboard() {
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 className="text-xl font-semibold leading-tight text-slate-900">
-                            Admin Management
+                            Employee Accounts
                         </h2>
+
                         <p className="text-sm text-slate-500">
-                            Create and manage employee accounts, sections, and
-                            roles from one clean dashboard.
+                            Who works here, what they can reach, and whether
+                            they can sign in.
                         </p>
                     </div>
+
                     <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
-                        {employees.length} active accounts
+                        {employees.filter((e) => e.is_active).length} active
                     </div>
                 </div>
             }
         >
-            <Head title="Admin Management" />
+            <Head title="Employee Accounts" />
 
             <div className="bg-slate-50 py-8">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -87,26 +117,64 @@ export default function Dashboard() {
                         </div>
                     )}
 
-                    {feedback && (
-                        <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                            {feedback.message}
+                    {/*
+                     * The accounts that predate the name columns. Every
+                     * screen naming a person falls back to their username
+                     * until somebody fills these in.
+                     */}
+                    {withoutName > 0 && (
+                        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            <strong>{withoutName}</strong> account
+                            {withoutName === 1 ? " has" : "s have"} no name on
+                            file, so the system still shows a username where it
+                            should show a person. Edit each one to add it.
                         </div>
                     )}
 
-                    <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+                    <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
                         <EmployeeForm
-                            form={employeeForm}
+                            form={createForm.data}
                             sections={sections}
                             roles={roles}
-                            errors={errors}
-                            handleChange={handleFieldChange(setEmployeeForm)}
+                            errors={createForm.errors}
+                            processing={createForm.processing}
+                            handleChange={handleFieldChange}
                             handleSubmit={handleSubmit}
                         />
 
-                        <EmployeeTable employees={employees} />
+                        <EmployeeTable
+                            employees={employees}
+                            search={search}
+                            onSearch={setSearch}
+                            onEdit={setEditing}
+                            onResetPassword={setChangingPassword}
+                            onSetActive={setActive}
+                        />
                     </div>
                 </div>
             </div>
+
+            <EditEmployeeModal
+                open={Boolean(editing)}
+                onClose={() => setEditing(null)}
+                employee={editing}
+                sections={sections}
+                roles={roles}
+            />
+
+            <PasswordModal
+                open={Boolean(changingPassword)}
+                onClose={() => setChangingPassword(null)}
+                account={changingPassword}
+                action={
+                    changingPassword
+                        ? route(
+                              "admin.employees.password",
+                              changingPassword.employee_id,
+                          )
+                        : ""
+                }
+            />
         </AuthenticatedLayout>
     );
 }

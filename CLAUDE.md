@@ -74,8 +74,11 @@ Every receive/forward/complete writes a `tracking_histories` row (`from_section_
 ## Gotchas
 
 - Model primary keys are **not** `id`: `document_id`, `employee_id`, `section_id`, `role_id`, `status_id`, `tracking_history_id`. Relationships must name both foreign and owner keys explicitly.
-- `employees_acc` has **no `employee_name` column** — only `username`. Do not select or display `employee_name`; a rewrite once did and it returned `null` everywhere.
-- `/test-web-auth` in `routes/web.php` is an unguarded session-dump debug route. Remove before deployment.
+- `employees_acc` has no `employee_name` column. The name columns are **`full_name`** and **`position`** (plus `email`), and `EmployeeAcc::$display_name` assembles them into "Atty. John Dela Cruz", falling back to `username` for the accounts that predate them. Never select `employee_name`; a rewrite once did and it returned `null` everywhere.
+- **`full_name`, `position` and `email` are in `$hidden`, and `display_name` is deliberately not in `$appends`.** An employee is serialised as a document's creator, a comment's author and a movement's employee — payloads that go to other sections, and the office asked for names to stay inside the section. A caller entitled to them says so: `->makeVisible([...])` / `->append('display_name')` (the admin panel), or `nameVisibleTo($viewer)`, which returns `null` unless the viewer shares the section. There is a test pinning this.
+- Individual names never reach the printed slip. The referral's `addressee` stays the fixed `config/referral.php` list ("Chief", "Authorized & Chief") — a data-privacy decision by the office, not an oversight.
+- There is **one administrator tier**. Any `users` row can manage every account; the office holds one and the developers hold others until handover. Deactivating (not deleting) is how access ends, and `AdministratorController` refuses to switch off your own account or the last active one.
+- `is_active` is enforced inside `LoginRequest` by being part of the credentials passed to `attempt()`, on **both** guards. Adding a login path elsewhere means enforcing it again.
 - `DocumentController::index()` is unrouted dead code; `documents()` (route `documents.index`) renders the held-documents list.
 - `resources/boostrap.js` is spelled that way and is what `app.jsx` imports.
 - The shell default `php` may be 8.2; the project needs 8.3. A shim at `~/bin/php` points at Laragon's 8.3 for Git Bash tool calls.

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdministratorController;
 use App\Http\Controllers\Admin\EmployeeAccountController;
 use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\Admin\Sections\SectionController;
@@ -33,7 +34,44 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/admin', [EmployeeAccountController::class, 'index'])->name('admin.dashboard');
-    Route::post('/admin/employees', [EmployeeAccountController::class, 'store'])->name('admin.employees.store');
+
+    /*
+    * Employee accounts. Creating one was all that existed here; an
+    * account could not be corrected, switched off, or given a new
+    * password, which left a forgotten password with no remedy at all.
+    */
+    Route::post('/admin/employees', [EmployeeAccountController::class, 'store'])
+        ->name('admin.employees.store');
+
+    Route::patch('/admin/employees/{employee}', [EmployeeAccountController::class, 'update'])
+        ->name('admin.employees.update');
+
+    Route::patch('/admin/employees/{employee}/password', [EmployeeAccountController::class, 'resetPassword'])
+        ->name('admin.employees.password');
+
+    Route::patch('/admin/employees/{employee}/active', [EmployeeAccountController::class, 'setActive'])
+        ->name('admin.employees.active');
+
+    /*
+    * The administrator accounts themselves - one tier, and the office
+    * holds one. Switching an account off is also the handover
+    * mechanism for the developers' own accounts.
+    */
+    Route::get('/admin/administrators', [AdministratorController::class, 'index'])
+        ->name('admin.administrators.index');
+
+    Route::post('/admin/administrators', [AdministratorController::class, 'store'])
+        ->name('admin.administrators.store');
+
+    Route::patch('/admin/administrators/{user}', [AdministratorController::class, 'update'])
+        ->name('admin.administrators.update');
+
+    Route::patch('/admin/administrators/{user}/password', [AdministratorController::class, 'resetPassword'])
+        ->name('admin.administrators.password');
+
+    Route::patch('/admin/administrators/{user}/active', [AdministratorController::class, 'setActive'])
+        ->name('admin.administrators.active');
+
     Route::resource('admin/sections', SectionController::class);
     Route::resource('admin/roles', RoleController::class);
 });

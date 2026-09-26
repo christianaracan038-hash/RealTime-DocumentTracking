@@ -6,6 +6,7 @@ use App\Models\EmployeeAcc;
 use App\Models\Role;
 use App\Models\Section;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 /**
  * One login per section, for setting up and testing the portal.
@@ -76,6 +77,7 @@ class EmployeeAccountSeeder extends Seeder
             $employee = EmployeeAcc::firstOrCreate(
                 ['username' => $username],
                 [
+                    'full_name' => Str::title($sectionName).' Staff',
                     'password' => $password,
                     'section_id' => $section->section_id,
                     'role_id' => $role->role_id,
@@ -102,6 +104,7 @@ class EmployeeAccountSeeder extends Seeder
             $desk = EmployeeAcc::firstOrCreate(
                 ['username' => $deskUsername],
                 [
+                    'full_name' => Str::title($sectionName).' Counter',
                     'password' => $password,
                     'section_id' => $section->section_id,
                     'role_id' => $registrationRole->role_id,
