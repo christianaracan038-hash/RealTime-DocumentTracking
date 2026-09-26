@@ -52,13 +52,6 @@ class StoreReferralRequest extends FormRequest
                 'nullable', 'string', 'max:150',
             ],
 
-            'referred_for' => ['required', 'array', 'min:1'],
-            'referred_for.*' => ['string', Rule::in(config('referral.referred_for'))],
-            'referred_for_other' => [
-                Rule::requiredIf(fn () => $this->ticked('referred_for', 'Other')),
-                'nullable', 'string', 'max:150',
-            ],
-
             'remarks' => ['required', 'string', Rule::in(config('referral.remarks'))],
             'remarks_other' => [
                 Rule::requiredIf(fn () => $this->input('remarks') === 'Other'),
@@ -86,10 +79,6 @@ class StoreReferralRequest extends FormRequest
             'concerns.required' => 'Please tick at least one concern.',
             'concerns.*.in' => 'That concern is not in the list.',
             'concern_other.required' => 'Please say what the other concern is.',
-
-            'referred_for.required' => 'Please tick at least one action for the receiving office.',
-            'referred_for.*.in' => 'That option is not in the list.',
-            'referred_for_other.required' => 'Please say what the other action is.',
 
             'remarks.required' => 'Please choose a remark.',
             'remarks.in' => 'That remark is not in the list.',

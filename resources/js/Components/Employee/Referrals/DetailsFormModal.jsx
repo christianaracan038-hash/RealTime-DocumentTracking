@@ -65,8 +65,6 @@ export default function DetailsFormModal({
         useForm({
             concerns: [],
             concern_other: "",
-            referred_for: [],
-            referred_for_other: "",
             remarks: "",
             remarks_other: "",
 
@@ -283,25 +281,10 @@ export default function DetailsFormModal({
                         />
                     </Field>
 
-                    <Field
-                        label="For"
-                        hint="Action requested of the receiving office. Tick all that apply."
-                        error={errors.referred_for}
-                    >
-                        <ChoiceGroup
-                            name="referred_for"
-                            multiple
-                            options={options.referred_for ?? []}
-                            value={data.referred_for}
-                            onChange={(v) => setData("referred_for", v)}
-                            otherValue={data.referred_for_other}
-                            onOtherChange={(v) =>
-                                setData("referred_for_other", v)
-                            }
-                            otherPlaceholder="What is the other action?"
-                            otherError={errors.referred_for_other}
-                        />
-                    </Field>
+                    {/*
+                     * No "For" field - it is ticked by hand on the
+                     * printed slip. See ReferenceSlipModal.
+                     */}
 
                     <Field
                         label="Remarks"

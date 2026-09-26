@@ -437,10 +437,13 @@ class DocumentService
                 $data['concern_other'] ?? null
             ),
 
-            'referred_for' => $this->joinChoices(
-                $data['referred_for'],
-                $data['referred_for_other'] ?? null
-            ),
+            /*
+            * referred_for is not set here. On BIR Form 2309 the "FOR"
+            * block is a grid of boxes ticked by hand on the hardcopy -
+            * see config('referral.referred_for'), which now only feeds
+            * the printed slip. The column stays for referrals recorded
+            * before that was understood.
+            */
 
             'remarks' => $data['remarks'] === 'Other'
                 ? trim($data['remarks_other'])

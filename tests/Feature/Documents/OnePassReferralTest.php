@@ -70,7 +70,6 @@ class OnePassReferralTest extends TestCase
             'destination_section_id' => $this->compliance->section_id,
             'addressee' => 'Chief',
             'concerns' => ['Promissory Note'],
-            'referred_for' => ['Approval'],
             'remarks' => 'Processing',
         ], $overrides);
     }
@@ -92,8 +91,14 @@ class OnePassReferralTest extends TestCase
 
         // The description.
         $this->assertSame('Promissory Note', $document->concern);
-        $this->assertSame('Approval', $document->referred_for);
         $this->assertSame('Processing', $document->remarks);
+
+        /*
+         * Nothing is stored for "FOR". On BIR Form 2309 that block is a
+         * grid of boxes the RDO or a Chief ticks by hand on the hardcopy,
+         * so the slip prints it empty and the system never asks.
+         */
+        $this->assertNull($document->referred_for);
 
         // Produced by the system, as step 1 would have.
         $this->assertMatchesRegularExpression('/^DOC-\d{8}-\d{6}$/', $document->tracking_number);
@@ -159,11 +164,35 @@ class OnePassReferralTest extends TestCase
                 'destination_section_id',
                 'addressee',
                 'concerns',
-                'referred_for',
                 'remarks',
             ]);
 
+        // Except "FOR", which is not asked for at all.
         $this->assertSame(0, Document::count());
+    }
+
+    public function test_for_is_not_asked_for_and_not_stored(): void
+    {
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('referrals.store'), $this->referral())
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull(Document::first()->referred_for);
+
+        /*
+         * And it cannot be smuggled in: the request does not validate it,
+         * so nothing reaches the column.
+         */
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('referrals.store'), $this->referral([
+                'taxpayer_name' => 'Somebody Else',
+                'referred_for' => ['Approval'],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull(
+            Document::where('taxpayer_name', 'Somebody Else')->first()->referred_for
+        );
     }
 
     public function test_ticking_other_asks_what_it_is(): void

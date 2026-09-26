@@ -59,8 +59,6 @@ export default function ReferralFormPanel({
         addressee: "",
         concerns: [],
         concern_other: "",
-        referred_for: [],
-        referred_for_other: "",
         remarks: "",
         remarks_other: "",
     });
@@ -189,25 +187,12 @@ export default function ReferralFormPanel({
                         </Field>
                     </div>
 
-                    <Field
-                        label="For"
-                        hint="Action requested of the receiving office. Tick all that apply."
-                        error={errors.referred_for}
-                    >
-                        <ChoiceGroup
-                            name="referred_for"
-                            multiple
-                            options={options.referred_for ?? []}
-                            value={data.referred_for}
-                            onChange={(value) => setData("referred_for", value)}
-                            otherValue={data.referred_for_other}
-                            onOtherChange={(value) =>
-                                setData("referred_for_other", value)
-                            }
-                            otherPlaceholder="What is the other action?"
-                            otherError={errors.referred_for_other}
-                        />
-                    </Field>
+                    {/*
+                     * No "For" field. On BIR Form 2309 that block is a
+                     * grid of boxes the RDO or a Chief ticks by hand, on
+                     * the hardcopy - so the slip prints it empty and the
+                     * system does not ask.
+                     */}
 
                     <Field
                         label="Remarks"

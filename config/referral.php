@@ -33,19 +33,38 @@ return [
     ],
 
     /*
-    * The "FOR" block on the printed slip - what the receiving office is
-    * being asked to do.
+    * The "FOR" block on BIR Form 2309.
+    *
+    * PRINTED ONLY. The system does not ask for these and does not store
+    * them: on the paper form this is a grid of empty boxes that the RDO
+    * or a Chief ticks by hand, with a pen, on the hardcopy that travels
+    * with the document. Asking for it on screen and printing one chosen
+    * value produced a slip that did not match the form the office is
+    * required to use.
+    *
+    * All fourteen, in the order and wording of the printed form
+    * (REVISED OCTOBER, 1971) - left column first, then right. Changing
+    * this list changes the printed slip, so it must keep matching the
+    * paper.
     */
     'referred_for' => [
-        'Approval',
-        'Comment',
-        'Investigation',
-        'Initial',
-        'Signature',
-        'As Requested',
-        'Dissemination',
-        'Necessary Action',
-        'Other',
+        // Left column
+        'APPROVAL',
+        'COMMENT',
+        'INVESTIGATION',
+        'INITIAL',
+        'SIGNATURE',
+        'AS REQUESTED',
+        'DISSEMINATIONS',
+
+        // Right column
+        'NECESSARY ACTION',
+        'SEE ME',
+        'STUDY AND REPORT',
+        'YOUR INFORMATION',
+        'VERIFICATION',
+        'FILE',
+        'STUDY / RECOMMENDATION',
     ],
 
     /*

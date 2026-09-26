@@ -92,7 +92,6 @@ class ReferralRegistrationTest extends TestCase
     {
         return array_merge([
             'concerns' => ['Promissory Note'],
-            'referred_for' => ['Approval'],
             'remarks' => 'Processing',
             'destination_section_id' => $this->compliance->section_id,
             'addressee' => 'Chief',
@@ -261,7 +260,6 @@ class ReferralRegistrationTest extends TestCase
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Tax Assumption', 'Promissory Note'],
-                'referred_for' => ['Approval', 'Signature'],
             ]))
             ->assertRedirect(route('referrals.index'))
             ->assertSessionHas('success');
@@ -269,8 +267,10 @@ class ReferralRegistrationTest extends TestCase
         $document->refresh();
 
         $this->assertSame('Tax Assumption, Promissory Note', $document->concern);
-        $this->assertSame('Approval, Signature', $document->referred_for);
         $this->assertSame('Processing', $document->remarks);
+
+        // "FOR" is ticked by hand on the printed slip, never stored.
+        $this->assertNull($document->referred_for);
 
         $this->assertFalse($document->awaiting_details);
         $this->assertSame(
@@ -288,10 +288,9 @@ class ReferralRegistrationTest extends TestCase
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Other'],
-                'referred_for' => ['Other'],
                 'remarks' => 'Other',
             ]))
-            ->assertSessionHasErrors(['concern_other', 'referred_for_other', 'remarks_other']);
+            ->assertSessionHasErrors(['concern_other', 'remarks_other']);
 
         $this->assertTrue($document->fresh()->awaiting_details);
 
@@ -299,8 +298,6 @@ class ReferralRegistrationTest extends TestCase
             ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Tax Assumption', 'Other'],
                 'concern_other' => 'Lost receipt',
-                'referred_for' => ['Other'],
-                'referred_for_other' => 'Return to taxpayer',
                 'remarks' => 'Other',
                 'remarks_other' => 'Waiting for the taxpayer to call back.',
             ]))
@@ -309,7 +306,6 @@ class ReferralRegistrationTest extends TestCase
         $document->refresh();
 
         $this->assertSame('Tax Assumption, Lost receipt', $document->concern);
-        $this->assertSame('Return to taxpayer', $document->referred_for);
         $this->assertSame('Waiting for the taxpayer to call back.', $document->remarks);
     }
 
@@ -504,7 +500,12 @@ class ReferralRegistrationTest extends TestCase
          * details are in, a referral is finished work and leaves that
          * page. Every word anybody might remember it by still finds it.
          */
-        foreach (['juan', 'promissory', 'assistant chief', 'approval', '1002'] as $keyword) {
+        /*
+         * "approval" is deliberately not among these: it used to be
+         * stored in referred_for, and that block is now ticked by hand on
+         * the printed slip rather than recorded.
+         */
+        foreach (['juan', 'promissory', 'assistant chief', '1002'] as $keyword) {
             $response = $this->actingAs($this->clerk, 'employee')
                 ->get(route('documents.history', ['search' => $keyword]));
 

@@ -143,7 +143,17 @@ export default function DocumentTrailModal({
                                     {longDate(document.document_date)}
                                 </Row>
                                 <Row label="Concerns">{document.concern}</Row>
-                                <Row label="For">{document.referred_for}</Row>
+
+                                {/*
+                                 * Only for referrals recorded before
+                                 * "For" became a hand-ticked block on the
+                                 * printed slip. Nothing stores it now.
+                                 */}
+                                {document.referred_for && (
+                                    <Row label="For">
+                                        {document.referred_for}
+                                    </Row>
+                                )}
                                 <Row label="Remarks">{document.remarks}</Row>
                                 <Row label="From">{sentFrom(document)}</Row>
                                 <Row label="To">{addressedTo(document)}</Row>
