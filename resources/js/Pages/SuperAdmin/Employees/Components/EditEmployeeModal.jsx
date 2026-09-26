@@ -50,7 +50,7 @@ export default function EditEmployeeModal({
     const submit = (e) => {
         e.preventDefault();
 
-        patch(route("admin.employees.update", employee.employee_id), {
+        patch(route("super.employees.update", employee.employee_id), {
             preserveScroll: true,
             onSuccess: onClose,
         });

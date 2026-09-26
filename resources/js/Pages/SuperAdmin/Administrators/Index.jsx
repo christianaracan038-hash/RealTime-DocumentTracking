@@ -43,7 +43,7 @@ function EditModal({ open, onClose, administrator }) {
     const submit = (e) => {
         e.preventDefault();
 
-        patch(route("admin.administrators.update", administrator.id), {
+        patch(route("super.administrators.update", administrator.id), {
             preserveScroll: true,
             onSuccess: onClose,
         });
@@ -120,7 +120,7 @@ export default function Index() {
     const submit = (e) => {
         e.preventDefault();
 
-        createForm.post(route("admin.administrators.store"), {
+        createForm.post(route("super.administrators.store"), {
             preserveScroll: true,
             onSuccess: () => createForm.reset(),
         });
@@ -134,7 +134,7 @@ export default function Index() {
         if (!window.confirm(`${administrator.name} will ${verb}.`)) return;
 
         router.patch(
-            route("admin.administrators.active", administrator.id),
+            route("super.administrators.active", administrator.id),
             { is_active: isActive },
             { preserveScroll: true },
         );
@@ -457,7 +457,7 @@ export default function Index() {
                 action={
                     changingPassword
                         ? route(
-                              "admin.administrators.password",
+                              "super.administrators.password",
                               changingPassword.id,
                           )
                         : ""

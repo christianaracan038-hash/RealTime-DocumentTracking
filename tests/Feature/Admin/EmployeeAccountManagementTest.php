@@ -94,18 +94,18 @@ class EmployeeAccountManagementTest extends TestCase
             'password' => 'employee-password',
         ])->assertSessionHasNoErrors();
 
-        $this->get(route('admin.dashboard'))->assertRedirect(route('login'));
+        $this->get(route('super.employees.index'))->assertRedirect(route('login'));
     }
 
     public function test_a_guest_cannot_reach_the_admin_panel(): void
     {
-        $this->get(route('admin.dashboard'))->assertRedirect(route('login'));
+        $this->get(route('super.employees.index'))->assertRedirect(route('login'));
     }
 
     public function test_an_account_is_created_with_its_identity(): void
     {
         $this->actingAs($this->administrator)
-            ->post(route('admin.employees.store'), $this->creationPayload())
+            ->post(route('super.employees.store'), $this->creationPayload())
             ->assertSessionHasNoErrors();
 
         $employee = EmployeeAcc::where('username', 'compliance.staff')->first();
@@ -120,7 +120,7 @@ class EmployeeAccountManagementTest extends TestCase
     public function test_a_new_account_must_be_named(): void
     {
         $this->actingAs($this->administrator)
-            ->post(route('admin.employees.store'), $this->creationPayload(['full_name' => '']))
+            ->post(route('super.employees.store'), $this->creationPayload(['full_name' => '']))
             ->assertSessionHasErrors('full_name');
 
         $this->assertSame(0, EmployeeAcc::count());
@@ -131,11 +131,11 @@ class EmployeeAccountManagementTest extends TestCase
         $this->employee(['username' => 'taken', 'email' => 'taken@rdo111.test']);
 
         $this->actingAs($this->administrator)
-            ->post(route('admin.employees.store'), $this->creationPayload(['username' => 'taken']))
+            ->post(route('super.employees.store'), $this->creationPayload(['username' => 'taken']))
             ->assertSessionHasErrors('username');
 
         $this->actingAs($this->administrator)
-            ->post(route('admin.employees.store'), $this->creationPayload(['email' => 'taken@rdo111.test']))
+            ->post(route('super.employees.store'), $this->creationPayload(['email' => 'taken@rdo111.test']))
             ->assertSessionHasErrors('email');
     }
 
@@ -144,7 +144,7 @@ class EmployeeAccountManagementTest extends TestCase
         $employee = $this->employee();
 
         $this->actingAs($this->administrator)
-            ->patch(route('admin.employees.update', $employee), [
+            ->patch(route('super.employees.update', $employee), [
                 'username' => 'rdo.chief',
                 'full_name' => 'Juan Dela Cruz',
                 'position' => 'Chief',
@@ -166,7 +166,7 @@ class EmployeeAccountManagementTest extends TestCase
         $employee = $this->employee();
 
         $this->actingAs($this->administrator)
-            ->patch(route('admin.employees.update', $employee), [
+            ->patch(route('super.employees.update', $employee), [
                 'username' => $employee->username,
                 'full_name' => 'John Dela Cruz',
                 'section_id' => $this->rdo->section_id,
@@ -188,7 +188,7 @@ class EmployeeAccountManagementTest extends TestCase
         $this->assertSame('rdo.staff', $bare->display_name);
 
         $this->actingAs($this->administrator)
-            ->patch(route('admin.employees.update', $bare), [
+            ->patch(route('super.employees.update', $bare), [
                 'username' => $bare->username,
                 'full_name' => '',
                 'section_id' => $this->rdo->section_id,
@@ -202,7 +202,7 @@ class EmployeeAccountManagementTest extends TestCase
         $employee = $this->employee();
 
         $this->actingAs($this->administrator)
-            ->patch(route('admin.employees.password', $employee), [
+            ->patch(route('super.employees.password', $employee), [
                 'password' => 'brand-new-password',
                 'password_confirmation' => 'brand-new-password',
             ])
@@ -216,7 +216,7 @@ class EmployeeAccountManagementTest extends TestCase
         $employee = $this->employee();
 
         $this->actingAs($this->administrator)
-            ->patch(route('admin.employees.password', $employee), [
+            ->patch(route('super.employees.password', $employee), [
                 'password' => 'brand-new-password',
                 'password_confirmation' => 'something-else',
             ])
@@ -230,7 +230,7 @@ class EmployeeAccountManagementTest extends TestCase
         $employee = $this->employee();
 
         $this->actingAs($this->administrator)
-            ->patch(route('admin.employees.active', $employee), ['is_active' => false])
+            ->patch(route('super.employees.active', $employee), ['is_active' => false])
             ->assertSessionHasNoErrors();
 
         $this->assertFalse($employee->fresh()->is_active);
@@ -239,7 +239,7 @@ class EmployeeAccountManagementTest extends TestCase
         $this->assertNotNull(EmployeeAcc::find($employee->employee_id));
 
         $this->actingAs($this->administrator)
-            ->patch(route('admin.employees.active', $employee), ['is_active' => true]);
+            ->patch(route('super.employees.active', $employee), ['is_active' => true]);
 
         $this->assertTrue($employee->fresh()->is_active);
     }
@@ -257,7 +257,7 @@ class EmployeeAccountManagementTest extends TestCase
         ]);
 
         $page = $this->actingAs($this->administrator)
-            ->get(route('admin.dashboard'))
+            ->get(route('super.employees.index'))
             ->assertOk()
             ->viewData('page');
 
@@ -268,7 +268,7 @@ class EmployeeAccountManagementTest extends TestCase
 
         // Searching finds a person by their name, not just their username.
         $page = $this->actingAs($this->administrator)
-            ->get(route('admin.dashboard', ['search' => 'santos']))
+            ->get(route('super.employees.index', ['search' => 'santos']))
             ->assertOk()
             ->viewData('page');
 

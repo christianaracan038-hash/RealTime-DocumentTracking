@@ -29,7 +29,7 @@ class AdministratorController extends Controller
 {
     public function index(): Response
     {
-        return Inertia::render('Admin/Administrators/Index', [
+        return Inertia::render('SuperAdmin/Administrators/Index', [
             'administrators' => User::query()
                 ->orderBy('is_active', 'desc')
                 ->orderBy('name')

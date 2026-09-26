@@ -23,7 +23,7 @@ export default function Roles() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        router.post(route("roles.store"), form, {
+        router.post(route("super.roles.store"), form, {
             onSuccess: () => {
                 setForm({
                     role_name: "",

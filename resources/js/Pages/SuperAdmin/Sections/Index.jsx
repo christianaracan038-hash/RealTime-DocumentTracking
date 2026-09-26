@@ -22,7 +22,7 @@ export default function Sections() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        router.post(route("sections.store"), form, {
+        router.post(route("super.sections.store"), form, {
             onSuccess: () => {
                 setForm({
                     section_code: "",

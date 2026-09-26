@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\EmployeeAcc;
+use App\Services\DashboardResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Services\DashboardResolver;
-
 
 class AuthenticatedSessionController extends Controller
 {
@@ -38,7 +38,7 @@ class AuthenticatedSessionController extends Controller
         // Employee Login
         if (Auth::guard('employee')->check()) {
 
-            /** @var \App\Models\EmployeeAcc $employee */
+            /** @var EmployeeAcc $employee */
             $employee = Auth::guard('employee')->user();
 
             $dashboard = DashboardResolver::resolve($employee);
@@ -56,7 +56,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         // Admin Login
-        return redirect()->intended(route('admin.dashboard'));
+        return redirect()->intended(route('super.dashboard'));
     }
 
     /**

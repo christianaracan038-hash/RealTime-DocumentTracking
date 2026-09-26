@@ -42,7 +42,7 @@ class AdministratorManagementTest extends TestCase
     public function test_an_administrator_can_be_added(): void
     {
         $this->actingAs($this->me)
-            ->post(route('admin.administrators.store'), [
+            ->post(route('super.administrators.store'), [
                 'name' => 'Christian Aracan',
                 'email' => 'christian@rdo111.test',
                 'password' => 'a-good-password',
@@ -60,7 +60,7 @@ class AdministratorManagementTest extends TestCase
     public function test_an_email_cannot_be_reused(): void
     {
         $this->actingAs($this->me)
-            ->post(route('admin.administrators.store'), [
+            ->post(route('super.administrators.store'), [
                 'name' => 'Someone Else',
                 'email' => $this->me->email,
                 'password' => 'a-good-password',
@@ -74,7 +74,7 @@ class AdministratorManagementTest extends TestCase
         $other = $this->administrator('Typo Nmae', 'typo@rdo111.test');
 
         $this->actingAs($this->me)
-            ->patch(route('admin.administrators.update', $other), [
+            ->patch(route('super.administrators.update', $other), [
                 'name' => 'Correct Name',
                 'email' => 'correct@rdo111.test',
             ])
@@ -94,7 +94,7 @@ class AdministratorManagementTest extends TestCase
         $other = $this->administrator('Forgetful Admin', 'forgot@rdo111.test');
 
         $this->actingAs($this->me)
-            ->patch(route('admin.administrators.password', $other), [
+            ->patch(route('super.administrators.password', $other), [
                 'password' => 'brand-new-password',
                 'password_confirmation' => 'brand-new-password',
             ])
@@ -108,7 +108,7 @@ class AdministratorManagementTest extends TestCase
         $leaving = $this->administrator('Developer', 'dev@rdo111.test');
 
         $this->actingAs($this->me)
-            ->patch(route('admin.administrators.active', $leaving), ['is_active' => false])
+            ->patch(route('super.administrators.active', $leaving), ['is_active' => false])
             ->assertSessionHasNoErrors();
 
         $this->assertFalse($leaving->fresh()->is_active);
@@ -123,7 +123,7 @@ class AdministratorManagementTest extends TestCase
         $this->administrator('Someone Else', 'other@rdo111.test');
 
         $this->actingAs($this->me)
-            ->patch(route('admin.administrators.active', $this->me), ['is_active' => false])
+            ->patch(route('super.administrators.active', $this->me), ['is_active' => false])
             ->assertSessionHasErrors('is_active');
 
         $this->assertTrue($this->me->fresh()->is_active);
@@ -140,7 +140,7 @@ class AdministratorManagementTest extends TestCase
 
         $this->actingAs($dormant);
 
-        $this->patch(route('admin.administrators.active', $this->me), ['is_active' => false])
+        $this->patch(route('super.administrators.active', $this->me), ['is_active' => false])
             ->assertSessionHasErrors('is_active');
 
         $this->assertTrue($this->me->fresh()->is_active);
@@ -151,7 +151,7 @@ class AdministratorManagementTest extends TestCase
         $returning = $this->administrator('Back Again', 'back@rdo111.test', active: false);
 
         $this->actingAs($this->me)
-            ->patch(route('admin.administrators.active', $returning), ['is_active' => true])
+            ->patch(route('super.administrators.active', $returning), ['is_active' => true])
             ->assertSessionHasNoErrors();
 
         $this->assertTrue($returning->fresh()->is_active);
@@ -162,7 +162,7 @@ class AdministratorManagementTest extends TestCase
         $this->administrator('Christian Aracan', 'christian@rdo111.test');
 
         $page = $this->actingAs($this->me)
-            ->get(route('admin.administrators.index'))
+            ->get(route('super.administrators.index'))
             ->assertOk()
             ->viewData('page');
 
@@ -172,9 +172,9 @@ class AdministratorManagementTest extends TestCase
 
     public function test_a_guest_cannot_manage_administrators(): void
     {
-        $this->get(route('admin.administrators.index'))->assertRedirect(route('login'));
+        $this->get(route('super.administrators.index'))->assertRedirect(route('login'));
 
-        $this->post(route('admin.administrators.store'), [
+        $this->post(route('super.administrators.store'), [
             'name' => 'Intruder',
             'email' => 'intruder@example.test',
             'password' => 'a-good-password',

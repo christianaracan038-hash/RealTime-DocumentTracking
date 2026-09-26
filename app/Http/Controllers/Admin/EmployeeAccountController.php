@@ -53,7 +53,7 @@ class EmployeeAccountController extends Controller
         $employees->each->append('display_name');
         $employees->each->makeVisible(['full_name', 'position', 'email']);
 
-        return Inertia::render('Admin/Employees/Index', [
+        return Inertia::render('SuperAdmin/Employees/Index', [
             'employees' => $employees,
 
             /*

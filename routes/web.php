@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdministratorController;
 use App\Http\Controllers\Admin\EmployeeAccountController;
 use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\Admin\Sections\SectionController;
+use App\Http\Controllers\Admin\SuperAdminController;
 use App\Http\Controllers\Employee\Documents\CommentInboxController;
 use App\Http\Controllers\Employee\Documents\DocumentController;
 use App\Http\Controllers\Employee\Documents\DocumentQrController;
@@ -24,56 +25,85 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+/*
+* Breeze's starter dashboard, kept only so that a bookmark or a stale
+* redirect still lands somewhere sensible.
+*/
+Route::get('/dashboard', fn () => redirect()->route('super.dashboard'))
+    ->middleware('auth')
+    ->name('dashboard');
+
+/*
+|--------------------------------------------------------------------------
+| Super administrator
+|--------------------------------------------------------------------------
+|
+| Everything that decides who can get into the system. Prefixed
+| /super-admin rather than /admin on purpose: the office has an Admin
+| Section that handles referrals like Compliance or CSS, and its staff
+| sign in as employees. Naming this area "admin" made the two look like
+| the same thing to the person using it.
+|
+| The `auth` middleware is the web guard, so an employee cannot reach any
+| of this - the two-guard split is what keeps account management away
+| from the Admin Section.
+|
+*/
 
 Route::middleware('auth')->group(function () {
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/admin', [EmployeeAccountController::class, 'index'])->name('admin.dashboard');
+    Route::prefix('super-admin')->name('super.')->group(function () {
 
-    /*
-    * Employee accounts. Creating one was all that existed here; an
-    * account could not be corrected, switched off, or given a new
-    * password, which left a forgotten password with no remedy at all.
-    */
-    Route::post('/admin/employees', [EmployeeAccountController::class, 'store'])
-        ->name('admin.employees.store');
+        /*
+        * The landing page: who can sign in, by section.
+        */
+        Route::get('/', [SuperAdminController::class, 'index'])->name('dashboard');
 
-    Route::patch('/admin/employees/{employee}', [EmployeeAccountController::class, 'update'])
-        ->name('admin.employees.update');
+        /*
+        * Employee accounts - created, corrected, switched off and given
+        * new passwords here. Nobody registers themselves.
+        */
+        Route::get('/employees', [EmployeeAccountController::class, 'index'])
+            ->name('employees.index');
 
-    Route::patch('/admin/employees/{employee}/password', [EmployeeAccountController::class, 'resetPassword'])
-        ->name('admin.employees.password');
+        Route::post('/employees', [EmployeeAccountController::class, 'store'])
+            ->name('employees.store');
 
-    Route::patch('/admin/employees/{employee}/active', [EmployeeAccountController::class, 'setActive'])
-        ->name('admin.employees.active');
+        Route::patch('/employees/{employee}', [EmployeeAccountController::class, 'update'])
+            ->name('employees.update');
 
-    /*
-    * The administrator accounts themselves - one tier, and the office
-    * holds one. Switching an account off is also the handover
-    * mechanism for the developers' own accounts.
-    */
-    Route::get('/admin/administrators', [AdministratorController::class, 'index'])
-        ->name('admin.administrators.index');
+        Route::patch('/employees/{employee}/password', [EmployeeAccountController::class, 'resetPassword'])
+            ->name('employees.password');
 
-    Route::post('/admin/administrators', [AdministratorController::class, 'store'])
-        ->name('admin.administrators.store');
+        Route::patch('/employees/{employee}/active', [EmployeeAccountController::class, 'setActive'])
+            ->name('employees.active');
 
-    Route::patch('/admin/administrators/{user}', [AdministratorController::class, 'update'])
-        ->name('admin.administrators.update');
+        /*
+        * The super administrator accounts themselves. Switching one off
+        * is how a developer's access ends at handover.
+        */
+        Route::get('/administrators', [AdministratorController::class, 'index'])
+            ->name('administrators.index');
 
-    Route::patch('/admin/administrators/{user}/password', [AdministratorController::class, 'resetPassword'])
-        ->name('admin.administrators.password');
+        Route::post('/administrators', [AdministratorController::class, 'store'])
+            ->name('administrators.store');
 
-    Route::patch('/admin/administrators/{user}/active', [AdministratorController::class, 'setActive'])
-        ->name('admin.administrators.active');
+        Route::patch('/administrators/{user}', [AdministratorController::class, 'update'])
+            ->name('administrators.update');
 
-    Route::resource('admin/sections', SectionController::class);
-    Route::resource('admin/roles', RoleController::class);
+        Route::patch('/administrators/{user}/password', [AdministratorController::class, 'resetPassword'])
+            ->name('administrators.password');
+
+        Route::patch('/administrators/{user}/active', [AdministratorController::class, 'setActive'])
+            ->name('administrators.active');
+
+        Route::resource('sections', SectionController::class);
+        Route::resource('roles', RoleController::class);
+    });
 });
 
 /*

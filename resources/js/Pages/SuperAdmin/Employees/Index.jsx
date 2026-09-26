@@ -46,7 +46,7 @@ export default function Index() {
 
         const timer = setTimeout(() => {
             router.get(
-                route("admin.dashboard"),
+                route("super.employees.index"),
                 { search: search || undefined },
                 { preserveState: true, preserveScroll: true, replace: true },
             );
@@ -64,7 +64,7 @@ export default function Index() {
     const handleSubmit = (event) => {
         event.preventDefault();
 
-        createForm.post(route("admin.employees.store"), {
+        createForm.post(route("super.employees.store"), {
             preserveScroll: true,
             onSuccess: () => createForm.reset(),
         });
@@ -78,7 +78,7 @@ export default function Index() {
         }
 
         router.patch(
-            route("admin.employees.active", employee.employee_id),
+            route("super.employees.active", employee.employee_id),
             { is_active: isActive },
             { preserveScroll: true },
         );
@@ -169,7 +169,7 @@ export default function Index() {
                 action={
                     changingPassword
                         ? route(
-                              "admin.employees.password",
+                              "super.employees.password",
                               changingPassword.employee_id,
                           )
                         : ""

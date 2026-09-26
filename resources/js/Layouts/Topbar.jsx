@@ -1,14 +1,42 @@
+import { Link, usePage } from "@inertiajs/react";
+import { useState } from "react";
+
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
-import { Link, usePage } from "@inertiajs/react";
-import { useState } from "react";
+
+/*
+ * The super administrator's navigation.
+ *
+ * Labelled "Super Admin" rather than "Admin", because the office has an
+ * Admin Section that processes referrals exactly like Compliance or CSS.
+ * Its staff sign in as employees and never see any of this.
+ */
+const LINKS = [
+    { label: "Overview", route: "super.dashboard", match: "super.dashboard" },
+    {
+        label: "Employees",
+        route: "super.employees.index",
+        match: "super.employees.*",
+    },
+    {
+        label: "Super Admins",
+        route: "super.administrators.index",
+        match: "super.administrators.*",
+    },
+    {
+        label: "Sections",
+        route: "super.sections.index",
+        match: "super.sections.*",
+    },
+    { label: "Roles", route: "super.roles.index", match: "super.roles.*" },
+];
 
 export default function Topbar() {
     const user = usePage().props.auth.user;
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+
+    const [open, setOpen] = useState(false);
 
     return (
         <nav className="border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
@@ -16,54 +44,36 @@ export default function Topbar() {
                 <div className="flex h-16 justify-between">
                     <div className="flex">
                         <div className="flex shrink-0 items-center">
-                            <Link href="/" className="flex items-center gap-3">
+                            <Link
+                                href={route("super.dashboard")}
+                                className="flex items-center gap-3"
+                            >
                                 <div className="rounded-xl bg-indigo-600 p-2 text-white shadow-sm">
                                     <ApplicationLogo className="block h-6 w-6 fill-current" />
                                 </div>
+
                                 <div className="leading-tight">
                                     <p className="text-sm font-semibold text-slate-900">
-                                        Realtime Docs
+                                        Document Tracking
                                     </p>
+
                                     <p className="text-xs text-slate-500">
-                                        Admin Control
+                                        Super Admin
                                     </p>
                                 </div>
                             </Link>
                         </div>
 
                         <div className="hidden space-x-6 sm:-my-px sm:ms-8 sm:flex">
-                            <NavLink
-                                href={route("dashboard")}
-                                active={route().current("dashboard")}
-                            >
-                                Dashboard
-                            </NavLink>
-                            <NavLink
-                                href={route("admin.dashboard")}
-                                active={route().current("admin.dashboard")}
-                            >
-                                Employees
-                            </NavLink>
-                            <NavLink
-                                href={route("sections.index")}
-                                active={route().current("sections.*")}
-                            >
-                                Sections
-                            </NavLink>
-                            <NavLink
-                                href={route("roles.index")}
-                                active={route().current("roles.*")}
-                            >
-                                Roles
-                            </NavLink>
-                            <NavLink
-                                href={route("admin.administrators.index")}
-                                active={route().current(
-                                    "admin.administrators.*",
-                                )}
-                            >
-                                Administrators
-                            </NavLink>
+                            {LINKS.map((link) => (
+                                <NavLink
+                                    key={link.route}
+                                    href={route(link.route)}
+                                    active={route().current(link.match)}
+                                >
+                                    {link.label}
+                                </NavLink>
+                            ))}
                         </div>
                     </div>
 
@@ -77,6 +87,7 @@ export default function Topbar() {
                                             className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                                         >
                                             {user.name}
+
                                             <svg
                                                 className="-me-0.5 ms-2 h-4 w-4"
                                                 viewBox="0 0 20 20"
@@ -96,6 +107,7 @@ export default function Topbar() {
                                     <Dropdown.Link href={route("profile.edit")}>
                                         Profile
                                     </Dropdown.Link>
+
                                     <Dropdown.Link
                                         href={route("logout")}
                                         method="post"
@@ -110,11 +122,8 @@ export default function Topbar() {
 
                     <div className="-me-2 flex items-center sm:hidden">
                         <button
-                            onClick={() =>
-                                setShowingNavigationDropdown(
-                                    (previousState) => !previousState,
-                                )
-                            }
+                            onClick={() => setOpen((previous) => !previous)}
+                            aria-label="Menu"
                             className="inline-flex items-center justify-center rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                         >
                             <svg
@@ -124,26 +133,14 @@ export default function Topbar() {
                                 viewBox="0 0 24 24"
                             >
                                 <path
-                                    className={
-                                        !showingNavigationDropdown
-                                            ? "inline-flex"
-                                            : "hidden"
-                                    }
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     strokeWidth="2"
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                />
-                                <path
-                                    className={
-                                        showingNavigationDropdown
-                                            ? "inline-flex"
-                                            : "hidden"
+                                    d={
+                                        open
+                                            ? "M6 18L18 6M6 6l12 12"
+                                            : "M4 6h16M4 12h16M4 18h16"
                                     }
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M6 18L18 6M6 6l12 12"
                                 />
                             </svg>
                         </button>
@@ -151,54 +148,31 @@ export default function Topbar() {
                 </div>
             </div>
 
-            <div
-                className={
-                    (showingNavigationDropdown ? "block" : "hidden") +
-                    " sm:hidden"
-                }
-            >
+            <div className={(open ? "block" : "hidden") + " sm:hidden"}>
                 <div className="space-y-1 border-t border-slate-200 px-4 pb-3 pt-2">
-                    <ResponsiveNavLink
-                        href={route("dashboard")}
-                        active={route().current("dashboard")}
-                    >
-                        Dashboard
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href={route("admin.dashboard")}
-                        active={route().current("admin.dashboard")}
-                    >
-                        Employees
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href={route("sections.index")}
-                        active={route().current("sections.*")}
-                    >
-                        Sections
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href={route("roles.index")}
-                        active={route().current("roles.*")}
-                    >
-                        Roles
-                    </ResponsiveNavLink>
-                    <ResponsiveNavLink
-                        href={route("admin.administrators.index")}
-                        active={route().current("admin.administrators.*")}
-                    >
-                        Administrators
-                    </ResponsiveNavLink>
+                    {LINKS.map((link) => (
+                        <ResponsiveNavLink
+                            key={link.route}
+                            href={route(link.route)}
+                            active={route().current(link.match)}
+                        >
+                            {link.label}
+                        </ResponsiveNavLink>
+                    ))}
                 </div>
 
                 <div className="border-t border-slate-200 px-4 pb-4 pt-3">
                     <div className="text-sm font-semibold text-slate-900">
                         {user.name}
                     </div>
+
                     <div className="text-sm text-slate-500">{user.email}</div>
+
                     <div className="mt-3 space-y-1">
                         <ResponsiveNavLink href={route("profile.edit")}>
                             Profile
                         </ResponsiveNavLink>
+
                         <ResponsiveNavLink
                             method="post"
                             href={route("logout")}
