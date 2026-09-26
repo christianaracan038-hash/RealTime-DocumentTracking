@@ -24,12 +24,28 @@ use Illuminate\Support\Facades\Route;
 | accounts are made for them, and they sign in with a username.
 */
 
+/*
+|--------------------------------------------------------------------------
+| Signing in
+|--------------------------------------------------------------------------
+|
+| Deliberately not behind 'guest'. These machines are shared, and being
+| signed in as somebody else is the normal reason to be at this form - a
+| clerk finishes, an administrator sits down. The guest middleware only
+| knows the web guard, so it let an employee session through and then
+| blocked an administrator from switching at all.
+|
+| LoginRequest clears whichever guard was not used, so submitting this
+| form always leaves exactly one identity on the session.
+|
+*/
+
+Route::get('login', [AuthenticatedSessionController::class, 'create'])
+    ->name('login');
+
+Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
 Route::middleware('guest')->group(function () {
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
-
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
-
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 

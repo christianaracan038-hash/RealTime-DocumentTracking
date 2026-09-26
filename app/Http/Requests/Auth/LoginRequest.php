@@ -34,6 +34,21 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Which guard this request actually signed in on.
+     *
+     * The caller must branch on this rather than asking a guard whether
+     * it is signed in: a stale session on the other guard answers yes,
+     * and somebody signing in as an administrator would be sent to
+     * whichever section was last used at that browser.
+     */
+    protected ?string $guard = null;
+
+    public function authenticatedGuard(): ?string
+    {
+        return $this->guard;
+    }
+
+    /**
      * Attempt to authenticate the request's credentials.
      *
      * @throws ValidationException
@@ -80,6 +95,21 @@ class LoginRequest extends FormRequest
                     ? 'This account has been deactivated. Please ask your administrator.'
                     : __('auth.failed'),
             ]);
+        }
+
+        $this->guard = $guard;
+
+        /*
+        * One identity per session. Signing in as an administrator while
+        * an employee session was still alive used to leave both - and
+        * because the employee guard was consulted first, the
+        * administrator was sent to that section's dashboard and stayed
+        * signed in as both people at once.
+        */
+        foreach (['web', 'employee'] as $other) {
+            if ($other !== $guard) {
+                Auth::guard($other)->logout();
+            }
         }
 
         RateLimiter::clear($this->throttleKey());

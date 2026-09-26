@@ -35,8 +35,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Employee Login
-        if (Auth::guard('employee')->check()) {
+        /*
+        * Branch on the guard this request signed in on, not on whether a
+        * guard is signed in. Those two differ when a session is left
+        * over from somebody else at the same browser, and asking the
+        * employee guard first meant an administrator landed on whichever
+        * section had last been used there.
+        */
+        if ($request->authenticatedGuard() === 'employee') {
 
             /** @var EmployeeAcc $employee */
             $employee = Auth::guard('employee')->user();
