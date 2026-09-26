@@ -6,6 +6,7 @@ import EmployeeForm from "./Components/EmployeeForm";
 import EmployeeTable from "./Components/EmployeeTable";
 import EditEmployeeModal from "./Components/EditEmployeeModal";
 import PasswordModal from "../Components/PasswordModal";
+import PhotoModal from "./Components/PhotoModal";
 
 /*
  * Employee accounts.
@@ -20,6 +21,7 @@ export default function Index() {
 
     const [editing, setEditing] = useState(null);
     const [changingPassword, setChangingPassword] = useState(null);
+    const [changingPhoto, setChangingPhoto] = useState(null);
     const [search, setSearch] = useState(filters?.search ?? "");
 
     const createForm = useForm({
@@ -148,6 +150,7 @@ export default function Index() {
                             onSearch={setSearch}
                             onEdit={setEditing}
                             onResetPassword={setChangingPassword}
+                            onPhoto={setChangingPhoto}
                             onSetActive={setActive}
                         />
                     </div>
@@ -160,6 +163,12 @@ export default function Index() {
                 employee={editing}
                 sections={sections}
                 roles={roles}
+            />
+
+            <PhotoModal
+                open={Boolean(changingPhoto)}
+                onClose={() => setChangingPhoto(null)}
+                employee={changingPhoto}
             />
 
             <PasswordModal

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AvatarStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,6 +20,7 @@ class EmployeeAcc extends Authenticatable
         'full_name',
         'position',
         'email',
+        'avatar_path',
         'password',
         'section_id',
         'role_id',
@@ -57,6 +59,7 @@ class EmployeeAcc extends Authenticatable
         'full_name',
         'position',
         'email',
+        'avatar_path',
     ];
 
     protected function casts(): array
@@ -98,6 +101,19 @@ class EmployeeAcc extends Authenticatable
         }
 
         return trim(($this->position ? $this->position.' ' : '').$this->full_name);
+    }
+
+    /**
+     * Where the browser can fetch this person's photograph, or null.
+     *
+     * Not appended by default, for the same reason as display_name: an
+     * employee is serialised into payloads that other sections receive,
+     * and a face is as identifying as a name. Callers entitled to it ask
+     * with ->append('avatar_url').
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return app(AvatarStorage::class)->url($this);
     }
 
     /**

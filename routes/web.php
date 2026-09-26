@@ -83,6 +83,17 @@ Route::middleware('auth')->group(function () {
             ->name('employees.active');
 
         /*
+        * Photographs. POST rather than PATCH because this is a file
+        * upload, and multipart form data with a spoofed method is a
+        * needless complication for no gain.
+        */
+        Route::post('/employees/{employee}/photo', [EmployeeAccountController::class, 'storeAvatar'])
+            ->name('employees.photo');
+
+        Route::delete('/employees/{employee}/photo', [EmployeeAccountController::class, 'destroyAvatar'])
+            ->name('employees.photo.destroy');
+
+        /*
         * The super administrator accounts themselves. Switching one off
         * is how a developer's access ends at handover.
         */

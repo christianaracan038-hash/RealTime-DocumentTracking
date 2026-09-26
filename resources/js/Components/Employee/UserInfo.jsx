@@ -1,5 +1,6 @@
 import { usePage, router } from "@inertiajs/react";
 
+import Avatar from "./Avatar";
 import Icon from "./Icon";
 
 export default function UserInfo() {
@@ -22,15 +23,11 @@ export default function UserInfo() {
         <div className="border-t border-navy-800 px-4 py-5">
             <div className="mb-4 flex items-center gap-3 px-2">
                 {/*
-                 * Their initial. Profile photos are not stored yet; a
-                 * letter reads better than a generic silhouette.
+                 * Their photograph, falling back to initials - which is
+                 * what happens when it was uploaded on another machine and
+                 * the avatar disk is still a local folder.
                  */}
-                <span
-                    aria-hidden="true"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-400 text-lg font-bold text-navy-900"
-                >
-                    {name?.charAt(0)?.toUpperCase() ?? "?"}
-                </span>
+                <Avatar url={employee?.avatar_url} name={name} />
 
                 <div className="min-w-0">
                     <p className="truncate font-semibold text-white">

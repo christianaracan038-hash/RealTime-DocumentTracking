@@ -1,4 +1,5 @@
 import FormCard from "./FormCard";
+import Avatar from "@/Components/Employee/Avatar";
 
 /*
  * Every employee account, with the three things that can be done to one.
@@ -13,6 +14,7 @@ export default function EmployeeTable({
     onEdit,
     onResetPassword,
     onSetActive,
+    onPhoto,
     search,
     onSearch,
 }) {
@@ -76,29 +78,46 @@ export default function EmployeeTable({
                                 }
                             >
                                 <td className="px-4 py-3">
-                                    <p
-                                        className={`font-medium ${
-                                            employee.is_active
-                                                ? "text-slate-800"
-                                                : "text-slate-500"
-                                        }`}
-                                    >
-                                        {employee.display_name}
-                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => onPhoto(employee)}
+                                            title="Set a photograph"
+                                            className="rounded-full transition hover:ring-2 hover:ring-indigo-400 hover:ring-offset-2"
+                                        >
+                                            <Avatar
+                                                url={employee.avatar_url}
+                                                name={employee.display_name}
+                                                size="sm"
+                                            />
+                                        </button>
 
-                                    <p className="text-xs text-slate-500">
-                                        {employee.username}
-                                        {employee.email
-                                            ? ` · ${employee.email}`
-                                            : ""}
-                                    </p>
+                                        <div className="min-w-0">
+                                            <p
+                                                className={`font-medium ${
+                                                    employee.is_active
+                                                        ? "text-slate-800"
+                                                        : "text-slate-500"
+                                                }`}
+                                            >
+                                                {employee.display_name}
+                                            </p>
 
-                                    {/* Accounts created before names existed */}
-                                    {!employee.full_name && (
-                                        <p className="mt-0.5 text-xs font-medium text-amber-700">
-                                            No name on file
-                                        </p>
-                                    )}
+                                            <p className="text-xs text-slate-500">
+                                                {employee.username}
+                                                {employee.email
+                                                    ? ` · ${employee.email}`
+                                                    : ""}
+                                            </p>
+
+                                            {/* Accounts created before names existed */}
+                                            {!employee.full_name && (
+                                                <p className="mt-0.5 text-xs font-medium text-amber-700">
+                                                    No name on file
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td className="px-4 py-3 text-slate-600">
@@ -131,6 +150,14 @@ export default function EmployeeTable({
                                             className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                                         >
                                             Edit
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => onPhoto(employee)}
+                                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                                        >
+                                            Photo
                                         </button>
 
                                         <button

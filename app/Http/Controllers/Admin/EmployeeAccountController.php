@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateEmployeeAccountRequest;
 use App\Models\EmployeeAcc;
 use App\Models\Role;
 use App\Models\Section;
+use App\Services\AvatarStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -50,7 +51,14 @@ class EmployeeAccountController extends Controller
         * document or the author of a comment - payloads that go to other
         * sections, which are not entitled to a person's name.
         */
-        $employees->each->append('display_name');
+        /*
+        * The administrator is entitled to all of it. On the model these
+        * are hidden and unappended, because an employee is also
+        * serialised as a document's creator or a comment's author -
+        * payloads that go to other sections, which are entitled to
+        * neither a name nor a face.
+        */
+        $employees->each->append(['display_name', 'avatar_url']);
         $employees->each->makeVisible(['full_name', 'position', 'email']);
 
         return Inertia::render('SuperAdmin/Employees/Index', [
@@ -125,6 +133,48 @@ class EmployeeAccountController extends Controller
             'success',
             'New password set for '.$employee->display_name.'.'
         );
+    }
+
+    /**
+     * Put a face to an account.
+     *
+     * Squared off and shrunk to 256px on the way in - these arrive from
+     * phone cameras at several megabytes, and an avatar is drawn at
+     * forty pixels. See AvatarStorage.
+     */
+    public function storeAvatar(
+        Request $request,
+        EmployeeAcc $employee,
+        AvatarStorage $avatars
+    ): RedirectResponse {
+        $request->validate([
+            'photo' => [
+                'required',
+                'image',
+                'mimes:jpeg,jpg,png,webp',
+
+                // Generous: this is what a phone camera produces.
+                'max:8192',
+            ],
+        ], [
+            'photo.required' => 'Please choose a photograph.',
+            'photo.image' => 'That file is not an image.',
+            'photo.mimes' => 'Please use a JPEG, PNG or WebP image.',
+            'photo.max' => 'That image is larger than 8MB.',
+        ]);
+
+        $avatars->store($employee, $request->file('photo'));
+
+        return back()->with('success', 'Photograph set for '.$employee->display_name.'.');
+    }
+
+    public function destroyAvatar(
+        EmployeeAcc $employee,
+        AvatarStorage $avatars
+    ): RedirectResponse {
+        $avatars->remove($employee);
+
+        return back()->with('success', 'Photograph removed for '.$employee->display_name.'.');
     }
 
     /**

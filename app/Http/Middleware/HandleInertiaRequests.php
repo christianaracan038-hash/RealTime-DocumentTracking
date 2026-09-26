@@ -111,6 +111,7 @@ class HandleInertiaRequests extends Middleware
                         */
                         'display_name' => $employee->display_name,
                         'position' => $employee->position,
+                        'avatar_url' => $employee->avatar_url,
 
                         /*
                         * A counter account gets the registration desk in
