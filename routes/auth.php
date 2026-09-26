@@ -7,16 +7,24 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| No public registration.
+|--------------------------------------------------------------------------
+|
+| There is one administrator tier, so a self-registered account could
+| create employees, reset anybody's password and delete sections - and
+| Breeze's /register was open to whoever reached the address.
+|
+| Administrators are created by another administrator, in the panel at
+| admin/administrators. Employees never registered themselves: their
+| accounts are made for them, and they sign in with a username.
+*/
+
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
