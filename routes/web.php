@@ -11,7 +11,6 @@ use App\Http\Controllers\Employee\Documents\RegistrationDeskController;
 use App\Http\Controllers\Employee\SectionDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -27,15 +26,6 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::get('/test-web-auth', function () {
-    return response()->json([
-        'check' => Auth::guard('employee')->check(),
-        'employee' => Auth::guard('employee')->user(),
-        'session_id' => session()->getId(),
-        'session_data' => session()->all(),
-    ]);
-});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

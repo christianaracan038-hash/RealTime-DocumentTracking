@@ -44,35 +44,42 @@ class LoginRequest extends FormRequest
 
         $login = $this->input('login');
 
-         // Admin Login (users table)
-        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+        // An email is an administrator; anything else is an employee.
+        [$guard, $field] = filter_var($login, FILTER_VALIDATE_EMAIL)
+            ? ['web', 'email']
+            : ['employee', 'username'];
 
-            if (!Auth::guard('web')->attempt([
-                'email' => $login,
-                'password' => $this->password,
-            ], $this->boolean('remember'))) {
+        $credentials = [
+            $field => $login,
+            'password' => $this->password,
+        ];
 
-                RateLimiter::hit($this->throttleKey());
+        /*
+        * is_active is part of the credentials, so a deactivated account
+        * cannot sign in at all. Nothing checked it before, which meant
+        * deactivating somebody did nothing and the only way to revoke
+        * access was to delete the account - taking its audit trail with
+        * it.
+        */
+        if (! Auth::guard($guard)->attempt(
+            $credentials + ['is_active' => true],
+            $this->boolean('remember')
+        )) {
 
-                throw ValidationException::withMessages([
-                    'login' => __('auth.failed'),
-                ]);
-            }
+            RateLimiter::hit($this->throttleKey());
 
-        } else {
-
-            // Employee Login (employees_acc table)
-            if (!Auth::guard('employee')->attempt([
-                'username' => $login,
-                'password' => $this->password,
-            ], $this->boolean('remember'))) {
-
-                RateLimiter::hit($this->throttleKey());
-
-                throw ValidationException::withMessages([
-                    'login' => __('auth.failed'),
-                ]);
-            }
+            /*
+            * Say which of the two it is, but only to somebody who typed
+            * the right password - otherwise this would confirm to anyone
+            * guessing that an account exists. Being told "wrong
+            * password" when the real answer is "your account was
+            * switched off" wastes a clerk's morning and then ours.
+            */
+            throw ValidationException::withMessages([
+                'login' => Auth::guard($guard)->validate($credentials)
+                    ? 'This account has been deactivated. Please ask your administrator.'
+                    : __('auth.failed'),
+            ]);
         }
 
         RateLimiter::clear($this->throttleKey());
