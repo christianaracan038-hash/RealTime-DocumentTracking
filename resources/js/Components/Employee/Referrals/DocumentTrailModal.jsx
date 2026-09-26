@@ -32,7 +32,18 @@ const ACTION_TONE = {
     COMPLETED: "bg-navy-200 text-navy-900",
 };
 
-export default function DocumentTrailModal({ documentId, onClose }) {
+export default function DocumentTrailModal({
+    documentId,
+    onClose,
+
+    /*
+     * Go straight to the reference slip once the document has loaded.
+     * The register offers "Reference slip" on a row, and the row is too
+     * light to build a slip from - it has to be fetched first, so the
+     * fetch happens here and the slip opens on top of it.
+     */
+    openSlip = false,
+}) {
     const [document, setDocument] = useState(null);
     const [error, setError] = useState(null);
     const [slipOpen, setSlipOpen] = useState(false);
@@ -65,7 +76,13 @@ export default function DocumentTrailModal({ documentId, onClose }) {
 
                 return response.json();
             })
-            .then((body) => !cancelled && setDocument(body.document))
+            .then((body) => {
+                if (cancelled) return;
+
+                setDocument(body.document);
+
+                if (openSlip) setSlipOpen(true);
+            })
             .catch((err) => !cancelled && setError(err.message));
 
         return () => {

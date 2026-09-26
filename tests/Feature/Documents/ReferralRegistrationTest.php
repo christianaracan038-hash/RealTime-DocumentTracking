@@ -437,7 +437,7 @@ class ReferralRegistrationTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
-    public function test_the_referrals_page_lists_what_is_awaiting_details(): void
+    public function test_the_referrals_page_is_the_sections_register(): void
     {
         $this->registerArrival();
 
@@ -446,7 +446,18 @@ class ReferralRegistrationTest extends TestCase
             ->assertOk()
             ->viewData('page')['props'];
 
-        $this->assertCount(1, $props['awaitingDetails']['data']);
+        /*
+         * One referral, counted as outstanding. The counts drive the tabs
+         * and are taken over the whole register, not the page shown.
+         */
+        $this->assertCount(1, $props['documents']['data']);
+        $this->assertSame(1, $props['counts']['all']);
+        $this->assertSame(1, $props['counts']['waiting']);
+        $this->assertSame(0, $props['counts']['slip']);
+
+        // The table opens first; registering is the other frame.
+        $this->assertSame('list', $props['frame']);
+
         $this->assertTrue($props['canCompleteDetails'], 'RDO may do step 2.');
         $this->assertSame(config('referral'), $props['referralOptions']);
 
@@ -465,7 +476,7 @@ class ReferralRegistrationTest extends TestCase
 
         $this->assertCount(
             1,
-            $response->viewData('page')['props']['awaitingDetails']['data']
+            $response->viewData('page')['props']['documents']['data']
         );
 
         $response = $this->actingAs($this->encoder, 'employee')
@@ -473,7 +484,7 @@ class ReferralRegistrationTest extends TestCase
 
         $this->assertCount(
             0,
-            $response->viewData('page')['props']['awaitingDetails']['data']
+            $response->viewData('page')['props']['documents']['data']
         );
     }
 

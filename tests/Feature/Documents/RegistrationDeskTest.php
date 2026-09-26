@@ -251,15 +251,30 @@ class RegistrationDeskTest extends TestCase
             'details_completed_by' => $this->encoder->employee_id,
         ]);
 
+        /*
+         * Filtered to what is outstanding, which is ordered oldest first -
+         * the one that has waited longest is holding up a taxpayer.
+         */
         $page = $this->actingAs($this->encoder, 'employee')
-            ->get(route('referrals.index'))
+            ->get(route('referrals.index', ['status' => 'waiting']))
             ->assertOk()
             ->viewData('page');
 
-        $names = collect($page['props']['awaitingDetails']['data'])->pluck('taxpayer_name');
+        $names = collect($page['props']['documents']['data'])->pluck('taxpayer_name');
 
         $this->assertSame(['First In', 'Second In'], $names->all());
         $this->assertFalse($names->contains($done->taxpayer_name));
+
+        // But the finished one is still in the register, with its slip.
+        $page = $this->actingAs($this->encoder, 'employee')
+            ->get(route('referrals.index', ['status' => 'slip']))
+            ->assertOk()
+            ->viewData('page');
+
+        $this->assertSame(
+            [$done->taxpayer_name],
+            collect($page['props']['documents']['data'])->pluck('taxpayer_name')->all()
+        );
     }
 
     public function test_the_sidebar_count_is_what_the_section_still_has_to_complete(): void

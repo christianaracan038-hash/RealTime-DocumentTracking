@@ -43,24 +43,49 @@ class DocumentController extends Controller
         $search = $request->string('search')->toString();
 
         /*
-        * The whole of this page: arrivals registered at the counter
-        * whose details are still outstanding. Everything else a section
-        * has registered is in History - here there is only work that is
-        * not finished.
-        *
-        * Paginated, because a referral only leaves this list when
-        * somebody completes it, and a bad week can leave a lot of them.
+        * This section's own register of referrals, whether or not they
+        * are finished. Scoped by who registered it rather than who is
+        * holding it: once a referral is completed and forwarded it is in
+        * somebody else's hands, and it still belongs in the register of
+        * slips this office issued.
         */
-        $awaitingDetails = Document::query()
+        $register = fn () => Document::query()
+            ->whereHas(
+                'creator',
+                fn ($query) => $query->where('section_id', $employee->section_id)
+            );
+
+        /*
+        * 'waiting' - registered at the counter, details outstanding.
+        * 'slip'    - step 2 done, so it has a reference slip.
+        */
+        $filter = $request->string('status')->toString();
+
+        $documents = $register()
             ->with(['destinationSection', 'creator.section', 'status', 'latestTrackingHistory'])
-            ->whereNull('details_completed_at')
-            ->where('current_section_id', $employee->section_id)
+            ->when(
+                $filter === 'waiting',
+                fn ($query) => $query->whereNull('details_completed_at')
+            )
+            ->when(
+                $filter === 'slip',
+                fn ($query) => $query->whereNotNull('details_completed_at')
+            )
             ->when(
                 filled($search),
                 fn ($query) => $documentService->applySearch($query, $search)
             )
-            ->oldest('created_at')
-            ->paginate(10)
+            /*
+            * Oldest first while looking at outstanding work, because the
+            * one that has waited longest is holding up a taxpayer.
+            * Newest first otherwise, which is how a register reads.
+            */
+            ->when(
+                $filter === 'waiting',
+                fn ($query) => $query->oldest('created_at'),
+                fn ($query) => $query->latest('created_at')
+            )
+            ->paginate(15)
             ->withQueryString();
 
         return Inertia::render('Employees/Referrals/Index', [
@@ -88,14 +113,28 @@ class DocumentController extends Controller
 
             'filters' => [
                 'search' => $search,
+                'status' => $filter,
+            ],
+
+            'documents' => $documents,
+
+            /*
+            * For the tabs, counted over the whole register rather than
+            * the page being shown.
+            */
+            'counts' => [
+                'all' => $register()->count(),
+                'waiting' => $register()->whereNull('details_completed_at')->count(),
+                'slip' => $register()->whereNotNull('details_completed_at')->count(),
             ],
 
             /*
-            * Open the registration form as soon as the page loads.
+            * Which frame to open on. The dashboard's "New referral"
+            * button still arrives with ?new=1.
             */
-            'openForm' => $request->boolean('new'),
-
-            'awaitingDetails' => $awaitingDetails,
+            'frame' => $request->boolean('new')
+                ? 'register'
+                : ($request->string('frame')->toString() ?: 'list'),
 
             /*
             * Which sections may do step 2. The frontend uses this to
