@@ -10,7 +10,7 @@ import SearchInput from "@/Components/Employee/SearchInput";
 import { useNotice } from "@/Components/Employee/Notice";
 import { urgencyOf } from "@/Components/Employee/urgency";
 
-import ArrivalFormPanel from "@/Components/Employee/Referrals/ArrivalFormPanel";
+import ReferralFormPanel from "@/Components/Employee/Referrals/ReferralFormPanel";
 import DetailsFormModal from "@/Components/Employee/Referrals/DetailsFormModal";
 import DocumentTrailModal from "@/Components/Employee/Referrals/DocumentTrailModal";
 import { exactTime } from "@/Components/Employee/Referrals/referral";
@@ -60,11 +60,14 @@ export default function Index({
     fromSection = null,
     filters = {},
     frame = "list",
+    openSlipFor = null,
 }) {
     const [completing, setCompleting] = useState(null);
 
     // The document being looked at, and whether to go straight to its slip.
-    const [opened, setOpened] = useState(null);
+    const [opened, setOpened] = useState(
+        openSlipFor ? { id: openSlipFor, slip: true } : null,
+    );
 
     const { flash } = usePage().props;
     const { notify } = useNotice();
@@ -97,11 +100,18 @@ export default function Index({
 
     if (frame === "register") {
         return (
-            <EmployeeLayout title="Register an arrival">
-                <ArrivalFormPanel
+            <EmployeeLayout title="Register a referral">
+                <ReferralFormPanel
+                    sections={sections}
+                    options={referralOptions}
                     fromSection={fromSection}
                     onCancel={() => showList()}
-                    onRegistered={() => showList("waiting")}
+                    /*
+                     * Where it lands is decided by the redirect, which
+                     * carries ?slip= so the new referral's slip opens on
+                     * arrival - it can be printed and attached at once.
+                     */
+                    onRegistered={() => {}}
                 />
             </EmployeeLayout>
         );
@@ -128,7 +138,7 @@ export default function Index({
                         className="w-full shrink-0 lg:w-auto"
                     >
                         <Icon name="add" />
-                        Register an arrival
+                        Register a referral
                     </EmployeeButton>
                 </div>
 
@@ -277,7 +287,7 @@ export default function Index({
                         <p className="mt-1 text-base text-muted">
                             {filters.search
                                 ? "Try the taxpayer's name or the reference number."
-                                : "Press Register an arrival when a document comes in."}
+                                : "Press Register a referral when a document comes in."}
                         </p>
                     </div>
                 )}

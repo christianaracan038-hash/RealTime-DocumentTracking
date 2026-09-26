@@ -163,6 +163,14 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
         ->name('referrals.index');
 
     /*
+    * A referral registered complete, in one pass. Distinct from
+    * documents.store, which is step 1 at the counter and accepts a
+    * taxpayer and a date and nothing else.
+    */
+    Route::post('/referrals', [DocumentController::class, 'storeReferral'])
+        ->name('referrals.store');
+
+    /*
     * The RDO's oversight screens. Both check the section themselves,
     * from config('referral.oversight_sections').
     */

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee\Documents;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\Documents\CompleteDocumentRequest;
 use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
+use App\Http\Requests\Employee\Documents\StoreReferralRequest;
 use App\Models\Document;
 use App\Models\Section;
 use App\Services\DocumentService;
@@ -132,6 +133,12 @@ class DocumentController extends Controller
             * Which frame to open on. The dashboard's "New referral"
             * button still arrives with ?new=1.
             */
+            /*
+            * A referral just registered in one pass, so its slip can be
+            * printed straight away.
+            */
+            'openSlipFor' => $request->integer('slip') ?: null,
+
             'frame' => $request->boolean('new')
                 ? 'register'
                 : ($request->string('frame')->toString() ?: 'list'),
@@ -182,6 +189,28 @@ class DocumentController extends Controller
             'success',
             'Arrival registered. The clock has started.'
         );
+    }
+
+    /**
+     * Register a referral complete - both steps at once.
+     *
+     * Its own action rather than a flag on store(): step 1 deliberately
+     * accepts two fields and nothing else, and loosening it so this could
+     * share it would mean the counter's form could quietly carry routing
+     * it is not supposed to decide.
+     */
+    public function storeReferral(
+        StoreReferralRequest $request,
+        DocumentService $documentService
+    ): RedirectResponse {
+        $document = $documentService->registerComplete(
+            $request->validated(),
+            Auth::guard('employee')->user()
+        );
+
+        return redirect()
+            ->route('referrals.index', ['slip' => $document->document_id])
+            ->with('success', 'Referral registered. Its slip is ready to print.');
     }
 
     /**

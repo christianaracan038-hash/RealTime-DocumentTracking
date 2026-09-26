@@ -398,6 +398,27 @@ class DocumentService
     }
 
     /**
+     * Register a referral complete, in one pass.
+     *
+     * The two-step split earns its keep at the counter, where a taxpayer
+     * is waiting and a name and a date are all anybody has time to take.
+     * At a desk with the document in hand it only means filling one form
+     * to unlock another, so this does both halves at once: the referral
+     * comes out with its reference number, its QR, its routing and its
+     * details, and a slip that can be printed immediately.
+     *
+     * One transaction, so a referral is never left half-registered.
+     */
+    public function registerComplete(array $data, $employee): Document
+    {
+        return DB::transaction(function () use ($data, $employee) {
+            $document = $this->register($data, $employee);
+
+            return $this->completeDetails($document, $data, $employee);
+        });
+    }
+
+    /**
      * Step 2 - fill in a referral's details.
      *
      * Records who completed them and when, so the two halves of the
