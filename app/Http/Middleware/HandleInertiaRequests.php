@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Document;
-use App\Models\DocumentComment;
+use App\Models\Section;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Middleware;
 
@@ -31,6 +31,36 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
+    /**
+     * Both sidebar counts, in one query, computed once per request.
+     */
+    protected ?array $badges = null;
+
+    protected function badges($employee): array
+    {
+        if ($this->badges !== null) {
+            return $this->badges;
+        }
+
+        if (! $employee) {
+            return $this->badges = ['unread' => 0, 'awaiting' => 0];
+        }
+
+        $row = DB::selectOne(
+            'select
+                (select count(*) from document_comments
+                    where to_section_id = ? and acknowledged_at is null) as unread,
+                (select count(*) from documents
+                    where current_section_id = ? and details_completed_at is null) as awaiting',
+            [$employee->section_id, $employee->section_id]
+        );
+
+        return $this->badges = [
+            'unread' => (int) ($row->unread ?? 0),
+            'awaiting' => (int) ($row->awaiting ?? 0),
+        ];
+    }
+
     public function share(Request $request): array
     {
         $employee = Auth::guard('employee')->user();
@@ -70,29 +100,23 @@ class HandleInertiaRequests extends Middleware
                 : null,
 
             /*
-            * Notes addressed to this section that nobody has marked as
-            * read yet, for the count on the sidebar. One indexed count,
-            * and only while an employee is signed in.
+            * The two sidebar badges: notes addressed to this section that
+            * nobody has read, and arrivals still waiting for their
+            * details.
+            *
+            * One round trip for both. They are counts on different
+            * tables, but the database is in Tokyo and every query costs
+            * about 290ms of network - so two separate counts spent more
+            * time on the wire than on the work. Both halves are covered
+            * by an index.
+            *
+            * awaitingDetailsCount is not called 'awaitingDetails': the
+            * referrals page sends a list under that key, and a page prop
+            * wins over a shared one.
             */
-            'unreadComments' => fn () => $employee
-                ? DocumentComment::query()
-                    ->where('to_section_id', $employee->section_id)
-                    ->whereNull('acknowledged_at')
-                    ->count()
-                : 0,
+            'unreadComments' => fn () => $this->badges($employee)['unread'],
 
-            /*
-            * Arrivals registered at the counter that still need their
-            * details, for the count on the Referrals menu entry. The
-            * name is not 'awaitingDetails': the referrals page sends a
-            * list under that key, and a page prop would win over this.
-            */
-            'awaitingDetailsCount' => fn () => $employee
-                ? Document::query()
-                    ->whereNull('details_completed_at')
-                    ->where('current_section_id', $employee->section_id)
-                    ->count()
-                : 0,
+            'awaitingDetailsCount' => fn () => $this->badges($employee)['awaiting'],
 
             'auth' => [
                 'user' => $request->user(),
@@ -102,7 +126,7 @@ class HandleInertiaRequests extends Middleware
                         'employee_id' => $employee->employee_id,
                         'username' => $employee->username,
                         'section_id' => $employee->section_id,
-                        'section_name' => $employee->section?->section_name,
+                        'section_name' => Section::cached($employee->section_id)?->section_name,
 
                         /*
                         * Your own name and title - "Atty. John Dela

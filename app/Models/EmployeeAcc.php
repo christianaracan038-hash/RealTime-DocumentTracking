@@ -166,7 +166,12 @@ class EmployeeAcc extends Authenticatable
     public function registersOnly(): bool
     {
         return in_array(
-            $this->role?->role_name,
+            /*
+            * The cached roles table, not the relation: this runs in
+            * middleware on every employee request, and a relation would
+            * spend 290ms of network on a row that never changes.
+            */
+            Role::cached($this->role_id)?->role_name,
             config('referral.registration_roles', []),
             true
         );
