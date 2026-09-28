@@ -104,6 +104,24 @@ class EmployeeAcc extends Authenticatable
     }
 
     /**
+     * "Atty. John" - the title and the first name, for greeting somebody.
+     *
+     * Null rather than a username when there is no name on file: "Good
+     * morning, rdo.staff" is worse than "Good morning" on its own, and a
+     * caller that wants the account instead can ask for it.
+     */
+    public function getShortNameAttribute(): ?string
+    {
+        if (blank($this->full_name)) {
+            return null;
+        }
+
+        $first = explode(' ', trim($this->full_name))[0];
+
+        return trim(($this->position ? $this->position.' ' : '').$first);
+    }
+
+    /**
      * Where the browser can fetch this person's photograph, or null.
      *
      * Not appended by default, for the same reason as display_name: an

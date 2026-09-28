@@ -110,6 +110,7 @@ class HandleInertiaRequests extends Middleware
                         * rather than showing a username back at them.
                         */
                         'display_name' => $employee->display_name,
+                        'short_name' => $employee->short_name,
                         'position' => $employee->position,
                         'avatar_url' => $employee->avatar_url,
 
