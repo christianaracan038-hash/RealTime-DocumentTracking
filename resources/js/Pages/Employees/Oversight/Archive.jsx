@@ -41,14 +41,16 @@ export default function Archive({ documents, filters = {} }) {
                             and where it went.
                         </p>
                     </div>
+                </div>
 
-                    <div className="w-full lg:w-96">
-                        <SearchInput
-                            label="Find an archived document"
-                            initialValue={filters.search}
-                            placeholder="Taxpayer, concern, reference no..."
-                        />
-                    </div>
+                <div className="mt-5">
+                    <SearchInput
+                        size="lg"
+                        label="Find a taxpayer"
+                        initialValue={filters.search}
+                        placeholder="Type a name, a concern, or a reference number"
+                        hint="Any part will do - the whole archive is searched, not just this page."
+                    />
                 </div>
 
                 {rows.length > 0 ? (
