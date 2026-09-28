@@ -31,6 +31,7 @@ const LINKS = [
         match: "super.sections.*",
     },
     { label: "Roles", route: "super.roles.index", match: "super.roles.*" },
+    { label: "Audit log", route: "super.audit.index", match: "super.audit.*" },
 ];
 
 export default function Topbar() {

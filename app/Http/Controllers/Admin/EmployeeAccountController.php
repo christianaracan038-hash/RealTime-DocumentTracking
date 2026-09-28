@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreEmployeeAccountRequest;
 use App\Http\Requests\Admin\UpdateEmployeeAccountRequest;
+use App\Models\AuditLog;
 use App\Models\EmployeeAcc;
 use App\Models\Role;
 use App\Models\Section;
@@ -76,23 +77,22 @@ class EmployeeAccountController extends Controller
         ]);
     }
 
-    public function sections(): Response
-    {
-        return Inertia::render('Admin/Sections/Index', [
-            'sections' => Section::where('is_active', true)->get(),
-        ]);
-    }
-
-    public function roles(): Response
-    {
-        return Inertia::render('Admin/Roles/Index', [
-            'roles' => Role::where('is_active', true)->get(),
-        ]);
-    }
+    /*
+    * sections() and roles() used to sit here. Both were unrouted -
+    * SectionController and RoleController serve those screens - and both
+    * still rendered 'Admin/…' page paths that stopped existing when the
+    * area was renamed to SuperAdmin. Dead code pointing at deleted
+    * files: the worst kind, because it reads as if it works.
+    */
 
     public function store(StoreEmployeeAccountRequest $request): RedirectResponse
     {
         $employee = EmployeeAcc::create($request->validated());
+
+        AuditLog::record('employee.created', $employee, [
+            'section_id' => $employee->section_id,
+            'role_id' => $employee->role_id,
+        ]);
 
         return back()->with(
             'success',
@@ -104,7 +104,18 @@ class EmployeeAccountController extends Controller
         UpdateEmployeeAccountRequest $request,
         EmployeeAcc $employee
     ): RedirectResponse {
-        $employee->update($request->validated());
+        /*
+        * What actually changed, not what was submitted - the form posts
+        * every field whether or not the administrator touched it, and a
+        * log that says "changed everything" on every edit says nothing.
+        */
+        $employee->fill($request->validated());
+
+        $changed = array_keys($employee->getDirty());
+
+        $employee->save();
+
+        AuditLog::record('employee.updated', $employee, ['changed' => $changed]);
 
         return back()->with('success', $employee->display_name.' updated.');
     }
@@ -128,6 +139,9 @@ class EmployeeAccountController extends Controller
         ]);
 
         $employee->update(['password' => $validated['password']]);
+
+        // The fact of it. Never the password, not even in the context.
+        AuditLog::record('employee.password_reset', $employee);
 
         return back()->with(
             'success',
@@ -165,6 +179,8 @@ class EmployeeAccountController extends Controller
 
         $avatars->store($employee, $request->file('photo'));
 
+        AuditLog::record('employee.photo_set', $employee);
+
         return back()->with('success', 'Photograph set for '.$employee->display_name.'.');
     }
 
@@ -173,6 +189,8 @@ class EmployeeAccountController extends Controller
         AvatarStorage $avatars
     ): RedirectResponse {
         $avatars->remove($employee);
+
+        AuditLog::record('employee.photo_removed', $employee);
 
         return back()->with('success', 'Photograph removed for '.$employee->display_name.'.');
     }
@@ -192,6 +210,11 @@ class EmployeeAccountController extends Controller
         ]);
 
         $employee->update(['is_active' => $validated['is_active']]);
+
+        AuditLog::record(
+            $validated['is_active'] ? 'employee.reactivated' : 'employee.deactivated',
+            $employee
+        );
 
         return back()->with(
             'success',

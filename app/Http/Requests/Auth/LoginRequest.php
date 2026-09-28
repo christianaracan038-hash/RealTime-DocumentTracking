@@ -89,9 +89,14 @@ class LoginRequest extends FormRequest
             * guessing that an account exists. Being told "wrong
             * password" when the real answer is "your account was
             * switched off" wastes a clerk's morning and then ours.
+            *
+            * Asked of the provider directly rather than through
+            * Auth::validate(), which fires a second Failed event and had
+            * the audit log recording every failed attempt twice - on the
+            * one table whose job is to show a *run* of them.
             */
             throw ValidationException::withMessages([
-                'login' => Auth::guard($guard)->validate($credentials)
+                'login' => $this->passwordWasRight($guard, $field, $login)
                     ? 'This account has been deactivated. Please ask your administrator.'
                     : __('auth.failed'),
             ]);
@@ -113,6 +118,27 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Whether the password was right and only is_active turned them away.
+     *
+     * Goes to the user provider rather than the guard on purpose: the
+     * guard's validate() fires a Failed event, which the audit log
+     * listens for, so using it here recorded a second entry for every
+     * failed attempt. Nothing about this check belongs in that log - the
+     * attempt has already been recorded by attempt() above.
+     */
+    protected function passwordWasRight(string $guard, string $field, string $login): bool
+    {
+        $provider = Auth::createUserProvider(
+            config("auth.guards.{$guard}.provider")
+        );
+
+        $user = $provider?->retrieveByCredentials([$field => $login]);
+
+        return $user !== null
+            && $provider->validateCredentials($user, ['password' => $this->password]);
     }
 
     /**
