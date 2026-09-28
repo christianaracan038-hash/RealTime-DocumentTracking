@@ -100,7 +100,7 @@ export default function DocumentTrailModal({
                 aria-modal="true"
                 aria-label="Document detail"
             >
-                <div className="w-full max-w-2xl rounded-2xl bg-white">
+                <div className="w-full max-w-2xl rounded-2xl bg-surface">
                     <div className="flex items-start justify-between gap-4 border-b border-line px-7 py-5">
                         <div className="min-w-0">
                             <h2 className="text-2xl font-bold text-navy-900">

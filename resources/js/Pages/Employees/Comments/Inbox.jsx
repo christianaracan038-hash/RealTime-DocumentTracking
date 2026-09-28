@@ -67,7 +67,7 @@ export default function Inbox({ comments }) {
                                 key={comment.comment_id}
                                 className={`flex overflow-hidden rounded-xl border ${
                                     comment.acknowledged
-                                        ? "border-line bg-white"
+                                        ? "border-line bg-surface"
                                         : "border-accent-400 bg-accent-100"
                                 }`}
                             >

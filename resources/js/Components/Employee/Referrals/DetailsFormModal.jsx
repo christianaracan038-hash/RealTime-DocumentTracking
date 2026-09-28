@@ -116,7 +116,7 @@ export default function DetailsFormModal({
             aria-modal="true"
             aria-labelledby="details-form-title"
         >
-            <div className="w-full max-w-2xl rounded-2xl bg-white">
+            <div className="w-full max-w-2xl rounded-2xl bg-surface">
                 <div className="flex items-start justify-between gap-4 border-b border-line px-7 py-5">
                     <div>
                         <p className="text-xs font-semibold tracking-widest text-brand-700 uppercase">

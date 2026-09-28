@@ -123,7 +123,7 @@ export default function Comments({ stuck = [], sent = [] }) {
                                             document.aging?.overdue
                                                 ? "border-stop-600"
                                                 : "border-line"
-                                        } ${urgency?.card ?? "bg-white"}`}
+                                        } ${urgency?.card ?? "bg-surface"}`}
                                     >
                                         <span
                                             aria-hidden="true"

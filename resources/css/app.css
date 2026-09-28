@@ -42,9 +42,23 @@
     --color-accent-400: #eafe01;
     --color-accent-100: #f7ffb8;
 
-    /* Neutrals, biased slightly blue so they sit with the navy */
-    --color-paper: #eef2fa;
-    --color-line: #e0e5f2;
+    /*
+    * Neutrals, biased slightly blue so they sit with the navy.
+    *
+    * paper is the page, surface is what sits on it. The office found the
+    * old pair painful: the page was #eef2fa and every card was pure
+    * white, which is a two per cent difference - so cards did not read
+    * as cards, and a screen of near-white at full brightness is tiring
+    * to work in all day.
+    *
+    * The page is now clearly darker and cards are just off white. The
+    * step between them does the work that a border alone could not, and
+    * nothing on screen sits at 100% white except small controls, which
+    * is what makes an input look like somewhere to type.
+    */
+    --color-paper: #dde5f3;
+    --color-surface: #f8fafd;
+    --color-line: #ccd6ea;
     --color-muted: #626d8f;
 
     /* Status. Kept separate from the brand colours on purpose. */

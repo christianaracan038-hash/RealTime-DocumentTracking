@@ -54,6 +54,35 @@ class SectionDashboardController extends Controller
             $request->route()->defaults['page'],
             [
                 'documents' => $documents,
+
+                /*
+                * The three numbers the office reads first thing in the
+                * morning. Counted here rather than in the page so the
+                * figures are the same ones the lists below are built
+                * from.
+                */
+                'stats' => [
+                    'waiting' => $documents->count(),
+
+                    /*
+                    * Held by this person, not the section: "on your
+                    * desk" is a personal queue, and it is what
+                    * documents.index lists.
+                    */
+                    'onDesk' => Document::query()
+                        ->where('current_employee_id', $employee->employee_id)
+                        ->where('status_id', 2)
+                        ->count(),
+
+                    /*
+                    * Read off the aging accessor rather than queried,
+                    * because the two-day limit is measured from the last
+                    * movement and not from a column.
+                    */
+                    'overdue' => $documents
+                        ->filter(fn (Document $document) => $document->aging['overdue'] ?? false)
+                        ->count(),
+                ],
             ]
         );
     }

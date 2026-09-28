@@ -6,7 +6,7 @@ export default function Header({ title, onOpenMenu = () => {} }) {
     const { auth } = usePage().props;
 
     return (
-        <header className="sticky top-0 z-30 border-b border-line bg-white px-4 py-3 sm:px-6 lg:px-8 lg:py-5">
+        <header className="sticky top-0 z-30 border-b border-line bg-surface px-4 py-3 sm:px-6 lg:px-8 lg:py-5">
             <div className="flex items-center gap-3">
                 {/* Menu - phones and tablets only */}
                 <button

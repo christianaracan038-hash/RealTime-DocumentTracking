@@ -2,6 +2,7 @@ import { Link } from "@inertiajs/react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 import Icon from "@/Components/Employee/Icon";
+import DashboardStats from "@/Components/Employee/DashboardStats";
 import IncomingDocuments from "@/Pages/Employees/Documents/IncomingDocuments";
 
 /*
@@ -19,6 +20,7 @@ export default function SectionDashboard({
     eyebrow,
     blurb,
     documents = [],
+    stats = {},
 }) {
     return (
         <EmployeeLayout title={title}>
@@ -49,6 +51,8 @@ export default function SectionDashboard({
                         </Link>
                     </div>
                 </div>
+
+                <DashboardStats stats={stats} />
 
                 <IncomingDocuments documents={documents} />
             </div>

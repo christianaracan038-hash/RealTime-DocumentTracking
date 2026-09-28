@@ -253,7 +253,7 @@ export default function ReceiveDocumentScanner({
                     100% { transform: translateX(400%); }
                 }
             `}</style>
-            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-xl">
                 <div className="flex items-center justify-between border-b px-5 py-4">
                     <div>
                         <h2 className="text-lg font-semibold text-slate-800">

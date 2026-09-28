@@ -104,7 +104,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
     return (
         <>
             <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center">
-                <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+                <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-surface shadow-2xl">
                     {/*
                      * The header states what this document needs, in the
                      * colour of how urgent it is - so the dialog itself

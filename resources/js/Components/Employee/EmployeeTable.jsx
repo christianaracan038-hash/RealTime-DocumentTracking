@@ -15,7 +15,7 @@ export default function EmployeeTable({ headers, children }) {
                     </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-100 bg-white">
+                <tbody className="divide-y divide-line bg-surface">
                     {children}
                 </tbody>
             </table>

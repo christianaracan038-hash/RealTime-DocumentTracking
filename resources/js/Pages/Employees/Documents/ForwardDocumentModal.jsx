@@ -140,7 +140,7 @@ export default function ForwardDocumentModal({
     return (
         <>
             <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center">
-                <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+                <div className="w-full max-w-lg rounded-xl bg-surface shadow-xl">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b px-6 py-4">
                         <div>
