@@ -295,7 +295,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
                      * rather than a small one competing in a row.
                      */}
                     {isPending && (
-                        <div className="border-t border-line bg-paper px-6 py-5">
+                        <div className="border-t border-line bg-sunken px-6 py-5">
                             <EmployeeButton
                                 size="lg"
                                 onClick={() => setShowScanner(true)}
@@ -317,7 +317,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
 
                     {/* Received: forward it on, or end its journey here */}
                     {isReceived && !confirmingComplete && (
-                        <div className="flex flex-col-reverse gap-3 border-t border-line bg-paper px-6 py-5 sm:flex-row sm:justify-end">
+                        <div className="flex flex-col-reverse gap-3 border-t border-line bg-sunken px-6 py-5 sm:flex-row sm:justify-end">
                             <EmployeeButton variant="quiet" onClick={onClose}>
                                 Close
                             </EmployeeButton>
@@ -340,7 +340,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
                     )}
 
                     {isCompleted && (
-                        <div className="border-t border-line bg-paper px-6 py-5">
+                        <div className="border-t border-line bg-sunken px-6 py-5">
                             <EmployeeButton
                                 variant="quiet"
                                 onClick={onClose}

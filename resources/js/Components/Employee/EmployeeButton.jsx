@@ -16,7 +16,7 @@ const VARIANTS = {
         "bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-700",
     secondary:
         "bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100",
-    quiet: "bg-white text-navy-800 border border-line hover:bg-paper",
+    quiet: "bg-white text-navy-800 border border-line hover:bg-sunken",
     danger: "bg-stop-600 text-white hover:brightness-110",
 
     /*

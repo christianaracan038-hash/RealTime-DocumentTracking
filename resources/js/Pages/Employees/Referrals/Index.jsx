@@ -161,7 +161,7 @@ export default function Index({
                                 className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-base font-semibold transition ${
                                     current
                                         ? "bg-navy-900 text-white"
-                                        : "bg-paper text-navy-800 hover:bg-brand-50"
+                                        : "bg-sunken text-navy-800 hover:bg-brand-50"
                                 }`}
                             >
                                 {tab.label}
@@ -324,7 +324,7 @@ export default function Index({
                                     className={`min-h-11 rounded-xl border px-4 text-base font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                         link.active
                                             ? "border-brand-600 bg-brand-600 text-white"
-                                            : "border-line bg-white text-navy-800 hover:bg-paper"
+                                            : "border-line bg-white text-navy-800 hover:bg-sunken"
                                     }`}
                                 />
                             ))}

@@ -13,7 +13,7 @@ export default function Header({ title, onOpenMenu = () => {} }) {
                     type="button"
                     onClick={onOpenMenu}
                     aria-label="Open menu"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-navy-900 transition hover:bg-paper lg:hidden"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-navy-900 transition hover:bg-sunken lg:hidden"
                 >
                     <Icon name="menu" className="text-xl" />
                 </button>

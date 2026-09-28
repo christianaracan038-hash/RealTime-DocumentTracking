@@ -136,7 +136,7 @@ export default function DetailsFormModal({
                         onClick={onClose}
                         disabled={processing}
                         aria-label="Close"
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-sunken hover:text-navy-900"
                     >
                         <Icon name="close" />
                     </button>
@@ -144,7 +144,7 @@ export default function DetailsFormModal({
 
                 {/* What step 1 recorded - check the paper against this */}
                 {!needsArrival && (
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 border-b border-line bg-paper px-7 py-5 text-base">
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 border-b border-line bg-sunken px-7 py-5 text-base">
                         <dt className="text-sm font-semibold text-muted">
                             Taxpayer
                         </dt>

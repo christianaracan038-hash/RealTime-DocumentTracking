@@ -118,7 +118,7 @@ export default function DocumentTrailModal({
                             type="button"
                             onClick={onClose}
                             aria-label="Close"
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-sunken hover:text-navy-900"
                         >
                             <Icon name="close" />
                         </button>
@@ -207,7 +207,7 @@ export default function DocumentTrailModal({
                                                             ACTION_TONE[
                                                                 move.action
                                                             ] ??
-                                                            "bg-paper text-navy-800"
+                                                            "bg-sunken text-navy-800"
                                                         }`}
                                                     >
                                                         {move.action}
