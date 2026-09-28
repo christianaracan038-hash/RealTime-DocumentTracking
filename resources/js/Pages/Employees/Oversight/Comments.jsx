@@ -276,8 +276,7 @@ export default function Comments({ stuck = [], sent = [] }) {
                                             <span className="inline-flex items-center gap-1.5 rounded-full bg-ok-100 px-3 py-1 text-sm font-bold text-ok-600">
                                                 <Icon name="check" />
                                                 Seen by{" "}
-                                                {comment.acknowledged_by_
-                                                    ?.username ??
+                                                {comment.reader?.username ??
                                                     sectionLabel(
                                                         comment.to_section,
                                                     )}

@@ -19,6 +19,9 @@ const sectionMenu = (dashboardRoute, extras = []) => [
         label: "Referrals",
         route: "referrals.index",
         icon: "referrals",
+
+        // Arrivals registered at the counter, still to be completed.
+        badge: "awaitingDetailsCount",
     },
     {
         label: "Documents",
@@ -26,6 +29,14 @@ const sectionMenu = (dashboardRoute, extras = []) => [
         icon: "documents",
     },
     ...extras,
+    {
+        label: "Comments",
+        route: "comments.inbox",
+        icon: "comment",
+
+        // The number of notes nobody here has read yet.
+        badge: "unreadComments",
+    },
     {
         label: "History",
         route: "documents.history",
@@ -53,8 +64,27 @@ const oversight = [
     },
 ];
 
+/*
+ * The RDO sends the notes rather than receiving them, so it gets the
+ * oversight screen in place of an inbox.
+ */
+const withoutInbox = (items) =>
+    items.filter((item) => item.route !== "comments.inbox");
+
+/*
+ * A counter account's whole menu. Registering an arrival is all it does,
+ * so there is one entry and nothing to choose between.
+ */
+export const registrationMenu = [
+    {
+        label: "Register a referral",
+        route: "registration.index",
+        icon: "register",
+    },
+];
+
 const navigation = {
-    RDO: sectionMenu("rdo.dashboard", oversight),
+    RDO: withoutInbox(sectionMenu("rdo.dashboard", oversight)),
     ASSESSMENT: sectionMenu("assessment.dashboard"),
     CSS: sectionMenu("css.dashboard"),
     COLLECTION: sectionMenu("collection.dashboard"),

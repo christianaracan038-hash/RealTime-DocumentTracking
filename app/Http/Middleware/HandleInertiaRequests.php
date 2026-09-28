@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Document;
+use App\Models\DocumentComment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -67,6 +69,31 @@ class HandleInertiaRequests extends Middleware
                 ? '/images/login-bg.jpg'
                 : null,
 
+            /*
+            * Notes addressed to this section that nobody has marked as
+            * read yet, for the count on the sidebar. One indexed count,
+            * and only while an employee is signed in.
+            */
+            'unreadComments' => fn () => $employee
+                ? DocumentComment::query()
+                    ->where('to_section_id', $employee->section_id)
+                    ->whereNull('acknowledged_at')
+                    ->count()
+                : 0,
+
+            /*
+            * Arrivals registered at the counter that still need their
+            * details, for the count on the Referrals menu entry. The
+            * name is not 'awaitingDetails': the referrals page sends a
+            * list under that key, and a page prop would win over this.
+            */
+            'awaitingDetailsCount' => fn () => $employee
+                ? Document::query()
+                    ->whereNull('details_completed_at')
+                    ->where('current_section_id', $employee->section_id)
+                    ->count()
+                : 0,
+
             'auth' => [
                 'user' => $request->user(),
 
@@ -76,6 +103,21 @@ class HandleInertiaRequests extends Middleware
                         'username' => $employee->username,
                         'section_id' => $employee->section_id,
                         'section_name' => $employee->section?->section_name,
+
+                        /*
+                        * Your own name and title - "Atty. John Dela
+                        * Cruz" - so the portal can say who is signed in
+                        * rather than showing a username back at them.
+                        */
+                        'display_name' => $employee->display_name,
+                        'position' => $employee->position,
+                        'avatar_url' => $employee->avatar_url,
+
+                        /*
+                        * A counter account gets the registration desk in
+                        * place of the rest of the portal.
+                        */
+                        'registers_only' => $employee->registersOnly(),
                     ]
                     : null,
             ],

@@ -9,13 +9,13 @@ import { sectionLabel } from "./referral";
 /*
  * Step 1 - registering a document's arrival.
  *
- * Deliberately short. Four fields, all readable off the paper in
- * seconds, so it can be done at the counter the moment the document
- * lands instead of in the evening. Saving starts the clock and produces
- * the tracking number and QR.
+ * Two fields, both readable off the paper at a glance, so this can be
+ * done with the taxpayer still at the counter instead of in the evening.
+ * Saving starts the clock and mints the reference number.
  *
- * The descriptive fields - concerns, what is being asked for, remarks -
- * are step 2, in DetailsFormModal.
+ * Everything else is step 2, in DetailsFormModal - including where the
+ * document is going, which needs it read properly rather than guessed at
+ * with somebody waiting.
  */
 
 const FIELD =
@@ -44,16 +44,12 @@ function Field({ label, hint, error, children }) {
 export default function ArrivalFormModal({
     open,
     onClose,
-    sections = [],
-    options = {},
     fromSection = null,
 }) {
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
             document_date: today(),
             taxpayer_name: "",
-            destination_section_id: "",
-            addressee: "",
         });
 
     useEffect(() => {
@@ -66,10 +62,6 @@ export default function ArrivalFormModal({
     }, [open, processing]);
 
     if (!open) return null;
-
-    const chosenSection = sections.find(
-        (s) => String(s.section_id) === String(data.destination_section_id),
-    );
 
     const submit = (e) => {
         e.preventDefault();
@@ -106,8 +98,10 @@ export default function ArrivalFormModal({
                         </h2>
 
                         <p className="mt-1 text-base text-muted">
-                            Saving starts the clock and creates the QR code. The
-                            concerns and remarks can be filled in later.
+                            Two things, while the taxpayer is still at the
+                            counter. Saving starts the clock and creates the
+                            reference number. Where it goes, and everything
+                            else, is filled in later.
                         </p>
                     </div>
 
@@ -145,86 +139,6 @@ export default function ArrivalFormModal({
                             }
                         />
                     </Field>
-
-                    <Field
-                        label="Receiving Section"
-                        error={errors.destination_section_id}
-                    >
-                        <select
-                            value={data.destination_section_id}
-                            onChange={(e) => {
-                                setData(
-                                    "destination_section_id",
-                                    e.target.value,
-                                );
-                                setData("addressee", "");
-                            }}
-                            className={FIELD}
-                        >
-                            <option value="">Select</option>
-                            {sections.map((s) => (
-                                <option key={s.section_id} value={s.section_id}>
-                                    {sectionLabel(s)}
-                                </option>
-                            ))}
-                        </select>
-                    </Field>
-
-                    {chosenSection && (
-                        <div className="rounded-xl border-2 border-brand-200 bg-brand-50 p-5">
-                            <p className="text-base font-semibold text-navy-900">
-                                Who in {sectionLabel(chosenSection)} should
-                                receive it?
-                            </p>
-
-                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                {(options.addressees ?? []).map((who) => {
-                                    const selected = data.addressee === who;
-
-                                    return (
-                                        <label
-                                            key={who}
-                                            className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 bg-white px-4 py-3 transition ${
-                                                selected
-                                                    ? "border-brand-600"
-                                                    : "border-line hover:border-brand-200"
-                                            }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="addressee"
-                                                value={who}
-                                                checked={selected}
-                                                onChange={() =>
-                                                    setData("addressee", who)
-                                                }
-                                                className="h-5 w-5 text-brand-600"
-                                            />
-                                            <span className="text-base font-medium text-navy-900">
-                                                {who}
-                                            </span>
-                                        </label>
-                                    );
-                                })}
-                            </div>
-
-                            {data.addressee && (
-                                <p className="mt-4 text-base text-navy-800">
-                                    Will be addressed to{" "}
-                                    <span className="font-bold">
-                                        {data.addressee},{" "}
-                                        {sectionLabel(chosenSection)}
-                                    </span>
-                                </p>
-                            )}
-
-                            {errors.addressee && (
-                                <p className="mt-2 text-sm font-medium text-stop-600">
-                                    {errors.addressee}
-                                </p>
-                            )}
-                        </div>
-                    )}
 
                     <div className="rounded-xl bg-paper px-4 py-3">
                         <p className="text-xs font-semibold tracking-wide text-muted uppercase">

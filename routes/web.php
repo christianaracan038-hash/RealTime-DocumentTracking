@@ -1,15 +1,18 @@
 <?php
 
+use App\Http\Controllers\Admin\AdministratorController;
 use App\Http\Controllers\Admin\EmployeeAccountController;
 use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\Admin\Sections\SectionController;
+use App\Http\Controllers\Admin\SuperAdminController;
+use App\Http\Controllers\Employee\Documents\CommentInboxController;
 use App\Http\Controllers\Employee\Documents\DocumentController;
 use App\Http\Controllers\Employee\Documents\DocumentQrController;
 use App\Http\Controllers\Employee\Documents\OversightController;
+use App\Http\Controllers\Employee\Documents\RegistrationDeskController;
 use App\Http\Controllers\Employee\SectionDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -22,28 +25,96 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+/*
+* Breeze's starter dashboard, kept only so that a bookmark or a stale
+* redirect still lands somewhere sensible.
+*/
+Route::get('/dashboard', fn () => redirect()->route('super.dashboard'))
+    ->middleware('auth')
+    ->name('dashboard');
 
-Route::get('/test-web-auth', function () {
-    return response()->json([
-        'check' => Auth::guard('employee')->check(),
-        'employee' => Auth::guard('employee')->user(),
-        'session_id' => session()->getId(),
-        'session_data' => session()->all(),
-    ]);
-});
+/*
+|--------------------------------------------------------------------------
+| Super administrator
+|--------------------------------------------------------------------------
+|
+| Everything that decides who can get into the system. Prefixed
+| /super-admin rather than /admin on purpose: the office has an Admin
+| Section that handles referrals like Compliance or CSS, and its staff
+| sign in as employees. Naming this area "admin" made the two look like
+| the same thing to the person using it.
+|
+| The `auth` middleware is the web guard, so an employee cannot reach any
+| of this - the two-guard split is what keeps account management away
+| from the Admin Section.
+|
+*/
 
 Route::middleware('auth')->group(function () {
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/admin', [EmployeeAccountController::class, 'index'])->name('admin.dashboard');
-    Route::post('/admin/employees', [EmployeeAccountController::class, 'store'])->name('admin.employees.store');
-    Route::resource('admin/sections', SectionController::class);
-    Route::resource('admin/roles', RoleController::class);
+    Route::prefix('super-admin')->name('super.')->group(function () {
+
+        /*
+        * The landing page: who can sign in, by section.
+        */
+        Route::get('/', [SuperAdminController::class, 'index'])->name('dashboard');
+
+        /*
+        * Employee accounts - created, corrected, switched off and given
+        * new passwords here. Nobody registers themselves.
+        */
+        Route::get('/employees', [EmployeeAccountController::class, 'index'])
+            ->name('employees.index');
+
+        Route::post('/employees', [EmployeeAccountController::class, 'store'])
+            ->name('employees.store');
+
+        Route::patch('/employees/{employee}', [EmployeeAccountController::class, 'update'])
+            ->name('employees.update');
+
+        Route::patch('/employees/{employee}/password', [EmployeeAccountController::class, 'resetPassword'])
+            ->name('employees.password');
+
+        Route::patch('/employees/{employee}/active', [EmployeeAccountController::class, 'setActive'])
+            ->name('employees.active');
+
+        /*
+        * Photographs. POST rather than PATCH because this is a file
+        * upload, and multipart form data with a spoofed method is a
+        * needless complication for no gain.
+        */
+        Route::post('/employees/{employee}/photo', [EmployeeAccountController::class, 'storeAvatar'])
+            ->name('employees.photo');
+
+        Route::delete('/employees/{employee}/photo', [EmployeeAccountController::class, 'destroyAvatar'])
+            ->name('employees.photo.destroy');
+
+        /*
+        * The super administrator accounts themselves. Switching one off
+        * is how a developer's access ends at handover.
+        */
+        Route::get('/administrators', [AdministratorController::class, 'index'])
+            ->name('administrators.index');
+
+        Route::post('/administrators', [AdministratorController::class, 'store'])
+            ->name('administrators.store');
+
+        Route::patch('/administrators/{user}', [AdministratorController::class, 'update'])
+            ->name('administrators.update');
+
+        Route::patch('/administrators/{user}/password', [AdministratorController::class, 'resetPassword'])
+            ->name('administrators.password');
+
+        Route::patch('/administrators/{user}/active', [AdministratorController::class, 'setActive'])
+            ->name('administrators.active');
+
+        Route::resource('sections', SectionController::class);
+        Route::resource('roles', RoleController::class);
+    });
 });
 
 /*
@@ -60,14 +131,22 @@ Route::middleware('auth')->group(function () {
 
 foreach (config('section') as $sectionName => $dashboard) {
 
-    Route::middleware(['auth:employee', 'section:'.$sectionName])
+    Route::middleware(['auth:employee', 'desk', 'section:'.$sectionName])
         ->get($dashboard['path'], [SectionDashboardController::class, 'index'])
         ->defaults('page', $dashboard['page'])
         ->name($dashboard['route']);
 
 }
 
-Route::middleware(['auth:employee'])->group(function () {
+Route::middleware(['auth:employee', 'desk'])->group(function () {
+
+    /*
+    * Step 1, on its own screen for the account that does nothing else.
+    * The 'desk' middleware sends a counter account back here from
+    * anywhere else in the portal.
+    */
+    Route::get('/registration', [RegistrationDeskController::class, 'index'])
+        ->name('registration.index');
 
     Route::get('/documents/create', [DocumentController::class, 'create'])
         ->name('documents.create');
@@ -84,6 +163,14 @@ Route::middleware(['auth:employee'])->group(function () {
         ->name('referrals.index');
 
     /*
+    * A referral registered complete, in one pass. Distinct from
+    * documents.store, which is step 1 at the counter and accepts a
+    * taxpayer and a date and nothing else.
+    */
+    Route::post('/referrals', [DocumentController::class, 'storeReferral'])
+        ->name('referrals.store');
+
+    /*
     * The RDO's oversight screens. Both check the section themselves,
     * from config('referral.oversight_sections').
     */
@@ -97,10 +184,14 @@ Route::middleware(['auth:employee'])->group(function () {
         ->name('archive.index');
 
     /*
-    * The other half of the conversation - the section that received a
-    * comment saying it has seen it.
+    * The other half of the conversation, and the one every section has:
+    * the notes addressed to your own section, and saying you have read
+    * one.
     */
-    Route::patch('/comments/{comment}/acknowledge', [OversightController::class, 'acknowledgeComment'])
+    Route::get('/comments/inbox', [CommentInboxController::class, 'index'])
+        ->name('comments.inbox');
+
+    Route::patch('/comments/{comment}/acknowledge', [CommentInboxController::class, 'acknowledge'])
         ->name('comments.acknowledge');
 
     Route::get('/documents/history', [DocumentController::class, 'history'])

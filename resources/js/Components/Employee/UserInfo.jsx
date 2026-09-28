@@ -1,5 +1,6 @@
 import { usePage, router } from "@inertiajs/react";
 
+import Avatar from "./Avatar";
 import Icon from "./Icon";
 
 export default function UserInfo() {
@@ -9,30 +10,32 @@ export default function UserInfo() {
         router.post(route("logout"));
     };
 
-    const username = auth?.employee?.username;
+    const employee = auth?.employee;
+
+    /*
+     * The person, not the account. display_name falls back to the
+     * username for the accounts that predate the name columns, so this
+     * is never blank.
+     */
+    const name = employee?.display_name ?? employee?.username;
 
     return (
         <div className="border-t border-navy-800 px-4 py-5">
             <div className="mb-4 flex items-center gap-3 px-2">
                 {/*
-                 * Initial instead of an avatar image - there are no
-                 * profile photos, and a letter is clearer than a
-                 * generic silhouette.
+                 * Their photograph, falling back to initials - which is
+                 * what happens when it was uploaded on another machine and
+                 * the avatar disk is still a local folder.
                  */}
-                <span
-                    aria-hidden="true"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-400 text-lg font-bold text-navy-900"
-                >
-                    {username?.charAt(0)?.toUpperCase() ?? "?"}
-                </span>
+                <Avatar url={employee?.avatar_url} name={name} />
 
                 <div className="min-w-0">
                     <p className="truncate font-semibold text-white">
-                        {username ?? "Signed in"}
+                        {name ?? "Signed in"}
                     </p>
 
-                    <p className="text-sm text-navy-400">
-                        {auth?.employee?.section_name}
+                    <p className="truncate text-sm text-navy-400">
+                        {employee?.section_name}
                     </p>
                 </div>
             </div>

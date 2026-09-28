@@ -53,7 +53,14 @@ class DocumentComment extends Model
         return $this->belongsTo(Section::class, 'to_section_id', 'section_id');
     }
 
-    public function acknowledgedBy(): BelongsTo
+    /**
+     * Who marked it as read.
+     *
+     * Named "reader" rather than after its column: a relation called
+     * acknowledgedBy would serialise onto the same key as the
+     * acknowledged_by id and quietly replace it.
+     */
+    public function reader(): BelongsTo
     {
         return $this->belongsTo(EmployeeAcc::class, 'acknowledged_by', 'employee_id');
     }

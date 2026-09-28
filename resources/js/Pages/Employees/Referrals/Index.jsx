@@ -1,153 +1,252 @@
 import { useEffect, useState } from "react";
-import { usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import Icon from "@/Components/Employee/Icon";
 import AgeBadge from "@/Components/Employee/AgeBadge";
+import SearchInput from "@/Components/Employee/SearchInput";
 import { useNotice } from "@/Components/Employee/Notice";
+import { urgencyOf } from "@/Components/Employee/urgency";
 
-import ArrivalFormModal from "@/Components/Employee/Referrals/ArrivalFormModal";
+import ReferralFormPanel from "@/Components/Employee/Referrals/ReferralFormPanel";
 import DetailsFormModal from "@/Components/Employee/Referrals/DetailsFormModal";
-import ArrivalStubModal from "@/Components/Employee/Referrals/ArrivalStubModal";
-import RecentReferralsTable from "@/Components/Employee/Referrals/RecentReferralsTable";
-import {
-    addressedTo,
-    exactTime,
-} from "@/Components/Employee/Referrals/referral";
+import DocumentTrailModal from "@/Components/Employee/Referrals/DocumentTrailModal";
+import { exactTime } from "@/Components/Employee/Referrals/referral";
 
 /*
- * Referrals, registered in two steps.
+ * The section's register of referrals.
  *
- * Step 1 - "Register arrival" - is done at the counter the moment a
- * document lands. It takes four fields, starts the clock, and produces
- * the QR, so the document can be forwarded the same morning. Its stub
- * is printed and attached straight away.
+ * Every referral this office has issued, in one table, in the shape the
+ * office actually needs to recognise one: the taxpayer, the reference
+ * number, and when it was registered. Nothing else - the concerns and
+ * remarks are a click away, and putting them in the row made a register
+ * that nobody could scan down.
  *
- * Step 2 - "Complete details" - is done later, usually by someone else.
- * Everything still waiting for it is listed at the top of this page, so
- * nothing quietly sits half-finished.
+ * Two frames rather than a dialog over the table. Registering an arrival
+ * is a different job from looking through the register, done while
+ * somebody stands at the counter, and it gets the screen to itself.
  */
+
+const TABS = [
+    { key: "", label: "All referrals" },
+    { key: "waiting", label: "Waiting for their details" },
+    { key: "slip", label: "With a slip" },
+];
+
+function StatusPill({ document }) {
+    if (document.details_completed_at) {
+        return (
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok-100 px-3 py-1 text-sm font-bold text-ok-600">
+                <Icon name="check" />
+                Slip ready
+            </span>
+        );
+    }
+
+    return (
+        <span className="shrink-0 rounded-full bg-accent-100 px-3 py-1 text-sm font-bold text-navy-900">
+            Waiting for details
+        </span>
+    );
+}
+
 export default function Index({
-    referrals = [],
-    awaitingDetails = [],
+    documents,
+    counts = {},
     sections = [],
     referralOptions = {},
     fromSection = null,
     filters = {},
-    openForm = false,
-    stubDocument = null,
-    canCompleteDetails = false,
+    frame = "list",
+    openSlipFor = null,
 }) {
-    const [registering, setRegistering] = useState(openForm);
     const [completing, setCompleting] = useState(null);
-    const [stubFor, setStubFor] = useState(stubDocument);
+
+    // The document being looked at, and whether to go straight to its slip.
+    const [opened, setOpened] = useState(
+        openSlipFor ? { id: openSlipFor, slip: true } : null,
+    );
 
     const { flash } = usePage().props;
     const { notify } = useNotice();
 
-    /*
-     * Keyed on flash.id, which changes every time, so two registrations
-     * in a row raise two notices.
-     */
+    const rows = documents?.data ?? [];
+
     useEffect(() => {
         if (!flash?.success) return;
 
-        const subject = stubDocument ?? referrals?.data?.[0];
-
-        notify({
-            title: stubDocument
-                ? "Arrival registered"
-                : "Referral details completed",
-            message: flash.success,
-            details: subject
-                ? [
-                      ["Taxpayer", subject.taxpayer_name],
-                      ["Reference no.", subject.tracking_number],
-                  ]
-                : [],
-        });
+        notify({ title: "Done", message: flash.success });
     }, [flash?.id]);
 
-    // A fresh arrival: offer its stub for printing straight away.
-    useEffect(() => setStubFor(stubDocument), [stubDocument]);
+    /*
+     * The frame and the filter both live in the address, so the browser
+     * back button behaves and a link can point at either.
+     */
+    const go = (params) =>
+        router.get(route("referrals.index"), params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+
+    const showRegister = () => go({ frame: "register" });
+
+    const showList = (status = filters.status ?? "") =>
+        go({
+            status: status || undefined,
+            search: filters.search || undefined,
+        });
+
+    if (frame === "register") {
+        return (
+            <EmployeeLayout title="Register a referral">
+                <ReferralFormPanel
+                    sections={sections}
+                    options={referralOptions}
+                    fromSection={fromSection}
+                    onCancel={() => showList()}
+                    /*
+                     * Where it lands is decided by the redirect, which
+                     * carries ?slip= so the new referral's slip opens on
+                     * arrival - it can be printed and attached at once.
+                     */
+                    onRegistered={() => {}}
+                />
+            </EmployeeLayout>
+        );
+    }
 
     return (
         <EmployeeLayout title="Referrals">
-            <div className="space-y-6">
-                {/* Step 2's worklist, so nothing sits half-finished */}
-                {awaitingDetails.length > 0 && (
-                    <EmployeeCard className="border-2 border-accent-400">
-                        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <h2 className="text-xl font-bold text-navy-900">
-                                    Awaiting details
-                                </h2>
+            <EmployeeCard>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                        <h2 className="text-xl font-bold text-navy-900">
+                            Referrals
+                        </h2>
 
-                                <p className="mt-1 text-base text-muted">
-                                    Registered at the counter. The concerns and
-                                    remarks still need filling in.
-                                </p>
-                            </div>
+                        <p className="mt-1 text-base text-muted">
+                            Everything this section has registered. Tap one to
+                            see it in full, or to print its reference slip.
+                        </p>
+                    </div>
 
-                            <span className="rounded-full bg-accent-400 px-4 py-1.5 text-base font-bold text-navy-900">
-                                {awaitingDetails.length} waiting
-                            </span>
-                        </div>
+                    <EmployeeButton
+                        size="lg"
+                        onClick={showRegister}
+                        className="w-full shrink-0 lg:w-auto"
+                    >
+                        <Icon name="add" />
+                        Register a referral
+                    </EmployeeButton>
+                </div>
 
-                        <ul className="space-y-3">
-                            {awaitingDetails.map((document) => (
+                {/*
+                 * The counts are the tabs. Pressing the number beside
+                 * "Waiting for their details" is how you get to just those.
+                 */}
+                <div className="mt-6 flex flex-wrap gap-2 border-b border-line pb-4">
+                    {TABS.map((tab) => {
+                        const current = (filters.status ?? "") === tab.key;
+
+                        const count = counts[tab.key || "all"] ?? 0;
+
+                        return (
+                            <button
+                                key={tab.key || "all"}
+                                type="button"
+                                onClick={() => showList(tab.key)}
+                                aria-current={current ? "true" : undefined}
+                                className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-base font-semibold transition ${
+                                    current
+                                        ? "bg-navy-900 text-white"
+                                        : "bg-paper text-navy-800 hover:bg-brand-50"
+                                }`}
+                            >
+                                {tab.label}
+
+                                <span
+                                    className={`rounded-full px-2 py-0.5 text-sm font-bold ${
+                                        current
+                                            ? "bg-accent-400 text-navy-900"
+                                            : tab.key === "waiting" && count > 0
+                                              ? "bg-accent-400 text-navy-900"
+                                              : "bg-navy-200 text-navy-900"
+                                    }`}
+                                >
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="mt-4 lg:w-96">
+                    <SearchInput
+                        label="Find a referral"
+                        initialValue={filters.search}
+                        placeholder="Taxpayer or reference no..."
+                        only={["documents", "counts", "filters"]}
+                    />
+                </div>
+
+                {rows.length > 0 ? (
+                    <ul className="mt-5 divide-y divide-line rounded-xl border border-line">
+                        {rows.map((document) => {
+                            const waiting = !document.details_completed_at;
+
+                            const urgency = waiting
+                                ? urgencyOf(document)
+                                : null;
+
+                            return (
                                 <li
                                     key={document.document_id}
-                                    className="rounded-xl border border-line p-4"
+                                    className="flex items-stretch"
                                 >
-                                    <div className="flex flex-wrap items-start justify-between gap-4">
-                                        <div className="min-w-0">
-                                            <p className="text-lg font-bold text-navy-900">
-                                                {document.taxpayer_name ??
-                                                    "No taxpayer on record"}
-                                            </p>
+                                    {/* Only unfinished work carries urgency */}
+                                    <span
+                                        aria-hidden="true"
+                                        className={`w-1.5 shrink-0 ${
+                                            urgency?.spine ?? "bg-transparent"
+                                        }`}
+                                    />
 
-                                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-                                                <span className="font-mono">
-                                                    {document.tracking_number}
-                                                </span>
-                                                <span>
-                                                    Registered{" "}
-                                                    {exactTime(
-                                                        document.created_at,
-                                                    )}
-                                                </span>
-                                            </div>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setOpened({
+                                                id: document.document_id,
+                                                slip: false,
+                                            })
+                                        }
+                                        className="min-w-0 flex-1 px-4 py-4 text-left transition hover:bg-brand-50"
+                                    >
+                                        <p className="truncate text-lg font-bold text-navy-900">
+                                            {document.taxpayer_name ??
+                                                "No taxpayer on record"}
+                                        </p>
 
-                                            <p className="mt-1 text-sm text-muted">
-                                                To{" "}
-                                                <span className="font-semibold text-navy-800">
-                                                    {addressedTo(document) ||
-                                                        "—"}
-                                                </span>
-                                            </p>
+                                        <p className="mt-0.5 font-mono text-sm text-muted">
+                                            {document.tracking_number}
+                                        </p>
 
-                                            <AgeBadge
-                                                document={document}
-                                                className="mt-2"
-                                            />
-                                        </div>
+                                        <p className="mt-1 text-base text-muted">
+                                            Registered{" "}
+                                            {exactTime(document.created_at)}
+                                        </p>
+                                    </button>
 
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <EmployeeButton
-                                                variant="quiet"
-                                                onClick={() =>
-                                                    setStubFor(document)
-                                                }
-                                            >
-                                                <Icon name="print" />
-                                                Stub
-                                            </EmployeeButton>
+                                    <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-4 pr-4">
+                                        <StatusPill document={document} />
 
-                                            {canCompleteDetails ? (
+                                        {waiting ? (
+                                            <>
+                                                <AgeBadge document={document} />
+
                                                 <EmployeeButton
+                                                    variant="secondary"
                                                     onClick={() =>
                                                         setCompleting(document)
                                                     }
@@ -155,61 +254,106 @@ export default function Index({
                                                     <Icon name="register" />
                                                     Complete details
                                                 </EmployeeButton>
-                                            ) : (
-                                                <span className="self-center text-sm text-muted">
-                                                    Awaiting details from RDO
-                                                </span>
-                                            )}
-                                        </div>
+                                            </>
+                                        ) : (
+                                            <EmployeeButton
+                                                variant="quiet"
+                                                onClick={() =>
+                                                    setOpened({
+                                                        id: document.document_id,
+                                                        slip: true,
+                                                    })
+                                                }
+                                            >
+                                                <Icon name="print" />
+                                                Reference slip
+                                            </EmployeeButton>
+                                        )}
                                     </div>
                                 </li>
-                            ))}
-                        </ul>
-                    </EmployeeCard>
+                            );
+                        })}
+                    </ul>
+                ) : (
+                    <div className="mt-5 rounded-xl border border-dashed border-line py-14 text-center">
+                        <p className="text-lg font-semibold text-navy-800">
+                            {filters.search
+                                ? "Nothing matches that search"
+                                : filters.status === "waiting"
+                                  ? "Nothing waiting for details"
+                                  : "No referrals registered yet"}
+                        </p>
+
+                        <p className="mt-1 text-base text-muted">
+                            {filters.search
+                                ? "Try the taxpayer's name or the reference number."
+                                : "Press Register a referral when a document comes in."}
+                        </p>
+                    </div>
                 )}
 
-                <RecentReferralsTable
-                    documents={referrals}
-                    filters={filters}
-                    only={["referrals", "filters"]}
-                    heading="Recent registered referrals"
-                    subheading="Referrals you registered, newest first."
-                    onCompleteDetails={
-                        canCompleteDetails ? setCompleting : null
-                    }
-                    action={
-                        <EmployeeButton
-                            size="lg"
-                            onClick={() => setRegistering(true)}
-                            className="w-full sm:w-auto"
-                        >
-                            <Icon name="add" />
-                            Register arrival
-                        </EmployeeButton>
-                    }
-                />
-            </div>
+                {documents?.links?.length > 3 && (
+                    <div className="mt-5 flex flex-col gap-4 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-base text-muted">
+                            Showing{" "}
+                            <span className="font-semibold text-navy-900">
+                                {documents.from ?? 0}–{documents.to ?? 0}
+                            </span>{" "}
+                            of{" "}
+                            <span className="font-semibold text-navy-900">
+                                {documents.total ?? 0}
+                            </span>
+                        </p>
 
-            <ArrivalFormModal
-                open={registering}
-                onClose={() => setRegistering(false)}
-                sections={sections}
-                options={referralOptions}
-                fromSection={fromSection}
-            />
+                        <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
+                            {documents.links.map((link, index) => (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    disabled={!link.url}
+                                    onClick={() =>
+                                        link.url &&
+                                        router.visit(link.url, {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                        })
+                                    }
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
+                                    className={`min-h-11 rounded-xl border px-4 text-base font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                        link.active
+                                            ? "border-brand-600 bg-brand-600 text-white"
+                                            : "border-line bg-white text-navy-800 hover:bg-paper"
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </EmployeeCard>
 
             <DetailsFormModal
                 open={Boolean(completing)}
                 onClose={() => setCompleting(null)}
+                onCompleted={(document) =>
+                    /*
+                     * Straight to the slip - the document can be routed
+                     * from here on, and the slip is what carries its QR
+                     * onto the paper.
+                     */
+                    setOpened({ id: document.document_id, slip: true })
+                }
                 document={completing}
                 sections={sections}
                 options={referralOptions}
             />
 
-            {stubFor && (
-                <ArrivalStubModal
-                    document={stubFor}
-                    onClose={() => setStubFor(null)}
+            {opened && (
+                <DocumentTrailModal
+                    documentId={opened.id}
+                    openSlip={opened.slip}
+                    onClose={() => setOpened(null)}
                 />
             )}
         </EmployeeLayout>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Employee\Documents;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\Documents\CompleteDocumentRequest;
 use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
+use App\Http\Requests\Employee\Documents\StoreReferralRequest;
 use App\Models\Document;
 use App\Models\Section;
 use App\Services\DocumentService;
@@ -43,35 +44,52 @@ class DocumentController extends Controller
         $search = $request->string('search')->toString();
 
         /*
-        * Arrivals whose details are still outstanding - the worklist
-        * for whoever does step 2.
+        * This section's own register of referrals, whether or not they
+        * are finished. Scoped by who registered it rather than who is
+        * holding it: once a referral is completed and forwarded it is in
+        * somebody else's hands, and it still belongs in the register of
+        * slips this office issued.
         */
-        $awaitingDetails = Document::query()
-            ->with(['destinationSection', 'creator.section', 'status'])
-            ->whereNull('details_completed_at')
-            ->where('current_section_id', $employee->section_id)
-            ->latest('created_at')
-            ->get();
+        $register = fn () => Document::query()
+            ->whereHas(
+                'creator',
+                fn ($query) => $query->where('section_id', $employee->section_id)
+            );
 
         /*
-        * A referral just registered, so its stub can be printed.
+        * 'waiting' - registered at the counter, details outstanding.
+        * 'slip'    - step 2 done, so it has a reference slip.
         */
-        $stubId = $request->integer('stub');
+        $filter = $request->string('status')->toString();
 
-        $stubDocument = $stubId
-            ? Document::query()
-                ->with(['destinationSection', 'creator.section'])
-                ->where('document_id', $stubId)
-                ->where('created_by', $employee->employee_id)
-                ->first()
-            : null;
+        $documents = $register()
+            ->with(['destinationSection', 'creator.section', 'status', 'latestTrackingHistory'])
+            ->when(
+                $filter === 'waiting',
+                fn ($query) => $query->whereNull('details_completed_at')
+            )
+            ->when(
+                $filter === 'slip',
+                fn ($query) => $query->whereNotNull('details_completed_at')
+            )
+            ->when(
+                filled($search),
+                fn ($query) => $documentService->applySearch($query, $search)
+            )
+            /*
+            * Oldest first while looking at outstanding work, because the
+            * one that has waited longest is holding up a taxpayer.
+            * Newest first otherwise, which is how a register reads.
+            */
+            ->when(
+                $filter === 'waiting',
+                fn ($query) => $query->oldest('created_at'),
+                fn ($query) => $query->latest('created_at')
+            )
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('Employees/Referrals/Index', [
-            'referrals' => $documentService->getRegisteredDocuments(
-                $employee,
-                $search
-            ),
-
             /*
             * A referral cannot be addressed to the section sending it.
             */
@@ -96,16 +114,34 @@ class DocumentController extends Controller
 
             'filters' => [
                 'search' => $search,
+                'status' => $filter,
+            ],
+
+            'documents' => $documents,
+
+            /*
+            * For the tabs, counted over the whole register rather than
+            * the page being shown.
+            */
+            'counts' => [
+                'all' => $register()->count(),
+                'waiting' => $register()->whereNull('details_completed_at')->count(),
+                'slip' => $register()->whereNotNull('details_completed_at')->count(),
             ],
 
             /*
-            * Open the registration form as soon as the page loads.
+            * Which frame to open on. The dashboard's "New referral"
+            * button still arrives with ?new=1.
             */
-            'openForm' => $request->boolean('new'),
+            /*
+            * A referral just registered in one pass, so its slip can be
+            * printed straight away.
+            */
+            'openSlipFor' => $request->integer('slip') ?: null,
 
-            'awaitingDetails' => $awaitingDetails,
-
-            'stubDocument' => $stubDocument,
+            'frame' => $request->boolean('new')
+                ? 'register'
+                : ($request->string('frame')->toString() ?: 'list'),
 
             /*
             * Which sections may do step 2. The frontend uses this to
@@ -141,12 +177,40 @@ class DocumentController extends Controller
         );
 
         /*
-        * Back to the referrals list, where the new arrival is at the
-        * top waiting for its details, and its stub can be printed.
+        * Straight back where they were - the desk for a counter
+        * account, the referrals list for everyone else - with the new
+        * arrival at the top of it.
+        *
+        * Nothing is printed here. Step 1 has not decided where the
+        * document goes, so there is no slip to attach yet; the QR
+        * leaves on the reference slip once step 2 is done.
         */
+        return back()->with(
+            'success',
+            'Arrival registered. The clock has started.'
+        );
+    }
+
+    /**
+     * Register a referral complete - both steps at once.
+     *
+     * Its own action rather than a flag on store(): step 1 deliberately
+     * accepts two fields and nothing else, and loosening it so this could
+     * share it would mean the counter's form could quietly carry routing
+     * it is not supposed to decide.
+     */
+    public function storeReferral(
+        StoreReferralRequest $request,
+        DocumentService $documentService
+    ): RedirectResponse {
+        $document = $documentService->registerComplete(
+            $request->validated(),
+            Auth::guard('employee')->user()
+        );
+
         return redirect()
-            ->route('referrals.index', ['stub' => $document->document_id])
-            ->with('success', 'Arrival registered. The clock has started.');
+            ->route('referrals.index', ['slip' => $document->document_id])
+            ->with('success', 'Referral registered. Its slip is ready to print.');
     }
 
     /**

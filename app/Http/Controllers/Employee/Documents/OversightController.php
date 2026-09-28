@@ -23,6 +23,11 @@ use Inertia\Response;
 class OversightController extends Controller
 {
     /**
+     * How many stuck documents the comments screen will draw at once.
+     */
+    protected const MOST_CHASED = 100;
+
+    /**
      * Documents sitting with other sections, and the notes sent about
      * them.
      *
@@ -51,7 +56,16 @@ class OversightController extends Controller
             */
             ->whereIn('status_id', [1, 2])
             ->where('current_section_id', '!=', $employee->section_id)
-            ->latest('created_at')
+
+            /*
+            * Oldest first, then capped. A document leaves this list as
+            * soon as it is completed or archived, so it is short in
+            * practice - but if the office ever abandons a few thousand,
+            * this screen must not try to draw them all. The oldest are
+            * the ones worth chasing anyway.
+            */
+            ->oldest('created_at')
+            ->limit(self::MOST_CHASED)
             ->get()
             /*
             * Longest wait first. Sorting here rather than in SQL
@@ -64,7 +78,7 @@ class OversightController extends Controller
             'stuck' => $stuck,
 
             'sent' => DocumentComment::query()
-                ->with(['document:document_id,tracking_number,taxpayer_name', 'toSection', 'acknowledgedBy'])
+                ->with(['document:document_id,tracking_number,taxpayer_name', 'toSection', 'reader'])
                 ->where('author_id', $employee->employee_id)
                 ->latest('created_at')
                 ->limit(20)
@@ -102,32 +116,6 @@ class OversightController extends Controller
         ]);
 
         return back()->with('success', 'Comment sent to the holding section.');
-    }
-
-    /**
-     * The receiving section says it has seen a comment.
-     *
-     * Not limited to the oversight sections: this is the other half of
-     * the conversation.
-     */
-    public function acknowledgeComment(DocumentComment $comment): RedirectResponse
-    {
-        $employee = Auth::guard('employee')->user();
-
-        abort_unless(
-            (int) $comment->to_section_id === (int) $employee->section_id,
-            403,
-            'That comment was addressed to another section.'
-        );
-
-        if (! $comment->acknowledged_at) {
-            $comment->update([
-                'acknowledged_at' => now(),
-                'acknowledged_by' => $employee->employee_id,
-            ]);
-        }
-
-        return back()->with('success', 'Comment acknowledged.');
     }
 
     /**

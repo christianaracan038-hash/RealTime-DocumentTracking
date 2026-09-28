@@ -3,10 +3,12 @@ import { Link, usePage } from "@inertiajs/react";
 import UserInfo from "./UserInfo";
 import Logos from "./Logos";
 import Icon from "./Icon";
-import navigation from "@/config/navigation";
+import navigation, { registrationMenu } from "@/config/navigation";
 
 export default function Sidebar({ open = false, onClose = () => {} }) {
-    const { auth } = usePage().props;
+    const props = usePage().props;
+
+    const { auth } = props;
 
     const sectionName = auth?.employee?.section_name?.toUpperCase();
 
@@ -15,9 +17,11 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
      * been built yet. Ziggy's route() throws on an unregistered name, so
      * those entries are dropped rather than crashing the whole sidebar.
      */
-    const menuItems = (navigation[sectionName] ?? []).filter((item) =>
-        route().has(item.route),
-    );
+    const menuItems = (
+        auth?.employee?.registers_only
+            ? registrationMenu
+            : (navigation[sectionName] ?? [])
+    ).filter((item) => route().has(item.route));
 
     return (
         <>
@@ -79,6 +83,8 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                     {menuItems.map((item) => {
                         const isCurrent = route().current(item.route);
 
+                        const count = item.badge ? (props[item.badge] ?? 0) : 0;
+
                         return (
                             <Link
                                 key={item.route}
@@ -112,7 +118,18 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                                     }`}
                                 />
 
-                                {item.label}
+                                <span className="flex-1">{item.label}</span>
+
+                                {/*
+                                 * How many notes are waiting to be read.
+                                 * Yellow on navy, because it is the one
+                                 * thing in the menu asking for something.
+                                 */}
+                                {count > 0 && (
+                                    <span className="min-w-6 rounded-full bg-accent-400 px-2 py-0.5 text-center text-sm font-bold text-navy-900">
+                                        {count > 99 ? "99+" : count}
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}

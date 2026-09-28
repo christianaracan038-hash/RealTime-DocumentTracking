@@ -6,6 +6,7 @@ use App\Models\EmployeeAcc;
 use App\Models\Role;
 use App\Models\Section;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 /**
  * One login per section, for setting up and testing the portal.
@@ -46,6 +47,16 @@ class EmployeeAccountSeeder extends Seeder
         );
 
         /*
+        * The counter's own account. Named in
+        * config('referral.registration_roles'), which is what limits it
+        * to the registration desk.
+        */
+        $registrationRole = Role::firstOrCreate(
+            ['role_name' => config('referral.registration_roles')[0] ?? 'Registration'],
+            ['description' => 'Registration desk - step 1 only', 'is_active' => true]
+        );
+
+        /*
         * Every section that has a dashboard gets a login, so the whole
         * routing workflow can be walked end to end.
         */
@@ -66,6 +77,7 @@ class EmployeeAccountSeeder extends Seeder
             $employee = EmployeeAcc::firstOrCreate(
                 ['username' => $username],
                 [
+                    'full_name' => Str::title($sectionName).' Staff',
                     'password' => $password,
                     'section_id' => $section->section_id,
                     'role_id' => $role->role_id,
@@ -77,6 +89,33 @@ class EmployeeAccountSeeder extends Seeder
                 $employee->wasRecentlyCreated
                     ? "  created  {$username}  ({$sectionName})"
                     : "  exists   {$username}  ({$sectionName}) - password unchanged"
+            );
+
+            /*
+            * The RDO runs its counter on two accounts: this one
+            * registers arrivals, <section>.staff completes them.
+            */
+            if (! in_array($sectionName, config('referral.details_completion_sections', []), true)) {
+                continue;
+            }
+
+            $deskUsername = strtolower($sectionName).'.counter';
+
+            $desk = EmployeeAcc::firstOrCreate(
+                ['username' => $deskUsername],
+                [
+                    'full_name' => Str::title($sectionName).' Counter',
+                    'password' => $password,
+                    'section_id' => $section->section_id,
+                    'role_id' => $registrationRole->role_id,
+                    'is_active' => true,
+                ]
+            );
+
+            $this->command->line(
+                $desk->wasRecentlyCreated
+                    ? "  created  {$deskUsername}  ({$sectionName} - registration desk)"
+                    : "  exists   {$deskUsername}  ({$sectionName} - registration desk) - password unchanged"
             );
         }
     }

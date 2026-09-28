@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Roles;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Role;
 
 class RoleController extends Controller
 {
@@ -14,9 +14,9 @@ class RoleController extends Controller
      */
     public function index()
     {
-         $roles = Role::orderBy('role_name')->get();
+        $roles = Role::orderBy('role_name')->get();
 
-        return Inertia::render('Admin/Roles/Index', [
+        return Inertia::render('SuperAdmin/Roles/Index', [
             'roles' => $roles,
         ]);
     }
@@ -34,32 +34,32 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-            $validated = $request->validate([
-                'role_name' => [
-                    'required',
-                    'string',
-                    'max:100',
-                    'unique:roles,role_name',
-                ],
+        $validated = $request->validate([
+            'role_name' => [
+                'required',
+                'string',
+                'max:100',
+                'unique:roles,role_name',
+            ],
 
-                'description' => [
-                    'nullable',
-                    'string',
-                    'max:255',
-                ],
+            'description' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
 
-                'is_active' => [
-                    'required',
-                    'boolean',
-                ],
-            ]);
+            'is_active' => [
+                'required',
+                'boolean',
+            ],
+        ]);
 
-            Role::create($validated);
+        Role::create($validated);
 
-            return redirect()->back()->with(
-                'success',
-                'Role added successfully.'
-            );
+        return redirect()->back()->with(
+            'success',
+            'Role added successfully.'
+        );
     }
 
     /**

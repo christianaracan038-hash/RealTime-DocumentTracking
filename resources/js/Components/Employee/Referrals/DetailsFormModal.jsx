@@ -45,19 +45,26 @@ function Field({ label, hint, error, children }) {
 export default function DetailsFormModal({
     open,
     onClose,
+    onCompleted = () => {},
     document = null,
     sections = [],
     options = {},
 }) {
-    // Anything step 1 did not record has to be asked for here.
-    const needsRouting = Boolean(document) && !document.taxpayer_name;
+    /*
+     * Anything step 1 did not record has to be asked for here.
+     *
+     * Where the document goes is the normal case: the counter registers
+     * a taxpayer and a date, and nothing else. The arrival fields are
+     * only ever missing on a referral left bare by the older draft flow.
+     */
+    const needsRouting = Boolean(document) && !document.destination_section_id;
+
+    const needsArrival = Boolean(document) && !document.taxpayer_name;
 
     const { data, setData, patch, processing, errors, reset, clearErrors } =
         useForm({
             concerns: [],
             concern_other: "",
-            referred_for: [],
-            referred_for_other: "",
             remarks: "",
             remarks_other: "",
 
@@ -84,6 +91,13 @@ export default function DetailsFormModal({
         patch(route("documents.complete", document.document_id), {
             preserveScroll: true,
             onSuccess: () => {
+                /*
+                 * The document can be routed from here on, so the slip
+                 * that carries its QR onto the paper is offered straight
+                 * away rather than hunted for later.
+                 */
+                onCompleted(document);
+
                 reset();
                 clearErrors();
                 onClose();
@@ -129,7 +143,7 @@ export default function DetailsFormModal({
                 </div>
 
                 {/* What step 1 recorded - check the paper against this */}
-                {!needsRouting && (
+                {!needsArrival && (
                     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 border-b border-line bg-paper px-7 py-5 text-base">
                         <dt className="text-sm font-semibold text-muted">
                             Taxpayer
@@ -166,35 +180,43 @@ export default function DetailsFormModal({
                     {needsRouting && (
                         <div className="space-y-6 rounded-xl border-2 border-accent-400 bg-accent-100 p-5">
                             <p className="text-base font-semibold text-navy-900">
-                                This referral has no details at all yet, so it
-                                needs the arrival information too.
+                                {needsArrival
+                                    ? "This referral has no details at all yet, so it needs the arrival information too."
+                                    : "Where is this going? The counter records the taxpayer and the date; the routing is decided here."}
                             </p>
 
-                            <Field
-                                label="Taxpayer's Name"
-                                error={errors.taxpayer_name}
-                            >
-                                <input
-                                    type="text"
-                                    value={data.taxpayer_name}
-                                    onChange={(e) =>
-                                        setData("taxpayer_name", e.target.value)
-                                    }
-                                    className={FIELD}
-                                />
-                            </Field>
+                            {needsArrival && (
+                                <>
+                                    <Field
+                                        label="Taxpayer's Name"
+                                        error={errors.taxpayer_name}
+                                    >
+                                        <input
+                                            type="text"
+                                            value={data.taxpayer_name}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "taxpayer_name",
+                                                    e.target.value,
+                                                )
+                                            }
+                                            className={FIELD}
+                                        />
+                                    </Field>
 
-                            <Field
-                                label="Date Issued"
-                                error={errors.document_date}
-                            >
-                                <DateField
-                                    value={data.document_date}
-                                    onChange={(v) =>
-                                        setData("document_date", v)
-                                    }
-                                />
-                            </Field>
+                                    <Field
+                                        label="Date Issued"
+                                        error={errors.document_date}
+                                    >
+                                        <DateField
+                                            value={data.document_date}
+                                            onChange={(v) =>
+                                                setData("document_date", v)
+                                            }
+                                        />
+                                    </Field>
+                                </>
+                            )}
 
                             <Field
                                 label="Receiving Section"
@@ -259,25 +281,10 @@ export default function DetailsFormModal({
                         />
                     </Field>
 
-                    <Field
-                        label="For"
-                        hint="Action requested of the receiving office. Tick all that apply."
-                        error={errors.referred_for}
-                    >
-                        <ChoiceGroup
-                            name="referred_for"
-                            multiple
-                            options={options.referred_for ?? []}
-                            value={data.referred_for}
-                            onChange={(v) => setData("referred_for", v)}
-                            otherValue={data.referred_for_other}
-                            onOtherChange={(v) =>
-                                setData("referred_for_other", v)
-                            }
-                            otherPlaceholder="What is the other action?"
-                            otherError={errors.referred_for_other}
-                        />
-                    </Field>
+                    {/*
+                     * No "For" field - it is ticked by hand on the
+                     * printed slip. See ReferenceSlipModal.
+                     */}
 
                     <Field
                         label="Remarks"

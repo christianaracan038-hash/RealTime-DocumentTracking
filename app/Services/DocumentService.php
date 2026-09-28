@@ -86,8 +86,11 @@ class DocumentService
      * Search runs in the database before pagination so the
      * registration page behaves the same way as History.
      */
-    public function getRegisteredDocuments($employee, ?string $search = null)
-    {
+    public function getRegisteredDocuments(
+        $employee,
+        ?string $search = null,
+        int $perPage = 5
+    ) {
         return Document::query()
             ->with([
                 'status',
@@ -107,7 +110,7 @@ class DocumentService
                 fn ($query) => $this->applySearch($query, $search)
             )
             ->latest('document_id')
-            ->paginate(5)
+            ->paginate($perPage)
             ->withQueryString();
     }
 
@@ -231,7 +234,7 @@ class DocumentService
      * LOWER(...) LIKE is used instead of ILIKE so the same query runs
      * on PostgreSQL (production) and SQLite (the test suite).
      */
-    protected function applySearch($query, string $search)
+    public function applySearch($query, string $search)
     {
         $keyword = '%'.mb_strtolower(trim($search)).'%';
 
@@ -346,11 +349,14 @@ class DocumentService
     /**
      * Step 1 - register a document's arrival.
      *
-     * This is the moment the office's clock starts. The tracking number
-     * and QR are produced here, with the routing facts read off the
-     * paper, so the document can be forwarded the same morning. The
-     * descriptive fields are filled in later by completeDetails(),
-     * which never touches the tracking number, the QR, or created_at.
+     * This is the moment the office's clock starts, and it takes a
+     * taxpayer and a date: the counter can do it while the taxpayer is
+     * still standing there, which is the point. The tracking number and
+     * QR are produced here.
+     *
+     * Everything else - where the document goes, what it is about - is
+     * filled in by completeDetails(), which never touches the tracking
+     * number, the QR, or created_at.
      */
     public function register(array $data, $employee): Document
     {
@@ -362,13 +368,19 @@ class DocumentService
                 'document_date' => $data['document_date'],
                 'taxpayer_name' => $data['taxpayer_name'],
 
-                'status_id' => 1, // Pending - routable straight away
+                'status_id' => 1, // Pending - the clock is running
 
                 'current_section_id' => $employee->section_id,
                 'current_employee_id' => $employee->employee_id,
 
-                'destination_section_id' => $data['destination_section_id'],
-                'addressee' => $data['addressee'],
+                /*
+                * Left blank on purpose. Step 2 decides where the
+                * document goes, and until it does the document cannot be
+                * received or forwarded by anyone - which is what stops a
+                * half-registered referral wandering off.
+                */
+                'destination_section_id' => null,
+                'addressee' => null,
 
                 'created_by' => $employee->employee_id,
 
@@ -382,6 +394,27 @@ class DocumentService
             $this->generateQrCode($document);
 
             return $document->fresh();
+        });
+    }
+
+    /**
+     * Register a referral complete, in one pass.
+     *
+     * The two-step split earns its keep at the counter, where a taxpayer
+     * is waiting and a name and a date are all anybody has time to take.
+     * At a desk with the document in hand it only means filling one form
+     * to unlock another, so this does both halves at once: the referral
+     * comes out with its reference number, its QR, its routing and its
+     * details, and a slip that can be printed immediately.
+     *
+     * One transaction, so a referral is never left half-registered.
+     */
+    public function registerComplete(array $data, $employee): Document
+    {
+        return DB::transaction(function () use ($data, $employee) {
+            $document = $this->register($data, $employee);
+
+            return $this->completeDetails($document, $data, $employee);
         });
     }
 
@@ -404,10 +437,13 @@ class DocumentService
                 $data['concern_other'] ?? null
             ),
 
-            'referred_for' => $this->joinChoices(
-                $data['referred_for'],
-                $data['referred_for_other'] ?? null
-            ),
+            /*
+            * referred_for is not set here. On BIR Form 2309 the "FOR"
+            * block is a grid of boxes ticked by hand on the hardcopy -
+            * see config('referral.referred_for'), which now only feeds
+            * the printed slip. The column stays for referrals recorded
+            * before that was understood.
+            */
 
             'remarks' => $data['remarks'] === 'Other'
                 ? trim($data['remarks_other'])

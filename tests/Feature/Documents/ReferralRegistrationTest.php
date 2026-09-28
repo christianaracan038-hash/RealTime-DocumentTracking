@@ -14,10 +14,10 @@ use Tests\TestCase;
 /**
  * Registering a referral (BIR Form 2309), in two steps.
  *
- * Step 1, at the counter: the routing facts, so the clock starts when
- * the document actually arrives and it can be forwarded the same
- * morning. Step 2, later and usually by someone else: the descriptive
- * fields.
+ * Step 1, at the counter: the taxpayer and the date, so the clock starts
+ * when the document actually arrives rather than when somebody gets
+ * round to encoding it. Step 2, later and by the other account: where it
+ * is going, and what it is about.
  */
 class ReferralRegistrationTest extends TestCase
 {
@@ -81,17 +81,20 @@ class ReferralRegistrationTest extends TestCase
         return array_merge([
             'document_date' => '2026-09-22',
             'taxpayer_name' => 'Juan Dela Cruz',
-            'destination_section_id' => $this->compliance->section_id,
-            'addressee' => 'Chief',
         ], $overrides);
     }
 
+    /**
+     * Step 2 carries the routing as well as the description, because
+     * step 1 no longer records it.
+     */
     protected function details(array $overrides = []): array
     {
         return array_merge([
             'concerns' => ['Promissory Note'],
-            'referred_for' => ['Approval'],
             'remarks' => 'Processing',
+            'destination_section_id' => $this->compliance->section_id,
+            'addressee' => 'Chief',
         ], $overrides);
     }
 
@@ -118,10 +121,12 @@ class ReferralRegistrationTest extends TestCase
 
         $document = Document::first();
 
-        // The routing facts, read off the paper.
+        // What the counter can read off the paper at a glance.
         $this->assertSame('Juan Dela Cruz', $document->taxpayer_name);
-        $this->assertSame($this->compliance->section_id, (int) $document->destination_section_id);
-        $this->assertSame('Chief', $document->addressee);
+
+        // Where it goes is decided in step 2, so it is not set yet.
+        $this->assertNull($document->destination_section_id);
+        $this->assertNull($document->addressee);
 
         // Produced by the system, now - this is when the clock starts.
         $this->assertMatchesRegularExpression('/^DOC-\d{8}-\d{6}$/', $document->tracking_number);
@@ -132,7 +137,7 @@ class ReferralRegistrationTest extends TestCase
 
         Storage::disk('public')->assertExists('qrcodes/'.$document->qr_value.'.svg');
 
-        // Pending, so it is routable immediately.
+        // Pending: the clock is running from this moment.
         $this->assertSame(1, (int) $document->status_id);
 
         // But the paperwork is not done.
@@ -151,18 +156,22 @@ class ReferralRegistrationTest extends TestCase
         $this->assertSame(1, Document::count());
     }
 
-    public function test_step_one_requires_every_routing_fact(): void
+    public function test_step_one_asks_for_the_taxpayer_and_the_date_and_no_more(): void
     {
         $this->actingAs($this->clerk, 'employee')
             ->post(route('documents.store'), [])
-            ->assertSessionHasErrors([
-                'document_date',
-                'taxpayer_name',
-                'destination_section_id',
-                'addressee',
-            ]);
+            ->assertSessionHasErrors(['document_date', 'taxpayer_name']);
 
         $this->assertSame(0, Document::count());
+
+        /*
+         * And nothing else is asked for. There is a taxpayer waiting at
+         * the counter; which section should handle the document is not a
+         * decision to make at that moment.
+         */
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), $this->arrival())
+            ->assertSessionHasNoErrors();
     }
 
     /*
@@ -171,7 +180,7 @@ class ReferralRegistrationTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
-    public function test_a_referral_can_be_forwarded_before_its_details_are_filled_in(): void
+    public function test_a_referral_cannot_move_until_step_two_says_where(): void
     {
         $document = $this->registerArrival();
 
@@ -183,15 +192,34 @@ class ReferralRegistrationTest extends TestCase
             'is_active' => true,
         ]);
 
-        // Compliance sees it waiting, the same morning.
+        /*
+         * Nobody is expecting it yet, because nobody has been named.
+         * A half-registered referral staying put is the point: the clock
+         * is already running on it, and it sits on the Referrals page as
+         * work outstanding instead of arriving somewhere with no
+         * concerns and no remarks on it.
+         */
+        $listed = $this->actingAs($receiver, 'employee')
+            ->get(route('compliance.dashboard'))
+            ->viewData('page')['props']['documents'];
+
+        $this->assertCount(0, $listed);
+
+        $this->actingAs($receiver, 'employee')
+            ->postJson("/api/documents/{$document->document_id}/receive")
+            ->assertStatus(403);
+
+        // Step 2 names the section, and then it is waiting for them.
+        $this->actingAs($this->encoder, 'employee')
+            ->patch(route('documents.complete', $document), $this->details())
+            ->assertSessionHasNoErrors();
+
         $listed = $this->actingAs($receiver, 'employee')
             ->get(route('compliance.dashboard'))
             ->viewData('page')['props']['documents'];
 
         $this->assertCount(1, $listed);
-        $this->assertTrue($listed[0]['awaiting_details']);
 
-        // And can receive it.
         $this->actingAs($receiver, 'employee')
             ->postJson("/api/documents/{$document->document_id}/receive")
             ->assertOk();
@@ -232,7 +260,6 @@ class ReferralRegistrationTest extends TestCase
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Tax Assumption', 'Promissory Note'],
-                'referred_for' => ['Approval', 'Signature'],
             ]))
             ->assertRedirect(route('referrals.index'))
             ->assertSessionHas('success');
@@ -240,8 +267,10 @@ class ReferralRegistrationTest extends TestCase
         $document->refresh();
 
         $this->assertSame('Tax Assumption, Promissory Note', $document->concern);
-        $this->assertSame('Approval, Signature', $document->referred_for);
         $this->assertSame('Processing', $document->remarks);
+
+        // "FOR" is ticked by hand on the printed slip, never stored.
+        $this->assertNull($document->referred_for);
 
         $this->assertFalse($document->awaiting_details);
         $this->assertSame(
@@ -259,10 +288,9 @@ class ReferralRegistrationTest extends TestCase
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Other'],
-                'referred_for' => ['Other'],
                 'remarks' => 'Other',
             ]))
-            ->assertSessionHasErrors(['concern_other', 'referred_for_other', 'remarks_other']);
+            ->assertSessionHasErrors(['concern_other', 'remarks_other']);
 
         $this->assertTrue($document->fresh()->awaiting_details);
 
@@ -270,8 +298,6 @@ class ReferralRegistrationTest extends TestCase
             ->patch(route('documents.complete', $document), $this->details([
                 'concerns' => ['Tax Assumption', 'Other'],
                 'concern_other' => 'Lost receipt',
-                'referred_for' => ['Other'],
-                'referred_for_other' => 'Return to taxpayer',
                 'remarks' => 'Other',
                 'remarks_other' => 'Waiting for the taxpayer to call back.',
             ]))
@@ -280,7 +306,6 @@ class ReferralRegistrationTest extends TestCase
         $document->refresh();
 
         $this->assertSame('Tax Assumption, Lost receipt', $document->concern);
-        $this->assertSame('Return to taxpayer', $document->referred_for);
         $this->assertSame('Waiting for the taxpayer to call back.', $document->remarks);
     }
 
@@ -330,15 +355,16 @@ class ReferralRegistrationTest extends TestCase
             'created_by' => $this->clerk->employee_id,
         ]);
 
-        // The routing facts are missing, so they are asked for here.
+        /*
+         * Not even the taxpayer was recorded, so step 2 has to ask for
+         * the arrival details as well as its own.
+         */
         $this->actingAs($this->encoder, 'employee')
-            ->patch(route('documents.complete', $bare), $this->details())
-            ->assertSessionHasErrors([
-                'taxpayer_name',
-                'document_date',
-                'destination_section_id',
-                'addressee',
-            ]);
+            ->patch(route('documents.complete', $bare), $this->details([
+                'destination_section_id' => $this->compliance->section_id,
+                'addressee' => 'Chief',
+            ]))
+            ->assertSessionHasErrors(['taxpayer_name', 'document_date']);
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $bare), $this->details($this->arrival()))
@@ -369,6 +395,16 @@ class ReferralRegistrationTest extends TestCase
             'is_active' => true,
         ]);
 
+        /*
+         * Routed but not described - what a referral looks like if
+         * somebody sets the destination and leaves the rest. It can
+         * travel, and it still must not be closed out.
+         */
+        $document->update([
+            'destination_section_id' => $this->compliance->section_id,
+            'addressee' => 'Chief',
+        ]);
+
         $this->actingAs($receiver, 'employee')
             ->postJson("/api/documents/{$document->document_id}/receive")
             ->assertOk();
@@ -397,7 +433,7 @@ class ReferralRegistrationTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
-    public function test_the_referrals_page_lists_what_is_awaiting_details(): void
+    public function test_the_referrals_page_is_the_sections_register(): void
     {
         $this->registerArrival();
 
@@ -406,7 +442,18 @@ class ReferralRegistrationTest extends TestCase
             ->assertOk()
             ->viewData('page')['props'];
 
-        $this->assertCount(1, $props['awaitingDetails']);
+        /*
+         * One referral, counted as outstanding. The counts drive the tabs
+         * and are taken over the whole register, not the page shown.
+         */
+        $this->assertCount(1, $props['documents']['data']);
+        $this->assertSame(1, $props['counts']['all']);
+        $this->assertSame(1, $props['counts']['waiting']);
+        $this->assertSame(0, $props['counts']['slip']);
+
+        // The table opens first; registering is the other frame.
+        $this->assertSame('list', $props['frame']);
+
         $this->assertTrue($props['canCompleteDetails'], 'RDO may do step 2.');
         $this->assertSame(config('referral'), $props['referralOptions']);
 
@@ -414,6 +461,27 @@ class ReferralRegistrationTest extends TestCase
         $offered = collect($props['sections'])->pluck('section_id');
         $this->assertFalse($offered->contains($this->rdo->section_id));
         $this->assertTrue($offered->contains($this->compliance->section_id));
+    }
+
+    public function test_an_unfinished_referral_can_be_found_on_the_referrals_page(): void
+    {
+        $this->registerArrival();
+
+        $response = $this->actingAs($this->encoder, 'employee')
+            ->get(route('referrals.index', ['search' => 'juan']));
+
+        $this->assertCount(
+            1,
+            $response->viewData('page')['props']['documents']['data']
+        );
+
+        $response = $this->actingAs($this->encoder, 'employee')
+            ->get(route('referrals.index', ['search' => 'nobody by that name']));
+
+        $this->assertCount(
+            0,
+            $response->viewData('page')['props']['documents']['data']
+        );
     }
 
     public function test_the_referral_can_be_found_by_concern_and_remarks(): void
@@ -427,13 +495,23 @@ class ReferralRegistrationTest extends TestCase
             ]))
             ->assertSessionHasNoErrors();
 
-        foreach (['juan', 'promissory', 'assistant chief', 'approval', '1002'] as $keyword) {
+        /*
+         * Searched from History, not the Referrals page: once its
+         * details are in, a referral is finished work and leaves that
+         * page. Every word anybody might remember it by still finds it.
+         */
+        /*
+         * "approval" is deliberately not among these: it used to be
+         * stored in referred_for, and that block is now ticked by hand on
+         * the printed slip rather than recorded.
+         */
+        foreach (['juan', 'promissory', 'assistant chief', '1002'] as $keyword) {
             $response = $this->actingAs($this->clerk, 'employee')
-                ->get(route('referrals.index', ['search' => $keyword]));
+                ->get(route('documents.history', ['search' => $keyword]));
 
             $this->assertCount(
                 1,
-                $response->viewData('page')['props']['referrals']['data'],
+                $response->viewData('page')['props']['documents']['data'],
                 "Expected a match for [{$keyword}]."
             );
         }

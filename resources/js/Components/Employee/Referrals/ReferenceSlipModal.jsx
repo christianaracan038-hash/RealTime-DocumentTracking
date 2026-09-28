@@ -6,6 +6,28 @@ import Icon from "@/Components/Employee/Icon";
 import { addressedTo, longDate, sentFrom } from "./referral";
 
 /*
+ * The fourteen boxes of the printed form, in its own order and wording.
+ * Mirrors config('referral.referred_for') - the slip is the only thing
+ * that uses it now.
+ */
+const REFERRED_FOR = [
+    "APPROVAL",
+    "COMMENT",
+    "INVESTIGATION",
+    "INITIAL",
+    "SIGNATURE",
+    "AS REQUESTED",
+    "DISSEMINATIONS",
+    "NECESSARY ACTION",
+    "SEE ME",
+    "STUDY AND REPORT",
+    "YOUR INFORMATION",
+    "VERIFICATION",
+    "FILE",
+    "STUDY / RECOMMENDATION",
+];
+
+/*
  * BIR Form 2309 - Reference Slip.
  *
  * Printed portrait, full sheet, stacked sections top to bottom - matching
@@ -37,6 +59,82 @@ import { addressedTo, longDate, sentFrom } from "./referral";
  *
  * The seal is read from /images/bir-logo.png.
  */
+
+/*
+ * The "FOR" grid, as it is printed on the paper.
+ *
+ * Fourteen empty boxes in two columns, plus two ruled lines for OTHER.
+ * The system does not ask which of these applies and does not store an
+ * answer: on the real form the RDO or a Chief ticks these with a pen, on
+ * the hardcopy that travels with the document. Printing one chosen value
+ * in place of the grid produced a slip that did not match the form the
+ * office is required to use.
+ *
+ * A referral recorded before this was understood may still carry a
+ * stored value, and its box is printed already ticked so the slip stays
+ * true to what was filed.
+ */
+function ForBoxes({ document }) {
+    const options = REFERRED_FOR;
+
+    const half = Math.ceil(options.length / 2);
+
+    const columns = [options.slice(0, half), options.slice(half)];
+
+    /*
+     * Legacy values were stored joined by ", " and in mixed case, so they
+     * are compared without case or spacing.
+     */
+    const recorded = String(document.referred_for ?? "")
+        .split(",")
+        .map((value) => value.trim().toUpperCase())
+        .filter(Boolean);
+
+    const ticked = (option) => recorded.includes(option.toUpperCase());
+
+    return (
+        <div>
+            <div className="flex gap-3">
+                {columns.map((column, index) => (
+                    <ul key={index} className="min-w-0 flex-1 space-y-[2px]">
+                        {column.map((option) => (
+                            <li
+                                key={option}
+                                className="flex items-center gap-1.5"
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className="flex h-[9px] w-[9px] shrink-0 items-center justify-center border border-navy-900 text-[8px] leading-none font-bold"
+                                >
+                                    {ticked(option) ? "X" : ""}
+                                </span>
+
+                                <span className="truncate text-[7.5px] uppercase">
+                                    {option}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                ))}
+            </div>
+
+            {/* OTHER, written in by hand like the rest of this block */}
+            <div className="mt-1 flex items-end gap-1.5">
+                <span className="shrink-0 text-[7.5px] uppercase">Other</span>
+
+                <span
+                    aria-hidden="true"
+                    className="h-[9px] flex-1 border-b border-navy-900"
+                />
+            </div>
+
+            <span
+                aria-hidden="true"
+                className="mt-[3px] block h-[9px] border-b border-navy-900"
+            />
+        </div>
+    );
+}
 
 function Section({ title, children, className = "" }) {
     return (
@@ -116,13 +214,13 @@ export function ReferenceSlip({ document }) {
                 <p>{document.concern}</p>
             </Section>
 
-            {/* 4. For */}
-            <Section title="For" className="min-h-[0.6in] shrink-0 border-b">
-                <p className="font-semibold">{document.referred_for}</p>
+            {/* 4. For - ticked by hand, on the paper */}
+            <Section title="For" className="shrink-0 border-b">
+                <ForBoxes document={document} />
             </Section>
 
             {/* 5. Remarks */}
-            <Section title="Remarks" className="h-[3.5in] border-b">
+            <Section title="Remarks" className="h-[2.1in] border-b">
                 <p className="whitespace-pre-wrap">{document.remarks || " "}</p>
             </Section>
 

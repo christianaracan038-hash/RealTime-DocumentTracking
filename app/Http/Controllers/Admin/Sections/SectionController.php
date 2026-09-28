@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Admin\Sections;
 
 use App\Http\Controllers\Controller;
+use App\Models\Section;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Section;
-
 
 class SectionController extends Controller
 {
@@ -15,9 +14,9 @@ class SectionController extends Controller
      */
     public function index()
     {
-         $sections = Section::orderBy('section_name')->get();
+        $sections = Section::orderBy('section_name')->get();
 
-        return Inertia::render('Admin/Sections/Index', [
+        return Inertia::render('SuperAdmin/Sections/Index', [
             'sections' => $sections,
         ]);
     }
@@ -35,12 +34,12 @@ class SectionController extends Controller
      */
     public function store(Request $request)
     {
-         $validated = $request->validate([
+        $validated = $request->validate([
             'section_code' => [
                 'required',
                 'string',
                 'max:20',
-                 'unique:sections,section_code',
+                'unique:sections,section_code',
             ],
 
             'section_name' => [
@@ -77,10 +76,7 @@ class SectionController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
-    {
-        
-    }
+    public function edit(string $id) {}
 
     /**
      * Update the specified resource in storage.
@@ -88,7 +84,7 @@ class SectionController extends Controller
     public function update(Request $request, Section $section)
     {
         $validated = $request->validate([
-            'section_code' => 'required|string|max:20|unique:sections,section_code,' . $section->section_id . ',section_id',
+            'section_code' => 'required|string|max:20|unique:sections,section_code,'.$section->section_id.',section_id',
             'section_name' => 'required|string|max:100',
             'description' => 'nullable|string|max:255',
             'is_active' => 'required|boolean',

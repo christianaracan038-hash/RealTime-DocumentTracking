@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
 
             SectionSeeder::class,
 
+            RoleSeeder::class,
+
             DocumentStatusSeeder::class,
 
         ]);

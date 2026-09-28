@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\EmployeeAcc;
+use App\Services\DashboardResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Services\DashboardResolver;
-
 
 class AuthenticatedSessionController extends Controller
 {
@@ -35,10 +35,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Employee Login
-        if (Auth::guard('employee')->check()) {
+        /*
+        * Branch on the guard this request signed in on, not on whether a
+        * guard is signed in. Those two differ when a session is left
+        * over from somebody else at the same browser, and asking the
+        * employee guard first meant an administrator landed on whichever
+        * section had last been used there.
+        */
+        if ($request->authenticatedGuard() === 'employee') {
 
-            /** @var \App\Models\EmployeeAcc $employee */
+            /** @var EmployeeAcc $employee */
             $employee = Auth::guard('employee')->user();
 
             $dashboard = DashboardResolver::resolve($employee);
@@ -56,7 +62,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         // Admin Login
-        return redirect()->intended(route('admin.dashboard'));
+        return redirect()->intended(route('super.dashboard'));
     }
 
     /**
