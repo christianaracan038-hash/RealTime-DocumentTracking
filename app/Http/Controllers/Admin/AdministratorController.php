@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,7 +54,13 @@ class AdministratorController extends Controller
             'password.confirmed' => 'The two passwords do not match.',
         ]);
 
-        User::create($validated + ['is_active' => true]);
+        $created = User::create($validated + ['is_active' => true]);
+
+        /*
+        * The entry that matters most in this table: who gave somebody
+        * the power to give power.
+        */
+        AuditLog::record('administrator.created', $created);
 
         return back()->with('success', $validated['name'].' can now sign in as an administrator.');
     }
@@ -70,7 +77,13 @@ class AdministratorController extends Controller
             'email.unique' => 'Another administrator already uses that email address.',
         ]);
 
-        $user->update($validated);
+        $user->fill($validated);
+
+        $changed = array_keys($user->getDirty());
+
+        $user->save();
+
+        AuditLog::record('administrator.updated', $user, ['changed' => $changed]);
 
         return back()->with('success', $user->name.' updated.');
     }
@@ -85,6 +98,8 @@ class AdministratorController extends Controller
         ]);
 
         $user->update(['password' => $validated['password']]);
+
+        AuditLog::record('administrator.password_reset', $user);
 
         return back()->with('success', 'New password set for '.$user->name.'.');
     }
@@ -104,6 +119,11 @@ class AdministratorController extends Controller
         }
 
         $user->update(['is_active' => $validated['is_active']]);
+
+        AuditLog::record(
+            $validated['is_active'] ? 'administrator.reactivated' : 'administrator.deactivated',
+            $user
+        );
 
         return back()->with(
             'success',

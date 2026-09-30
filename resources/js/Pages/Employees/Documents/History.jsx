@@ -47,14 +47,16 @@ export default function History({ documents, filters = {} }) {
                             has been.
                         </p>
                     </div>
+                </div>
 
-                    <div className="w-full lg:w-96">
-                        <SearchInput
-                            label="Find a document"
-                            initialValue={filters.search}
-                            placeholder="Taxpayer, concern, reference no..."
-                        />
-                    </div>
+                <div className="mt-5">
+                    <SearchInput
+                        size="lg"
+                        label="Find a taxpayer"
+                        initialValue={filters.search}
+                        placeholder="Type a name, a concern, or a reference number"
+                        hint="Any part will do - all of History is searched, not just this page."
+                    />
                 </div>
 
                 {rows.length > 0 ? (
@@ -133,7 +135,7 @@ export default function History({ documents, filters = {} }) {
                                     className={`min-h-11 rounded-xl border px-4 text-base font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                         link.active
                                             ? "border-brand-600 bg-brand-600 text-white"
-                                            : "border-line bg-white text-navy-800 hover:bg-paper"
+                                            : "border-line bg-white text-navy-800 hover:bg-sunken"
                                     }`}
                                 />
                             ))}

@@ -67,7 +67,7 @@ export default function Inbox({ comments }) {
                                 key={comment.comment_id}
                                 className={`flex overflow-hidden rounded-xl border ${
                                     comment.acknowledged
-                                        ? "border-line bg-white"
+                                        ? "border-line bg-surface"
                                         : "border-accent-400 bg-accent-100"
                                 }`}
                             >
@@ -163,7 +163,7 @@ export default function Inbox({ comments }) {
                                 className={`min-h-11 rounded-xl border px-4 text-base font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                     link.active
                                         ? "border-brand-600 bg-brand-600 text-white"
-                                        : "border-line bg-white text-navy-800 hover:bg-paper"
+                                        : "border-line bg-white text-navy-800 hover:bg-sunken"
                                 }`}
                             />
                         ))}

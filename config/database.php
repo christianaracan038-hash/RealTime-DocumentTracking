@@ -97,6 +97,23 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            /*
+            * Keep the connection open between requests.
+            *
+            * The database is in Tokyo: opening one costs about 600ms of
+            * TLS handshake and authentication, paid on every page load
+            * before a single row is read. Reusing it takes that to zero.
+            *
+            * Off by default because it is not free: each PHP worker holds
+            * a slot on the Supabase pooler for as long as it lives, so a
+            * host with many workers can exhaust the pool. For one office
+            * on one server that is the right trade; set DB_PERSISTENT=false
+            * if connections ever start being refused.
+            */
+            'options' => env('DB_PERSISTENT', false)
+                ? [PDO::ATTR_PERSISTENT => true]
+                : [],
         ],
 
         'sqlsrv' => [

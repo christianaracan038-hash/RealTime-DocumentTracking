@@ -74,7 +74,7 @@ export default function IncomingDocuments({ documents = [] }) {
                                             document.aging?.overdue
                                                 ? "border-stop-600"
                                                 : "border-line"
-                                        } ${urgency?.card ?? "bg-white"}`}
+                                        } ${urgency?.card ?? "bg-surface"}`}
                                     >
                                         {/* The urgency reads before any text does */}
                                         <span

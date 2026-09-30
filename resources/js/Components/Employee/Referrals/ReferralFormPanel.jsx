@@ -213,7 +213,7 @@ export default function ReferralFormPanel({
                         />
                     </Field>
 
-                    <div className="rounded-xl bg-paper px-4 py-3">
+                    <div className="rounded-xl bg-sunken px-4 py-3">
                         <p className="text-xs font-semibold tracking-wide text-muted uppercase">
                             From
                         </p>

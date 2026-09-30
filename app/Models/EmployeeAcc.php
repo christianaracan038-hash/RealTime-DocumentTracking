@@ -104,6 +104,24 @@ class EmployeeAcc extends Authenticatable
     }
 
     /**
+     * "Atty. John" - the title and the first name, for greeting somebody.
+     *
+     * Null rather than a username when there is no name on file: "Good
+     * morning, rdo.staff" is worse than "Good morning" on its own, and a
+     * caller that wants the account instead can ask for it.
+     */
+    public function getShortNameAttribute(): ?string
+    {
+        if (blank($this->full_name)) {
+            return null;
+        }
+
+        $first = explode(' ', trim($this->full_name))[0];
+
+        return trim(($this->position ? $this->position.' ' : '').$first);
+    }
+
+    /**
      * Where the browser can fetch this person's photograph, or null.
      *
      * Not appended by default, for the same reason as display_name: an
@@ -148,7 +166,12 @@ class EmployeeAcc extends Authenticatable
     public function registersOnly(): bool
     {
         return in_array(
-            $this->role?->role_name,
+            /*
+            * The cached roles table, not the relation: this runs in
+            * middleware on every employee request, and a relation would
+            * spend 290ms of network on a row that never changes.
+            */
+            Role::cached($this->role_id)?->role_name,
             config('referral.registration_roles', []),
             true
         );

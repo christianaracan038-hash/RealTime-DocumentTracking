@@ -20,7 +20,7 @@ export default function Documents({ documents = [] }) {
                     </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
                     <div className="mb-5 flex items-center justify-between">
                         <div>
                             <h2 className="text-lg font-semibold text-slate-800">

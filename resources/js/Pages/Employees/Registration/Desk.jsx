@@ -202,7 +202,7 @@ export default function Desk({
                                         className={`min-h-11 rounded-xl border px-4 text-base font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                             link.active
                                                 ? "border-brand-600 bg-brand-600 text-white"
-                                                : "border-line bg-white text-navy-800 hover:bg-paper"
+                                                : "border-line bg-white text-navy-800 hover:bg-sunken"
                                         }`}
                                     />
                                 ))}

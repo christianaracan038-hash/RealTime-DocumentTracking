@@ -14,7 +14,7 @@ export const URGENCY = {
         label: "On time",
         icon: "check",
         spine: "bg-ok-600",
-        card: "bg-white",
+        card: "bg-surface",
         pill: "bg-ok-100 text-ok-600",
         dot: "bg-ok-600",
         band: "bg-ok-600",

@@ -70,7 +70,7 @@ function SuccessNotice({ notice, onDone }) {
             aria-modal="true"
             aria-labelledby="notice-title"
         >
-            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-2xl">
                 {/* The unmistakable part */}
                 <div className="flex flex-col items-center bg-ok-600 px-6 pt-8 pb-6 text-center text-white">
                     <span

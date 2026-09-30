@@ -42,9 +42,29 @@
     --color-accent-400: #eafe01;
     --color-accent-100: #f7ffb8;
 
-    /* Neutrals, biased slightly blue so they sit with the navy */
-    --color-paper: #eef2fa;
-    --color-line: #e0e5f2;
+    /*
+    * Three grounds, and they are not interchangeable:
+    *
+    *   paper   the page itself, and nothing else. Grey, chosen by the
+    *           office: the old near-white page made every card invisible
+    *           against it, and a screen of white is tiring all day.
+    *   surface panels - cards, dialogs, the header, document rows. Off
+    *           white, so it is plainly a sheet lying on the page.
+    *   sunken  recessed areas INSIDE a panel: modal footers, the "From"
+    *           block, an unselected tab, a quiet button's hover. It has
+    *           to stay light, because it sits on surface, not on paper.
+    *
+    * sunken exists because paper used to do both jobs. Once the page
+    * went grey, every one of those recessed areas would have gone grey
+    * with it - dark slabs inside white cards.
+    *
+    * Only small controls - inputs, quiet buttons, choice tiles - sit at
+    * pure white, which is what makes a field look like somewhere to type.
+    */
+    --color-paper: #b4b4b4;
+    --color-surface: #f8fafd;
+    --color-sunken: #e7edf8;
+    --color-line: #ccd6ea;
     --color-muted: #626d8f;
 
     /* Status. Kept separate from the brand colours on purpose. */
@@ -85,22 +105,10 @@
         background-color: var(--color-paper);
 
         /*
-        * Two very faint washes of the brand colours, fixed so they do
-        * not travel with the scroll. Enough to give the page some depth
-        * without becoming a pattern anyone notices.
+        * No wash. The office asked for a flat grey ground, and a tint
+        * over a mid grey reads as a patch rather than as depth - the
+        * separation now comes from the step up to the panels.
         */
-        background-image:
-            radial-gradient(
-                1100px 600px at 100% -10%,
-                rgba(20, 0, 255, 0.07),
-                transparent 60%
-            ),
-            radial-gradient(
-                900px 500px at -10% 110%,
-                rgba(10, 17, 64, 0.06),
-                transparent 60%
-            );
-        background-attachment: fixed;
         color: var(--color-navy-900);
         font-size: 1rem;
         line-height: 1.6;

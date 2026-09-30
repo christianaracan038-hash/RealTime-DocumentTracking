@@ -29,11 +29,89 @@ import { exactTime } from "@/Components/Employee/Referrals/referral";
  * somebody stands at the counter, and it gets the screen to itself.
  */
 
+/*
+ * The three counts, which are also the filter.
+ *
+ * Drawn as cards rather than pills so they carry the same weight as the
+ * dashboard's: on both screens these are the numbers somebody reads
+ * first, and a count that matters should not look like a tab.
+ *
+ * `tone: "act"` is the one with work in it - it takes the attention
+ * colour, and only while it is not zero.
+ */
 const TABS = [
-    { key: "", label: "All referrals" },
-    { key: "waiting", label: "Waiting for their details" },
-    { key: "slip", label: "With a slip" },
+    {
+        key: "",
+        label: "All referrals",
+        hint: "Everything this section has issued",
+        icon: "referrals",
+    },
+    {
+        key: "waiting",
+        label: "Waiting for their details",
+        hint: "Registered, not yet completed",
+        icon: "register",
+        tone: "act",
+    },
+    {
+        key: "slip",
+        label: "With a slip",
+        hint: "Finished and ready to print",
+        icon: "print",
+    },
 ];
+
+function CountCard({ tab, count, current, onSelect }) {
+    const acting = tab.tone === "act" && count > 0;
+
+    return (
+        <button
+            type="button"
+            onClick={onSelect}
+            aria-current={current ? "true" : undefined}
+            className={`flex flex-col rounded-2xl border-2 p-5 text-left shadow-sm shadow-navy-900/5 transition ${
+                current
+                    ? "border-brand-600 bg-brand-50"
+                    : "border-line bg-surface hover:border-brand-200"
+            }`}
+        >
+            <span className="flex items-start justify-between gap-3">
+                <span
+                    className={`text-base font-semibold ${
+                        current ? "text-brand-700" : "text-muted"
+                    }`}
+                >
+                    {tab.label}
+                </span>
+
+                <span
+                    aria-hidden="true"
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        acting
+                            ? "bg-accent-400 text-navy-900"
+                            : "bg-brand-50 text-brand-700"
+                    }`}
+                >
+                    <Icon name={tab.icon} />
+                </span>
+            </span>
+
+            <span className="mt-2 block text-4xl font-bold text-navy-900">
+                {count}
+            </span>
+
+            <span className="mt-1 block text-sm text-muted">{tab.hint}</span>
+
+            {/* Which one the list below is showing */}
+            <span
+                aria-hidden="true"
+                className={`mt-3 block h-1 rounded-full ${
+                    current ? "bg-brand-600" : "bg-transparent"
+                }`}
+            />
+        </button>
+    );
+}
 
 function StatusPill({ document }) {
     if (document.details_completed_at) {
@@ -143,50 +221,33 @@ export default function Index({
                 </div>
 
                 {/*
-                 * The counts are the tabs. Pressing the number beside
-                 * "Waiting for their details" is how you get to just those.
+                 * The counts are the filter. Pressing one shows just
+                 * those below.
                  */}
-                <div className="mt-6 flex flex-wrap gap-2 border-b border-line pb-4">
-                    {TABS.map((tab) => {
-                        const current = (filters.status ?? "") === tab.key;
-
-                        const count = counts[tab.key || "all"] ?? 0;
-
-                        return (
-                            <button
-                                key={tab.key || "all"}
-                                type="button"
-                                onClick={() => showList(tab.key)}
-                                aria-current={current ? "true" : undefined}
-                                className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-base font-semibold transition ${
-                                    current
-                                        ? "bg-navy-900 text-white"
-                                        : "bg-paper text-navy-800 hover:bg-brand-50"
-                                }`}
-                            >
-                                {tab.label}
-
-                                <span
-                                    className={`rounded-full px-2 py-0.5 text-sm font-bold ${
-                                        current
-                                            ? "bg-accent-400 text-navy-900"
-                                            : tab.key === "waiting" && count > 0
-                                              ? "bg-accent-400 text-navy-900"
-                                              : "bg-navy-200 text-navy-900"
-                                    }`}
-                                >
-                                    {count}
-                                </span>
-                            </button>
-                        );
-                    })}
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                    {TABS.map((tab) => (
+                        <CountCard
+                            key={tab.key || "all"}
+                            tab={tab}
+                            count={counts[tab.key || "all"] ?? 0}
+                            current={(filters.status ?? "") === tab.key}
+                            onSelect={() => showList(tab.key)}
+                        />
+                    ))}
                 </div>
 
-                <div className="mt-4 lg:w-96">
+                {/*
+                 * Searching is how anybody actually finds one referral
+                 * among a year of them, so it gets a block of its own
+                 * rather than a thin box in a corner.
+                 */}
+                <div className="mt-5">
                     <SearchInput
-                        label="Find a referral"
+                        size="lg"
+                        label="Find a taxpayer"
                         initialValue={filters.search}
-                        placeholder="Taxpayer or reference no..."
+                        placeholder="Type a name, or a reference number"
+                        hint="Any part of the name will do - the whole register is searched, not just this page."
                         only={["documents", "counts", "filters"]}
                     />
                 </div>
@@ -324,7 +385,7 @@ export default function Index({
                                     className={`min-h-11 rounded-xl border px-4 text-base font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                         link.active
                                             ? "border-brand-600 bg-brand-600 text-white"
-                                            : "border-line bg-white text-navy-800 hover:bg-paper"
+                                            : "border-line bg-white text-navy-800 hover:bg-sunken"
                                     }`}
                                 />
                             ))}

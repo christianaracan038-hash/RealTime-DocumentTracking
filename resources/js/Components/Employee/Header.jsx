@@ -1,19 +1,16 @@
-import { usePage } from "@inertiajs/react";
-
+import GreetingClock from "./GreetingClock";
 import Icon from "./Icon";
 
 export default function Header({ title, onOpenMenu = () => {} }) {
-    const { auth } = usePage().props;
-
     return (
-        <header className="sticky top-0 z-30 border-b border-line bg-white px-4 py-3 sm:px-6 lg:px-8 lg:py-5">
+        <header className="sticky top-0 z-30 border-b border-line bg-surface px-4 py-3 sm:px-6 lg:px-8 lg:py-5">
             <div className="flex items-center gap-3">
                 {/* Menu - phones and tablets only */}
                 <button
                     type="button"
                     onClick={onOpenMenu}
                     aria-label="Open menu"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-navy-900 transition hover:bg-paper lg:hidden"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-navy-900 transition hover:bg-sunken lg:hidden"
                 >
                     <Icon name="menu" className="text-xl" />
                 </button>
@@ -24,20 +21,14 @@ export default function Header({ title, onOpenMenu = () => {} }) {
                     </h1>
 
                     {/*
-                     * Repeating the section here means someone who walks up
-                     * to a shared machine can tell whose account is open
-                     * without opening a menu. Hidden on phones, where the
-                     * drawer already shows it and the width is needed.
+                     * Who is at this machine and what the time is. On a
+                     * shared desk that is the first thing anybody needs,
+                     * and it used to be answered with a username.
+                     *
+                     * Hidden on phones, where the drawer already names
+                     * the account and the width is needed for the title.
                      */}
-                    {auth?.employee?.section_name && (
-                        <p className="hidden text-sm text-muted sm:block">
-                            Signed in as{" "}
-                            <span className="font-semibold text-navy-800">
-                                {auth.employee.username}
-                            </span>{" "}
-                            &middot; {auth.employee.section_name}
-                        </p>
-                    )}
+                    <GreetingClock className="hidden sm:block" />
                 </div>
             </div>
         </header>

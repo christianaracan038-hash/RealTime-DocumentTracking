@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdministratorController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\EmployeeAccountController;
 use App\Http\Controllers\Admin\Roles\RoleController;
 use App\Http\Controllers\Admin\Sections\SectionController;
@@ -111,6 +112,13 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('/administrators/{user}/active', [AdministratorController::class, 'setActive'])
             ->name('administrators.active');
+
+        /*
+        * The audit log. Read-only by design - the model refuses updates
+        * and deletes, so there is no route to offer for either.
+        */
+        Route::get('/audit', [AuditLogController::class, 'index'])
+            ->name('audit.index');
 
         Route::resource('sections', SectionController::class);
         Route::resource('roles', RoleController::class);

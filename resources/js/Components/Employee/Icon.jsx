@@ -15,6 +15,7 @@ import {
     faFileLines,
     faFilePen,
     faGaugeHigh,
+    faInbox,
     faMagnifyingGlass,
     faPaperPlane,
     faPlus,
@@ -44,6 +45,7 @@ const ICONS = {
     // Navigation
     dashboard: faGaugeHigh,
     documents: faFileLines,
+    inbox: faInbox,
     referrals: faClipboardList,
     history: faClockRotateLeft,
     archive: faBoxArchive,

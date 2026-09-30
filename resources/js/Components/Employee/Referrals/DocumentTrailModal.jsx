@@ -100,7 +100,7 @@ export default function DocumentTrailModal({
                 aria-modal="true"
                 aria-label="Document detail"
             >
-                <div className="w-full max-w-2xl rounded-2xl bg-white">
+                <div className="w-full max-w-2xl rounded-2xl bg-surface">
                     <div className="flex items-start justify-between gap-4 border-b border-line px-7 py-5">
                         <div className="min-w-0">
                             <h2 className="text-2xl font-bold text-navy-900">
@@ -118,7 +118,7 @@ export default function DocumentTrailModal({
                             type="button"
                             onClick={onClose}
                             aria-label="Close"
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-sunken hover:text-navy-900"
                         >
                             <Icon name="close" />
                         </button>
@@ -207,7 +207,7 @@ export default function DocumentTrailModal({
                                                             ACTION_TONE[
                                                                 move.action
                                                             ] ??
-                                                            "bg-paper text-navy-800"
+                                                            "bg-sunken text-navy-800"
                                                         }`}
                                                     >
                                                         {move.action}

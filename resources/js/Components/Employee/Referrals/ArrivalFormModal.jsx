@@ -83,7 +83,7 @@ export default function ArrivalFormModal({
             aria-modal="true"
             aria-labelledby="arrival-form-title"
         >
-            <div className="w-full max-w-xl rounded-2xl bg-white">
+            <div className="w-full max-w-xl rounded-2xl bg-surface">
                 <div className="flex items-start justify-between gap-4 border-b border-line px-7 py-5">
                     <div>
                         <p className="text-xs font-semibold tracking-widest text-brand-700 uppercase">
@@ -110,7 +110,7 @@ export default function ArrivalFormModal({
                         onClick={onClose}
                         disabled={processing}
                         aria-label="Close"
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-paper hover:text-navy-900"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-sunken hover:text-navy-900"
                     >
                         <Icon name="close" />
                     </button>
@@ -140,7 +140,7 @@ export default function ArrivalFormModal({
                         />
                     </Field>
 
-                    <div className="rounded-xl bg-paper px-4 py-3">
+                    <div className="rounded-xl bg-sunken px-4 py-3">
                         <p className="text-xs font-semibold tracking-wide text-muted uppercase">
                             From
                         </p>
