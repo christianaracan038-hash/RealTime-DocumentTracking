@@ -94,14 +94,15 @@ export default function ArrivalFormModal({
                             id="arrival-form-title"
                             className="mt-1 text-2xl font-bold text-navy-900"
                         >
-                            Register arrival
+                            Register
                         </h2>
 
                         <p className="mt-1 text-base text-muted">
-                            Two things, while the taxpayer is still at the
-                            counter. Saving starts the clock and creates the
-                            reference number. Where it goes, and everything
-                            else, is filled in later.
+                            While the taxpayer is still at the counter, the
+                            transaction is saved to initiate the tracking period
+                            and generate a unique reference number. The
+                            document’s destination, routing information, and
+                            other relevant details are completed subsequently.
                         </p>
                     </div>
 
@@ -165,7 +166,7 @@ export default function ArrivalFormModal({
                             disabled={processing}
                         >
                             <Icon name="register" />
-                            {processing ? "Registering..." : "Register arrival"}
+                            {processing ? "Registering..." : "Register"}
                         </EmployeeButton>
                     </div>
                 </form>
