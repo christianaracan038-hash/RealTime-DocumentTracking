@@ -87,7 +87,7 @@ class DocumentController extends Controller
                 fn ($query) => $query->oldest('created_at'),
                 fn ($query) => $query->latest('created_at')
             )
-            ->paginate(15)
+            ->paginate(5)
             ->withQueryString();
 
         return Inertia::render('Employees/Referrals/Index', [

@@ -78,9 +78,10 @@ export default function Desk({
                             </h2>
 
                             <p className="mt-1 text-base text-navy-800">
-                                Take the taxpayer's name and the date on the
-                                paper. That starts the clock and gives it a
-                                reference number.
+                                Record the taxpayer’s name and the date
+                                indicated on the document. This initiates the
+                                tracking period and assigns a unique reference
+                                number for monitoring and identification.
                             </p>
                         </div>
 
@@ -103,9 +104,11 @@ export default function Desk({
                             </h2>
 
                             <p className="mt-1 text-base text-muted">
-                                Newest first. The details are filled in
-                                afterwards, so these will show as waiting until
-                                someone completes them.
+                                Records are displayed with the newest entries
+                                first. Since the details are completed
+                                afterward, incomplete information will initially
+                                appear with a “AWaiting details” status until
+                                the required details are provided.
                             </p>
                         </div>
 

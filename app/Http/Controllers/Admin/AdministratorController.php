@@ -11,7 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-
+use Illuminate\Support\Facades\Auth;
 /**
  * The administrator accounts themselves.
  *
@@ -36,7 +36,7 @@ class AdministratorController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'email', 'is_active', 'created_at']),
 
-            'currentId' => auth()->id(),
+            'currentId' => Auth::id(),
         ]);
     }
 
@@ -138,7 +138,7 @@ class AdministratorController extends Controller
      */
     protected function refuseIfLockingEveryoneOut(User $user): void
     {
-        if ((int) $user->id === (int) auth()->id()) {
+        if ((int) $user->id === (int) Auth::id()) {
             throw ValidationException::withMessages([
                 'is_active' => 'You cannot switch off your own account. Ask another administrator to do it.',
             ]);

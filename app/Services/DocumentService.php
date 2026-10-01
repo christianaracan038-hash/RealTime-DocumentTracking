@@ -220,7 +220,7 @@ class DocumentService
             * Same pagination style as
             * RecentDocumentsTable.
             */
-            ->paginate(10)
+            ->paginate(5)
 
             /*
             * Preserve pagination and search query parameters.
