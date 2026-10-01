@@ -49,7 +49,7 @@ class CompleteDocumentRequest extends FormRequest
             'concerns.*' => ['string', Rule::in(config('referral.concerns'))],
             'concern_other' => [
                 Rule::requiredIf(fn () => $this->ticked('concerns', 'Other')),
-                'nullable', 'string', 'max:150',
+                'nullable', 'string', 'max:1000',
             ],
 
             'remarks' => ['required', 'string', Rule::in(config('referral.remarks'))],

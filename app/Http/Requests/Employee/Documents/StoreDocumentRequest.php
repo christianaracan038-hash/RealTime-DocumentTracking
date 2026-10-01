@@ -48,7 +48,7 @@ class StoreDocumentRequest extends FormRequest
             'document_date.required' => 'Please enter the date issued.',
             'document_date.date' => 'That is not a valid date.',
 
-            'taxpayer_name.required' => 'Please enter the taxpayer\'s name.',
+            'taxpayer_name.req  uired' => 'Please enter the taxpayer\'s name.',
             'taxpayer_name.max' => 'The taxpayer\'s name may not exceed 255 characters.',
 
         ];
