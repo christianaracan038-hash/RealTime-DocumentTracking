@@ -78,8 +78,10 @@ class ReferralRegistrationTest extends TestCase
 
     protected function arrival(array $overrides = []): array
     {
+        /*
+         * No date: step 1 does not accept one, the server stamps it.
+         */
         return array_merge([
-            'document_date' => '2026-09-22',
             'taxpayer_name' => 'Juan Dela Cruz',
         ], $overrides);
     }
@@ -156,22 +158,42 @@ class ReferralRegistrationTest extends TestCase
         $this->assertSame(1, Document::count());
     }
 
-    public function test_step_one_asks_for_the_taxpayer_and_the_date_and_no_more(): void
+    public function test_step_one_asks_for_the_taxpayer_and_nothing_else(): void
     {
         $this->actingAs($this->clerk, 'employee')
             ->post(route('documents.store'), [])
-            ->assertSessionHasErrors(['document_date', 'taxpayer_name']);
+            ->assertSessionHasErrors('taxpayer_name');
 
         $this->assertSame(0, Document::count());
 
         /*
-         * And nothing else is asked for. There is a taxpayer waiting at
-         * the counter; which section should handle the document is not a
-         * decision to make at that moment.
+         * A name on its own is enough. There is a taxpayer waiting at the
+         * counter; the date is stamped by the server and which section
+         * handles it is not a decision to make at that moment.
          */
         $this->actingAs($this->clerk, 'employee')
-            ->post(route('documents.store'), $this->arrival())
+            ->post(route('documents.store'), ['taxpayer_name' => 'Juan Dela Cruz'])
             ->assertSessionHasNoErrors();
+    }
+
+    public function test_the_date_is_stamped_by_the_server_and_cannot_be_set(): void
+    {
+        $this->travelTo('2026-09-30 14:05:00');
+
+        $this->actingAs($this->clerk, 'employee')
+            ->post(route('documents.store'), [
+                'taxpayer_name' => 'Juan Dela Cruz',
+
+                // Backdated by three weeks. Ignored, not honoured.
+                'document_date' => '2026-09-09',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            '2026-09-30',
+            Document::first()->document_date->toDateString(),
+            'The office asked for a date nobody can set.'
+        );
     }
 
     /*
@@ -357,14 +379,16 @@ class ReferralRegistrationTest extends TestCase
 
         /*
          * Not even the taxpayer was recorded, so step 2 has to ask for
-         * the arrival details as well as its own.
+         * that - but not for the date, which no form anywhere accepts.
          */
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $bare), $this->details([
                 'destination_section_id' => $this->compliance->section_id,
                 'addressee' => 'Chief',
             ]))
-            ->assertSessionHasErrors(['taxpayer_name', 'document_date']);
+            ->assertSessionHasErrors('taxpayer_name');
+
+        $this->assertTrue($bare->fresh()->awaiting_details);
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $bare), $this->details($this->arrival()))
@@ -373,6 +397,9 @@ class ReferralRegistrationTest extends TestCase
         $bare->refresh();
 
         $this->assertSame('Juan Dela Cruz', $bare->taxpayer_name);
+
+        // Stamped on the way through, since it had none.
+        $this->assertNotNull($bare->document_date);
         $this->assertSame($this->compliance->section_id, (int) $bare->destination_section_id);
         $this->assertFalse($bare->awaiting_details);
     }

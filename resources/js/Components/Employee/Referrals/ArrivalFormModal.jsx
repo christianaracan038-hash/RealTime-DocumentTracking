@@ -3,15 +3,19 @@ import { useForm } from "@inertiajs/react";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import Icon from "@/Components/Employee/Icon";
-import DateField, { today } from "@/Components/Employee/DateField";
-import { sectionLabel } from "./referral";
+import { longDate, sectionLabel } from "./referral";
 
 /*
  * Step 1 - registering a document's arrival.
  *
- * Two fields, both readable off the paper at a glance, so this can be
- * done with the taxpayer still at the counter instead of in the evening.
- * Saving starts the clock and mints the reference number.
+ * One field: the taxpayer's name. That is all anybody has time to type
+ * with somebody standing at the counter, and it is enough to mint the
+ * reference number and start the clock.
+ *
+ * The date is shown but cannot be touched. It is stamped by the server
+ * when the record saves - the office asked for a date nobody can set,
+ * and a disabled input would only stop an honest clerk. See
+ * StoreDocumentRequest, which does not accept one at all.
  *
  * Everything else is step 2, in DetailsFormModal - including where the
  * document is going, which needs it read properly rather than guessed at
@@ -48,7 +52,6 @@ export default function ArrivalFormModal({
 }) {
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
-            document_date: today(),
             taxpayer_name: "",
         });
 
@@ -94,14 +97,16 @@ export default function ArrivalFormModal({
                             id="arrival-form-title"
                             className="mt-1 text-2xl font-bold text-navy-900"
                         >
-                            Register arrival
+                            Register
                         </h2>
 
                         <p className="mt-1 text-base text-muted">
-                            Two things, while the taxpayer is still at the
-                            counter. Saving starts the clock and creates the
-                            reference number. Where it goes, and everything
-                            else, is filled in later.
+                            Initial referral registration and timestamping are
+                            completed at the service counter. The system
+                            generates a unique reference number and starts the
+                            processing clock upon saving, while routing
+                            information and subsequent workflow details are
+                            completed during downstream processing.
                         </p>
                     </div>
 
@@ -130,14 +135,23 @@ export default function ArrivalFormModal({
                         />
                     </Field>
 
-                    <Field label="Date Issued" error={errors.document_date}>
-                        <DateField
-                            id="document_date"
-                            value={data.document_date}
-                            onChange={(value) =>
-                                setData("document_date", value)
-                            }
-                        />
+                    {/*
+                     * Shown, not asked for. The server stamps it on save,
+                     * so this is what it will be rather than what anybody
+                     * chose.
+                     */}
+                    <Field label="Date Issued">
+                        <div className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-sunken px-4 py-3">
+                            <Icon name="date" className="text-muted" />
+
+                            <span className="text-base font-semibold text-navy-900">
+                                {longDate(new Date())}
+                            </span>
+
+                            <span className="ml-auto text-sm text-muted">
+                                Set automatically
+                            </span>
+                        </div>
                     </Field>
 
                     <div className="rounded-xl bg-sunken px-4 py-3">
@@ -165,7 +179,7 @@ export default function ArrivalFormModal({
                             disabled={processing}
                         >
                             <Icon name="register" />
-                            {processing ? "Registering..." : "Register arrival"}
+                            {processing ? "Registering..." : "Register"}
                         </EmployeeButton>
                     </div>
                 </form>

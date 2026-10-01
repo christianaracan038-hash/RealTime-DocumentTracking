@@ -66,7 +66,6 @@ class OnePassReferralTest extends TestCase
     {
         return array_merge([
             'taxpayer_name' => 'Juan Dela Cruz',
-            'document_date' => '2026-09-22',
             'destination_section_id' => $this->compliance->section_id,
             'addressee' => 'Chief',
             'concerns' => ['Promissory Note'],
@@ -160,7 +159,6 @@ class OnePassReferralTest extends TestCase
             ->post(route('referrals.store'), [])
             ->assertSessionHasErrors([
                 'taxpayer_name',
-                'document_date',
                 'destination_section_id',
                 'addressee',
                 'concerns',

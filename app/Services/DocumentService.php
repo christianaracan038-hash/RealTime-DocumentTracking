@@ -365,7 +365,18 @@ class DocumentService
             $document = Document::create([
                 'tracking_number' => $this->generateTrackingNumber(),
 
-                'document_date' => $data['document_date'],
+                /*
+                * Stamped here, never taken from the request. This is the
+                * moment the document arrived at the counter, and the
+                * office asked for a date nobody can set - which means
+                * the server has to be the one that sets it, not a
+                * disabled input.
+                *
+                * A date supplied by a caller is ignored rather than
+                * trusted; the one-pass form on the Referrals page goes
+                * through here too.
+                */
+                'document_date' => now(),
                 'taxpayer_name' => $data['taxpayer_name'],
 
                 'status_id' => 1, // Pending - the clock is running
@@ -454,9 +465,18 @@ class DocumentService
         ];
 
         /*
+        * A referral left with no date at all by the flow that predated
+        * server stamping. Stamped rather than asked for, so there is no
+        * form anywhere that accepts one.
+        */
+        if (blank($document->document_date)) {
+            $update['document_date'] = now();
+        }
+
+        /*
         * Catching up a referral the draft flow left bare.
         */
-        foreach (['taxpayer_name', 'document_date', 'destination_section_id', 'addressee'] as $field) {
+        foreach (['taxpayer_name', 'destination_section_id', 'addressee'] as $field) {
             if (blank($document->{$field}) && filled($data[$field] ?? null)) {
                 $update[$field] = $data[$field];
             }

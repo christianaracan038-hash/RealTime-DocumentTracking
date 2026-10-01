@@ -4,8 +4,7 @@ import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import Icon from "@/Components/Employee/Icon";
 import ChoiceGroup from "@/Components/Employee/ChoiceGroup";
-import DateField, { today } from "@/Components/Employee/DateField";
-import { sectionLabel } from "./referral";
+import { longDate, sectionLabel } from "./referral";
 
 /*
  * Registering a referral, complete, in one frame.
@@ -54,7 +53,6 @@ export default function ReferralFormPanel({
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         taxpayer_name: "",
-        document_date: today(),
         destination_section_id: "",
         addressee: "",
         concerns: [],
@@ -108,13 +106,23 @@ export default function ReferralFormPanel({
                         />
                     </Field>
 
-                    <Field label="Date Issued" error={errors.document_date}>
-                        <DateField
-                            value={data.document_date}
-                            onChange={(value) =>
-                                setData("document_date", value)
-                            }
-                        />
+                    {/*
+                     * Shown, not asked for - the server stamps it on
+                     * save. Registering in one pass must not be a way
+                     * round the rule that step 1 obeys.
+                     */}
+                    <Field label="Date Issued">
+                        <div className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-sunken px-4 py-3">
+                            <Icon name="date" className="text-muted" />
+
+                            <span className="text-base font-semibold text-navy-900">
+                                {longDate(new Date())}
+                            </span>
+
+                            <span className="ml-auto text-sm text-muted">
+                                Set automatically
+                            </span>
+                        </div>
                     </Field>
 
                     <div className="border-t border-line pt-6">

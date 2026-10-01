@@ -29,9 +29,13 @@ class StoreReferralRequest extends FormRequest
     {
         return [
 
-            // The arrival, as step 1 would have taken it.
+            /*
+            * The arrival, as step 1 would have taken it - and like step
+            * 1, the date is stamped by the server rather than accepted
+            * here. An anti-backdating rule with one form that still
+            * accepts a date is not a rule.
+            */
             'taxpayer_name' => ['required', 'string', 'max:255'],
-            'document_date' => ['required', 'date'],
 
             // Where it goes.
             'destination_section_id' => [
@@ -66,9 +70,6 @@ class StoreReferralRequest extends FormRequest
         return [
             'taxpayer_name.required' => 'Please enter the taxpayer\'s name.',
             'taxpayer_name.max' => 'The taxpayer\'s name may not exceed 255 characters.',
-
-            'document_date.required' => 'Please enter the date issued.',
-            'document_date.date' => 'That is not a valid date.',
 
             'destination_section_id.required' => 'Please choose the receiving section.',
             'destination_section_id.exists' => 'That section does not exist.',

@@ -65,10 +65,6 @@ class CompleteDocumentRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->documentLacks('taxpayer_name')),
                 'nullable', 'string', 'max:255',
             ],
-            'document_date' => [
-                Rule::requiredIf(fn () => $this->documentLacks('document_date')),
-                'nullable', 'date',
-            ],
             'destination_section_id' => [
                 Rule::requiredIf(fn () => $this->documentLacks('destination_section_id')),
                 'nullable', Rule::exists('sections', 'section_id'),
@@ -94,7 +90,6 @@ class CompleteDocumentRequest extends FormRequest
             'remarks_other.max' => 'Remarks may not exceed 1000 characters.',
 
             'taxpayer_name.required' => 'Please enter the taxpayer\'s name.',
-            'document_date.required' => 'Please enter the date issued.',
             'destination_section_id.required' => 'Please choose the receiving section.',
             'addressee.required' => 'Please choose who in that section should receive it.',
         ];
