@@ -93,10 +93,8 @@ class ReferralRegistrationTest extends TestCase
     protected function details(array $overrides = []): array
     {
         return array_merge([
-            'concerns' => ['Promissory Note'],
-            'remarks' => 'Processing',
+            'concern' => 'Promissory Note',
             'destination_section_id' => $this->compliance->section_id,
-            'addressee' => 'Chief',
         ], $overrides);
     }
 
@@ -281,18 +279,24 @@ class ReferralRegistrationTest extends TestCase
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), $this->details([
-                'concerns' => ['Tax Assumption', 'Promissory Note'],
+                'concern' => 'Tax Assumption, and a promissory note',
             ]))
             ->assertRedirect(route('referrals.index'))
             ->assertSessionHas('success');
 
         $document->refresh();
 
-        $this->assertSame('Tax Assumption, Promissory Note', $document->concern);
-        $this->assertSame('Processing', $document->remarks);
+        $this->assertSame('Tax Assumption, and a promissory note', $document->concern);
 
-        // "FOR" is ticked by hand on the printed slip, never stored.
+        // Addressed to the Chief without anybody being asked.
+        $this->assertSame('Chief', $document->addressee);
+
+        /*
+         * "FOR" and "Remarks" are both written by hand on the printed
+         * slip, so neither is stored.
+         */
         $this->assertNull($document->referred_for);
+        $this->assertNull($document->remarks);
 
         $this->assertFalse($document->awaiting_details);
         $this->assertSame(
@@ -303,32 +307,32 @@ class ReferralRegistrationTest extends TestCase
         $this->assertSame($this->clerk->employee_id, (int) $document->created_by);
     }
 
-    public function test_ticking_other_requires_the_text_and_stores_it_in_place(): void
+    public function test_the_details_are_free_text_and_required(): void
     {
         $document = $this->registerArrival();
 
+        /*
+         * The details used to be a tick list with an "Other" box. The
+         * office found the fixed choices never matched what was on the
+         * paper, so it is one field now - but it still has to say
+         * something.
+         */
         $this->actingAs($this->encoder, 'employee')
-            ->patch(route('documents.complete', $document), $this->details([
-                'concerns' => ['Other'],
-                'remarks' => 'Other',
-            ]))
-            ->assertSessionHasErrors(['concern_other', 'remarks_other']);
+            ->patch(route('documents.complete', $document), $this->details(['concern' => '']))
+            ->assertSessionHasErrors('concern');
 
         $this->assertTrue($document->fresh()->awaiting_details);
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), $this->details([
-                'concerns' => ['Tax Assumption', 'Other'],
-                'concern_other' => 'Lost receipt',
-                'remarks' => 'Other',
-                'remarks_other' => 'Waiting for the taxpayer to call back.',
+                'concern' => 'Lost receipt; taxpayer to call back.',
             ]))
             ->assertSessionHasNoErrors();
 
-        $document->refresh();
-
-        $this->assertSame('Tax Assumption, Lost receipt', $document->concern);
-        $this->assertSame('Waiting for the taxpayer to call back.', $document->remarks);
+        $this->assertSame(
+            'Lost receipt; taxpayer to call back.',
+            $document->fresh()->concern
+        );
     }
 
     public function test_details_cannot_be_completed_twice(): void
@@ -340,10 +344,13 @@ class ReferralRegistrationTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->actingAs($this->encoder, 'employee')
-            ->patch(route('documents.complete', $document), $this->details(['remarks' => 'Complied']))
+            ->patch(route('documents.complete', $document), $this->details([
+                'concern' => 'A second attempt at the details',
+            ]))
             ->assertForbidden();
 
-        $this->assertSame('Processing', $document->fresh()->remarks);
+        // The first answer stands.
+        $this->assertSame('Promissory Note', $document->fresh()->concern);
     }
 
     public function test_only_the_configured_sections_may_complete_details(): void
@@ -384,7 +391,6 @@ class ReferralRegistrationTest extends TestCase
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $bare), $this->details([
                 'destination_section_id' => $this->compliance->section_id,
-                'addressee' => 'Chief',
             ]))
             ->assertSessionHasErrors('taxpayer_name');
 
@@ -517,8 +523,7 @@ class ReferralRegistrationTest extends TestCase
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), $this->details([
-                'remarks' => 'Other',
-                'remarks_other' => 'Awaiting signature of the Assistant Chief.',
+                'concern' => 'Promissory note; awaiting the Assistant Chief.',
             ]))
             ->assertSessionHasNoErrors();
 

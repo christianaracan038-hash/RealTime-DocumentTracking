@@ -67,9 +67,7 @@ class OnePassReferralTest extends TestCase
         return array_merge([
             'taxpayer_name' => 'Juan Dela Cruz',
             'destination_section_id' => $this->compliance->section_id,
-            'addressee' => 'Chief',
-            'concerns' => ['Promissory Note'],
-            'remarks' => 'Processing',
+            'concern' => 'Promissory Note',
         ], $overrides);
     }
 
@@ -90,7 +88,17 @@ class OnePassReferralTest extends TestCase
 
         // The description.
         $this->assertSame('Promissory Note', $document->concern);
-        $this->assertSame('Processing', $document->remarks);
+
+        /*
+         * Addressed to the Chief without being asked. If the Chief is
+         * away somebody else receives it, and the movement trail records
+         * who - which is a fact about what happened rather than a box on
+         * a form.
+         */
+        $this->assertSame('Chief', $document->addressee);
+
+        // Written by hand on the slip, so nothing is stored.
+        $this->assertNull($document->remarks);
 
         /*
          * Nothing is stored for "FOR". On BIR Form 2309 that block is a
@@ -160,12 +168,15 @@ class OnePassReferralTest extends TestCase
             ->assertSessionHasErrors([
                 'taxpayer_name',
                 'destination_section_id',
-                'addressee',
-                'concerns',
-                'remarks',
+                'concern',
             ]);
 
-        // Except "FOR", which is not asked for at all.
+        /*
+         * And that is the whole of it. "FOR" and "Remarks" are filled in
+         * by hand on the printed slip, the date is stamped by the server,
+         * and everything is addressed to the Chief - so none of the four
+         * is asked for here.
+         */
         $this->assertSame(0, Document::count());
     }
 
@@ -193,29 +204,24 @@ class OnePassReferralTest extends TestCase
         );
     }
 
-    public function test_ticking_other_asks_what_it_is(): void
+    public function test_the_details_are_whatever_is_typed(): void
     {
+        /*
+         * The details used to be a tick list with an "Other" box. The
+         * office found the fixed choices never matched what was actually
+         * on the paper, so it is one free-text field now and whatever is
+         * typed is what is stored.
+         */
         $this->actingAs($this->clerk, 'employee')
             ->post(route('referrals.store'), $this->referral([
-                'concerns' => ['Other'],
-                'remarks' => 'Other',
-            ]))
-            ->assertSessionHasErrors(['concern_other', 'remarks_other']);
-
-        $this->actingAs($this->clerk, 'employee')
-            ->post(route('referrals.store'), $this->referral([
-                'concerns' => ['Other'],
-                'concern_other' => 'Compromise settlement',
-                'remarks' => 'Other',
-                'remarks_other' => 'Awaiting signature of the Assistant Chief.',
+                'concern' => 'Compromise settlement of open cases, 2024-2025',
             ]))
             ->assertSessionHasNoErrors();
 
-        $document = Document::first();
-
-        // Stored in place of the word "Other", as on the paper form.
-        $this->assertSame('Compromise settlement', $document->concern);
-        $this->assertSame('Awaiting signature of the Assistant Chief.', $document->remarks);
+        $this->assertSame(
+            'Compromise settlement of open cases, 2024-2025',
+            Document::first()->concern
+        );
     }
 
     public function test_nothing_is_created_when_the_details_are_rejected(): void
@@ -226,8 +232,10 @@ class OnePassReferralTest extends TestCase
          * half-failed one-pass registration would otherwise leave behind.
          */
         $this->actingAs($this->clerk, 'employee')
-            ->post(route('referrals.store'), $this->referral(['remarks' => 'Not a real remark']))
-            ->assertSessionHasErrors('remarks');
+            ->post(route('referrals.store'), $this->referral([
+                'concern' => str_repeat('a', 1001),
+            ]))
+            ->assertSessionHasErrors('concern');
 
         $this->assertSame(0, Document::count());
     }
@@ -244,7 +252,6 @@ class OnePassReferralTest extends TestCase
                 'taxpayer_name' => 'Juan Dela Cruz',
                 'document_date' => '2026-09-22',
                 'destination_section_id' => $this->compliance->section_id,
-                'addressee' => 'Chief',
             ])
             ->assertSessionHasNoErrors();
 

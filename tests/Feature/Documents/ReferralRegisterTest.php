@@ -75,11 +75,8 @@ class ReferralRegisterTest extends TestCase
     {
         $this->actingAs($this->clerk, 'employee')
             ->patch(route('documents.complete', $document), [
-                'concerns' => ['Tax Assumption'],
-                'referred_for' => ['Approval'],
-                'remarks' => 'Processing',
+                'concern' => 'Tax Assumption',
                 'destination_section_id' => $this->compliance->section_id,
-                'addressee' => 'Chief',
             ])
             ->assertSessionHasNoErrors();
     }

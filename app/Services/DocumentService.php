@@ -443,22 +443,22 @@ class DocumentService
         $employee
     ): Document {
         $update = [
-            'concern' => $this->joinChoices(
-                $data['concerns'],
-                $data['concern_other'] ?? null
-            ),
+            'concern' => $data['concern'],
 
             /*
-            * referred_for is not set here. On BIR Form 2309 the "FOR"
-            * block is a grid of boxes ticked by hand on the hardcopy -
-            * see config('referral.referred_for'), which now only feeds
-            * the printed slip. The column stays for referrals recorded
-            * before that was understood.
+            * Neither referred_for nor remarks is written here. Both are
+            * blocks on BIR Form 2309 that the RDO or a Chief fills in by
+            * hand on the hardcopy, so the slip prints them empty and no
+            * form asks. Their columns stay for referrals recorded before
+            * that was understood, and a stored value still prints.
             */
 
-            'remarks' => $data['remarks'] === 'Other'
-                ? trim($data['remarks_other'])
-                : $data['remarks'],
+            /*
+            * Everything goes to the Chief. If the Chief is away somebody
+            * else receives it, and the movement trail records who - that
+            * is a fact about what happened, not a box on a form.
+            */
+            'addressee' => $document->addressee ?: 'Chief',
 
             'details_completed_at' => now(),
             'details_completed_by' => $employee->employee_id,

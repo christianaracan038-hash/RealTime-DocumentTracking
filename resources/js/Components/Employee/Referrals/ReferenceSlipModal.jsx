@@ -219,10 +219,23 @@ export function ReferenceSlip({ document }) {
                 <ForBoxes document={document} />
             </Section>
 
-            {/* 5. Remarks */}
-            <Section title="Remarks" className="h-[2.1in] border-b">
+            {/* 5. Remarks - written by hand, like the FOR block */}
+            <div className="flex h-[2.1in] min-w-0 flex-col border-b border-navy-900 px-3 py-2">
+                <p className="mb-1 text-[9px] font-bold tracking-wider text-navy-900 uppercase">
+                    Remarks{" "}
+                    <span className="font-normal normal-case">
+                        (or additional instruction)
+                    </span>
+                </p>
+
+                {/*
+                 * Empty, because the system no longer asks for this - the
+                 * RDO or a Chief writes it on the hardcopy. A referral
+                 * recorded before that prints what was stored, so an
+                 * older slip stays true to what was filed.
+                 */}
                 <p className="whitespace-pre-wrap">{document.remarks || " "}</p>
-            </Section>
+            </div>
 
             {/* 6. From + office code */}
             <div className="flex shrink-0 items-end gap-4 px-3 py-2">

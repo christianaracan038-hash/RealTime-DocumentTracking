@@ -186,11 +186,8 @@ class RegistrationDeskTest extends TestCase
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), [
-                'concerns' => ['Tax Assumption'],
-                'referred_for' => ['Approval'],
-                'remarks' => 'Processing',
+                'concern' => 'Tax Assumption',
                 'destination_section_id' => $this->assessment->section_id,
-                'addressee' => 'Chief',
             ])
             ->assertRedirect();
 
@@ -211,11 +208,9 @@ class RegistrationDeskTest extends TestCase
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', Document::first()), [
-                'concerns' => ['Tax Assumption'],
-                'referred_for' => ['Approval'],
-                'remarks' => 'Processing',
+                'concern' => 'Tax Assumption',
             ])
-            ->assertSessionHasErrors(['destination_section_id', 'addressee']);
+            ->assertSessionHasErrors('destination_section_id');
     }
 
     public function test_the_referrals_page_lists_what_is_waiting_oldest_first(): void
@@ -285,11 +280,8 @@ class RegistrationDeskTest extends TestCase
         // Completing one takes it off the count.
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', Document::first()), [
-                'concerns' => ['Tax Assumption'],
-                'referred_for' => ['Approval'],
-                'remarks' => 'Processing',
+                'concern' => 'Tax Assumption',
                 'destination_section_id' => $this->assessment->section_id,
-                'addressee' => 'Chief',
             ]);
 
         $page = $this->actingAs($this->encoder, 'employee')

@@ -3,7 +3,6 @@ import { useForm } from "@inertiajs/react";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import Icon from "@/Components/Employee/Icon";
-import ChoiceGroup from "@/Components/Employee/ChoiceGroup";
 import DateField, { today } from "@/Components/Employee/DateField";
 import { addressedTo, exactTime, sectionLabel } from "./referral";
 
@@ -63,15 +62,10 @@ export default function DetailsFormModal({
 
     const { data, setData, patch, processing, errors, reset, clearErrors } =
         useForm({
-            concerns: [],
-            concern_other: "",
-            remarks: "",
-            remarks_other: "",
+            concern: "",
 
             taxpayer_name: "",
-            document_date: today(),
             destination_section_id: "",
-            addressee: "",
         });
 
     useEffect(() => {
@@ -104,10 +98,6 @@ export default function DetailsFormModal({
             },
         });
     };
-
-    const chosenSection = sections.find(
-        (s) => String(s.section_id) === String(data.destination_section_id),
-    );
 
     return (
         <div
@@ -244,64 +234,25 @@ export default function DetailsFormModal({
                                     ))}
                                 </select>
                             </Field>
-
-                            {chosenSection && (
-                                <Field
-                                    label="Addressed to"
-                                    error={errors.addressee}
-                                >
-                                    <ChoiceGroup
-                                        name="addressee"
-                                        options={options.addressees ?? []}
-                                        value={data.addressee}
-                                        onChange={(v) =>
-                                            setData("addressee", v)
-                                        }
-                                    />
-                                </Field>
-                            )}
                         </div>
                     )}
 
-                    <Field
-                        label="Concerns"
-                        hint="Tick all that apply."
-                        error={errors.concerns}
-                    >
-                        <ChoiceGroup
-                            name="concerns"
-                            multiple
-                            options={options.concerns ?? []}
-                            value={data.concerns}
-                            onChange={(v) => setData("concerns", v)}
-                            otherValue={data.concern_other}
-                            onOtherChange={(v) => setData("concern_other", v)}
-                            otherPlaceholder="What is the other concern?"
-                            otherError={errors.concern_other}
+                    <Field label="Details" error={errors.concern}>
+                        <textarea
+                            rows="4"
+                            value={data.concern}
+                            onChange={(e) => setData("concern", e.target.value)}
+                            placeholder="Details"
+                            className={`${FIELD} resize-none`}
                         />
                     </Field>
 
                     {/*
-                     * No "For" field - it is ticked by hand on the
-                     * printed slip. See ReferenceSlipModal.
+                     * No "For" and no "Remarks" field. Both are blocks on
+                     * the printed form that the RDO or a Chief fills in by
+                     * hand on the hardcopy - the slip prints them empty.
+                     * See ReferenceSlipModal.
                      */}
-
-                    <Field
-                        label="Remarks"
-                        hint="Where the document stands right now."
-                        error={errors.remarks}
-                    >
-                        <ChoiceGroup
-                            name="remarks"
-                            options={options.remarks ?? []}
-                            value={data.remarks}
-                            onChange={(v) => setData("remarks", v)}
-                            otherValue={data.remarks_other}
-                            onOtherChange={(v) => setData("remarks_other", v)}
-                            otherPlaceholder="Describe the status"
-                            otherError={errors.remarks_other}
-                        />
-                    </Field>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-end">
                         <EmployeeButton
