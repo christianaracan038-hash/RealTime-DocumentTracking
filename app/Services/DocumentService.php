@@ -430,6 +430,55 @@ class DocumentService
     }
 
     /**
+     * A section's own referral, registered and finished in one go.
+     *
+     * Not a taxpayer's referral: this is an internal docket moving
+     * between sections, and the paper it produces is an accountability
+     * slip with two signature blocks rather than BIR Form 2309. There is
+     * no step 2 and no taxpayer - just what it is about, and where it is
+     * going.
+     *
+     * Complete the moment it is created, so it can be forwarded at once
+     * and never appears as outstanding work on anybody's list.
+     */
+    public function registerSectionReferral(array $data, $employee): Document
+    {
+        return DB::transaction(function () use ($data, $employee) {
+
+            $document = Document::create([
+                'tracking_number' => $this->generateTrackingNumber(),
+
+                // Stamped, never accepted - as everywhere else.
+                'document_date' => now(),
+
+                'concern' => $data['concern'],
+
+                'status_id' => 1, // Pending - the clock is running
+
+                'current_section_id' => $employee->section_id,
+                'current_employee_id' => $employee->employee_id,
+
+                'destination_section_id' => $data['destination_section_id'],
+                'addressee' => 'Chief',
+
+                'created_by' => $employee->employee_id,
+                'office_code' => $employee->section?->section_code,
+
+                /*
+                * Nothing is outstanding on it. The whole referral is the
+                * one form, so it is finished the moment it is saved.
+                */
+                'details_completed_at' => now(),
+                'details_completed_by' => $employee->employee_id,
+            ]);
+
+            $this->generateQrCode($document);
+
+            return $document->fresh();
+        });
+    }
+
+    /**
      * Step 2 - fill in a referral's details.
      *
      * Records who completed them and when, so the two halves of the

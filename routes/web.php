@@ -180,6 +180,14 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
         ->name('referrals.store');
 
     /*
+    * A section's own referral. Separate from referrals.store because it
+    * produces a different slip, and the request refuses the RDO - the
+    * two forms must not be able to issue each other's paper.
+    */
+    Route::post('/referrals/section', [DocumentController::class, 'storeSectionReferral'])
+        ->name('referrals.section.store');
+
+    /*
     * The RDO's oversight screens. Both check the section themselves,
     * from config('referral.oversight_sections').
     */

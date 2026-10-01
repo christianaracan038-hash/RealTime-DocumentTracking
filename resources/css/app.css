@@ -168,6 +168,15 @@
         margin: 0.45in;
     }
 
+    /*
+    * The accountability slip every section except the RDO issues: half a
+    * sheet, crosswise.
+    */
+    @page sectionslip {
+        size: 8.5in 5.5in;
+        margin: 0.25in;
+    }
+
     @page slip {
         size: 4.75in 8.5in;
         margin: 0.2in;
@@ -192,11 +201,16 @@
         page: transmittal;
     }
 
+    #print-root .section-slip {
+        page: sectionslip;
+    }
+
     #print-root .reference-slip {
         page: slip;
     }
 
-    #print-root .reference-slip {
+    #print-root .reference-slip,
+    #print-root .section-slip {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         page-break-inside: avoid;

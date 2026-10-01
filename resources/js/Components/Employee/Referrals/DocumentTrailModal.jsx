@@ -4,6 +4,7 @@ import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
 import Icon from "@/Components/Employee/Icon";
 import ReferenceSlipModal from "./ReferenceSlipModal";
+import SectionSlipModal from "./SectionSlipModal";
 import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
 
 /*
@@ -43,6 +44,14 @@ export default function DocumentTrailModal({
      * fetch happens here and the slip opens on top of it.
      */
     openSlip = false,
+
+    /*
+     * Which paper this document is printed on. "2309" is the taxpayer's
+     * referral the RDO issues; "section" is the half-sheet
+     * accountability slip every other section issues. They are different
+     * forms, not two renderings of one.
+     */
+    slipVariant = "2309",
 }) {
     const [document, setDocument] = useState(null);
     const [error, setError] = useState(null);
@@ -272,7 +281,14 @@ export default function DocumentTrailModal({
                 </div>
             </div>
 
-            {slipOpen && document && (
+            {slipOpen && document && slipVariant === "section" && (
+                <SectionSlipModal
+                    document={document}
+                    onClose={() => setSlipOpen(false)}
+                />
+            )}
+
+            {slipOpen && document && slipVariant !== "section" && (
                 <ReferenceSlipModal
                     document={document}
                     onClose={() => setSlipOpen(false)}
