@@ -3,9 +3,7 @@ import { useForm } from "@inertiajs/react";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import Icon from "@/Components/Employee/Icon";
-import ChoiceGroup from "@/Components/Employee/ChoiceGroup";
-import DateField, { today } from "@/Components/Employee/DateField";
-import { sectionLabel } from "./referral";
+import { longDate, sectionLabel } from "./referral";
 
 /*
  * Registering a referral, complete, in one frame.
@@ -54,19 +52,9 @@ export default function ReferralFormPanel({
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         taxpayer_name: "",
-        document_date: today(),
         destination_section_id: "",
-        addressee: "",
-        concerns: [],
-        concern_other: "",
-        remarks: "",
-        remarks_other: "",
+        concern: "",
     });
-
-    const chosenSection = sections.find(
-        (section) =>
-            String(section.section_id) === String(data.destination_section_id),
-    );
 
     const submit = (event) => {
         event.preventDefault();
@@ -108,13 +96,23 @@ export default function ReferralFormPanel({
                         />
                     </Field>
 
-                    <Field label="Date Issued" error={errors.document_date}>
-                        <DateField
-                            value={data.document_date}
-                            onChange={(value) =>
-                                setData("document_date", value)
-                            }
-                        />
+                    {/*
+                     * Shown, not asked for - the server stamps it on
+                     * save. Registering in one pass must not be a way
+                     * round the rule that step 1 obeys.
+                     */}
+                    <Field label="Date Issued">
+                        <div className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-sunken px-4 py-3">
+                            <Icon name="date" className="text-muted" />
+
+                            <span className="text-base font-semibold text-navy-900">
+                                {longDate(new Date())}
+                            </span>
+
+                            <span className="ml-auto text-sm text-muted">
+                                Set automatically
+                            </span>
+                        </div>
                     </Field>
 
                     <div className="border-t border-line pt-6">
@@ -124,15 +122,12 @@ export default function ReferralFormPanel({
                         >
                             <select
                                 value={data.destination_section_id}
-                                onChange={(e) => {
+                                onChange={(e) =>
                                     setData(
                                         "destination_section_id",
                                         e.target.value,
-                                    );
-
-                                    // A new section means choosing again.
-                                    setData("addressee", "");
-                                }}
+                                    )
+                                }
                                 className={FIELD}
                             >
                                 <option value="">Select</option>
@@ -149,69 +144,28 @@ export default function ReferralFormPanel({
                         </Field>
                     </div>
 
-                    {chosenSection && (
-                        <Field
-                            label={`Who in ${sectionLabel(chosenSection)} should receive it?`}
-                            error={errors.addressee}
-                        >
-                            <ChoiceGroup
-                                name="addressee"
-                                options={options.addressees ?? []}
-                                value={data.addressee}
-                                onChange={(value) =>
-                                    setData("addressee", value)
-                                }
-                            />
-                        </Field>
-                    )}
-
                     <div className="border-t border-line pt-6">
-                        <Field
-                            label="Concerns"
-                            hint="Tick all that apply."
-                            error={errors.concerns}
-                        >
-                            <ChoiceGroup
-                                name="concerns"
-                                multiple
-                                options={options.concerns ?? []}
-                                value={data.concerns}
-                                onChange={(value) => setData("concerns", value)}
-                                otherValue={data.concern_other}
-                                onOtherChange={(value) =>
-                                    setData("concern_other", value)
+                        <Field label="Details" error={errors.concern}>
+                            <textarea
+                                rows="4"
+                                value={data.concern}
+                                onChange={(e) =>
+                                    setData("concern", e.target.value)
                                 }
-                                otherPlaceholder="What is the other concern?"
-                                otherError={errors.concern_other}
+                                placeholder="Details"
+                                className={`${FIELD} resize-none`}
                             />
                         </Field>
                     </div>
 
                     {/*
-                     * No "For" field. On BIR Form 2309 that block is a
-                     * grid of boxes the RDO or a Chief ticks by hand, on
-                     * the hardcopy - so the slip prints it empty and the
-                     * system does not ask.
+                     * No addressee, no "For", no "Remarks". Everything is
+                     * addressed to the Chief - and if the Chief is away,
+                     * whoever receives it does so on their own account,
+                     * which the movement trail records. The other two are
+                     * blocks the RDO or a Chief fills in by hand on the
+                     * hardcopy, so the slip prints them empty.
                      */}
-
-                    <Field
-                        label="Remarks"
-                        hint="Where the document stands right now."
-                        error={errors.remarks}
-                    >
-                        <ChoiceGroup
-                            name="remarks"
-                            options={options.remarks ?? []}
-                            value={data.remarks}
-                            onChange={(value) => setData("remarks", value)}
-                            otherValue={data.remarks_other}
-                            onOtherChange={(value) =>
-                                setData("remarks_other", value)
-                            }
-                            otherPlaceholder="Describe the status"
-                            otherError={errors.remarks_other}
-                        />
-                    </Field>
 
                     <div className="rounded-xl bg-sunken px-4 py-3">
                         <p className="text-xs font-semibold tracking-wide text-muted uppercase">

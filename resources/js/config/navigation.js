@@ -28,6 +28,11 @@ const sectionMenu = (dashboardRoute, extras = []) => [
         route: "documents.index",
         icon: "documents",
     },
+    {
+        label: "Transmittal",
+        route: "transmittal.index",
+        icon: "transmittal",
+    },
     ...extras,
     {
         label: "Comments",

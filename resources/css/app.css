@@ -147,9 +147,12 @@
 | Printing
 |--------------------------------------------------------------------------
 |
-| Two things print: the arrival stub from step 1, and BIR Form 2309 once
-| the details are in. Each gets a named @page sized to its own content,
-| so neither is paginated across sheets it does not need.
+| Two things print: BIR Form 2309 once a referral's details are in, and
+| the transmittal sheet that goes with a stack of documents handed to
+| another section. Each gets a named @page sized to its own content, so
+| neither is paginated across sheets it does not need - the slip is a
+| quarter sheet, the transmittal is a full one because it is a list that
+| has to be signed.
 |
 | Whichever is open renders into #print-root directly under <body>, and
 | every other child of <body> is removed with display:none. It has to be
@@ -160,9 +163,18 @@
 */
 
 @media print {
-    @page stub {
-        size: 4.5in 3.2in;
-        margin: 0.2in;
+    @page transmittal {
+        size: Letter portrait;
+        margin: 0.45in;
+    }
+
+    /*
+    * The accountability slip every section except the RDO issues: half a
+    * sheet, crosswise.
+    */
+    @page sectionslip {
+        size: 8.5in 5.5in;
+        margin: 0.25in;
     }
 
     @page slip {
@@ -185,16 +197,20 @@
         display: block !important;
     }
 
-    #print-root .arrival-stub {
-        page: stub;
+    #print-root .transmittal-sheet {
+        page: transmittal;
+    }
+
+    #print-root .section-slip {
+        page: sectionslip;
     }
 
     #print-root .reference-slip {
         page: slip;
     }
 
-    #print-root .arrival-stub,
-    #print-root .reference-slip {
+    #print-root .reference-slip,
+    #print-root .section-slip {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         page-break-inside: avoid;

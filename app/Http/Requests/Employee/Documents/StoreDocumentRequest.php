@@ -7,14 +7,17 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Step 1 - registering a document's arrival.
  *
- * Two fields, because this happens with the taxpayer standing at the
- * counter: whose document it is, and the date on it. That is enough to
- * start the clock and mint the reference number, which is the whole
- * point of doing it now rather than at the end of the day.
+ * One field. The taxpayer is standing at the counter, and a name is all
+ * anybody has time to type.
  *
- * Where it goes and who it is addressed to are decided in step 2, by
- * someone reading the document properly - see CompleteDocumentRequest,
- * which asks for whatever is still missing.
+ * The date is NOT accepted here, deliberately. It is stamped by the
+ * server at the moment of saving - see DocumentService::register(). The
+ * office wanted a date nobody can set, and a date the browser sends is a
+ * date the browser chose: greying the field out would stop an honest
+ * clerk and nobody else.
+ *
+ * Where it goes and who it is addressed to are decided in step 2 - see
+ * CompleteDocumentRequest, which asks for whatever is still missing.
  */
 class StoreDocumentRequest extends FormRequest
 {
@@ -26,11 +29,6 @@ class StoreDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-
-            'document_date' => [
-                'required',
-                'date',
-            ],
 
             'taxpayer_name' => [
                 'required',
@@ -45,10 +43,7 @@ class StoreDocumentRequest extends FormRequest
     {
         return [
 
-            'document_date.required' => 'Please enter the date issued.',
-            'document_date.date' => 'That is not a valid date.',
-
-            'taxpayer_name.req  uired' => 'Please enter the taxpayer\'s name.',
+            'taxpayer_name.required' => 'Please enter the taxpayer\'s name.',
             'taxpayer_name.max' => 'The taxpayer\'s name may not exceed 255 characters.',
 
         ];

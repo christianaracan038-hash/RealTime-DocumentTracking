@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\Documents\CompleteDocumentRequest;
 use App\Http\Requests\Employee\Documents\StoreDocumentRequest;
 use App\Http\Requests\Employee\Documents\StoreReferralRequest;
+use App\Http\Requests\Employee\Documents\StoreSectionReferralRequest;
 use App\Models\Document;
 use App\Models\Section;
 use App\Services\DocumentService;
@@ -148,6 +149,18 @@ class DocumentController extends Controller
             * hide the action for everyone else, rather than letting
             * them hit a 403 after clicking it.
             */
+            /*
+            * Which referral this section issues. The RDO issues BIR Form
+            * 2309; everybody else issues the half-sheet accountability
+            * slip, which is a different form and a different piece of
+            * paper.
+            */
+            'usesForm2309' => in_array(
+                $employee->section?->section_name,
+                config('referral.form_2309_sections', ['RDO']),
+                true
+            ),
+
             'canCompleteDetails' => in_array(
                 $employee->section?->section_name,
                 config('referral.details_completion_sections', ['RDO']),
@@ -204,6 +217,28 @@ class DocumentController extends Controller
         DocumentService $documentService
     ): RedirectResponse {
         $document = $documentService->registerComplete(
+            $request->validated(),
+            Auth::guard('employee')->user()
+        );
+
+        return redirect()
+            ->route('referrals.index', ['slip' => $document->document_id])
+            ->with('success', 'Referral registered. Its slip is ready to print.');
+    }
+
+    /**
+     * A section's own referral - everything except the RDO.
+     *
+     * Its own action and its own request, because it is a different
+     * piece of paper: an internal docket with two signature blocks
+     * rather than a taxpayer's BIR Form 2309. There is no step 2 - the
+     * one form finishes it.
+     */
+    public function storeSectionReferral(
+        StoreSectionReferralRequest $request,
+        DocumentService $documentService
+    ): RedirectResponse {
+        $document = $documentService->registerSectionReferral(
             $request->validated(),
             Auth::guard('employee')->user()
         );

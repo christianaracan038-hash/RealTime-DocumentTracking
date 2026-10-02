@@ -11,6 +11,7 @@ use App\Http\Controllers\Employee\Documents\DocumentController;
 use App\Http\Controllers\Employee\Documents\DocumentQrController;
 use App\Http\Controllers\Employee\Documents\OversightController;
 use App\Http\Controllers\Employee\Documents\RegistrationDeskController;
+use App\Http\Controllers\Employee\Documents\TransmittalController;
 use App\Http\Controllers\Employee\SectionDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -179,6 +180,14 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
         ->name('referrals.store');
 
     /*
+    * A section's own referral. Separate from referrals.store because it
+    * produces a different slip, and the request refuses the RDO - the
+    * two forms must not be able to issue each other's paper.
+    */
+    Route::post('/referrals/section', [DocumentController::class, 'storeSectionReferral'])
+        ->name('referrals.section.store');
+
+    /*
     * The RDO's oversight screens. Both check the section themselves,
     * from config('referral.oversight_sections').
     */
@@ -201,6 +210,13 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
 
     Route::patch('/comments/{comment}/acknowledge', [CommentInboxController::class, 'acknowledge'])
         ->name('comments.acknowledge');
+
+    /*
+    * The paper that goes with a stack of documents to another section.
+    * Every section hands over to some other one, so this is not scoped.
+    */
+    Route::get('/transmittal', [TransmittalController::class, 'index'])
+        ->name('transmittal.index');
 
     Route::get('/documents/history', [DocumentController::class, 'history'])
         ->name('documents.history');

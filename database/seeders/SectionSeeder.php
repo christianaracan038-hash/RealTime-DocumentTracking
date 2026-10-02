@@ -55,7 +55,19 @@ class SectionSeeder extends Seeder
             [
                 'section_code' => '1006',
                 'section_name' => 'ADMIN',
-                'description' => 'Admin Section',
+                'description' => 'Administrative Section',
+            ],
+
+            /*
+            * Everything outside the District. A referral addressed here
+            * is leaving the office, so this section has no entry in
+            * config/section.php and therefore no dashboard and no login -
+            * it is a destination, not a place anybody works.
+            */
+            [
+                'section_code' => '1007',
+                'section_name' => 'OTHERS',
+                'description' => 'Others (outside the District)',
             ],
 
         ];

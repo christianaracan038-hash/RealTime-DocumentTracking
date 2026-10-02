@@ -29,34 +29,28 @@ class StoreReferralRequest extends FormRequest
     {
         return [
 
-            // The arrival, as step 1 would have taken it.
+            /*
+            * The arrival, as step 1 would have taken it - and like step
+            * 1, the date is stamped by the server rather than accepted
+            * here. An anti-backdating rule with one form that still
+            * accepts a date is not a rule.
+            */
             'taxpayer_name' => ['required', 'string', 'max:255'],
-            'document_date' => ['required', 'date'],
 
             // Where it goes.
             'destination_section_id' => [
                 'required',
                 Rule::exists('sections', 'section_id'),
             ],
-            'addressee' => [
-                'required',
-                'string',
-                Rule::in(config('referral.addressees')),
-            ],
+            /*
+            * No addressee. Everything is addressed to the Chief, so the
+            * server writes it rather than asking - and if the Chief is
+            * away, whoever receives it does so on their own account,
+            * which the movement trail records.
+            */
 
-            // What it is about.
-            'concerns' => ['required', 'array', 'min:1'],
-            'concerns.*' => ['string', Rule::in(config('referral.concerns'))],
-            'concern_other' => [
-                Rule::requiredIf(fn () => $this->ticked('concerns', 'Other')),
-                'nullable', 'string', 'max:1000',
-            ],
-
-            'remarks' => ['required', 'string', Rule::in(config('referral.remarks'))],
-            'remarks_other' => [
-                Rule::requiredIf(fn () => $this->input('remarks') === 'Other'),
-                'nullable', 'string', 'max:1000',
-            ],
+            // What it is about - free text, not a tick list.
+            'concern' => ['required', 'string', 'max:1000'],
 
         ];
     }
@@ -67,23 +61,11 @@ class StoreReferralRequest extends FormRequest
             'taxpayer_name.required' => 'Please enter the taxpayer\'s name.',
             'taxpayer_name.max' => 'The taxpayer\'s name may not exceed 255 characters.',
 
-            'document_date.required' => 'Please enter the date issued.',
-            'document_date.date' => 'That is not a valid date.',
-
             'destination_section_id.required' => 'Please choose the receiving section.',
             'destination_section_id.exists' => 'That section does not exist.',
 
-            'addressee.required' => 'Please choose who in that section should receive it.',
-            'addressee.in' => 'That option is not in the list.',
-
-            'concerns.required' => 'Please tick at least one concern.',
-            'concerns.*.in' => 'That concern is not in the list.',
-            'concern_other.required' => 'Please say what the other concern is.',
-
-            'remarks.required' => 'Please choose a remark.',
-            'remarks.in' => 'That remark is not in the list.',
-            'remarks_other.required' => 'Please describe the status.',
-            'remarks_other.max' => 'Remarks may not exceed 1000 characters.',
+            'concern.required' => 'Please enter the details.',
+            'concern.max' => 'The details may not exceed 1000 characters.',
         ];
     }
 

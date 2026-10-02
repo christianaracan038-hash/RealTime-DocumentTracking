@@ -65,7 +65,6 @@ class RegistrationDeskTest extends TestCase
         $this->actingAs($this->counter, 'employee')
             ->post(route('documents.store'), [
                 'taxpayer_name' => 'Juan Dela Cruz',
-                'document_date' => '2026-09-26',
             ])
             ->assertRedirect();
 
@@ -87,30 +86,24 @@ class RegistrationDeskTest extends TestCase
         $this->assertNull($document->details_completed_at);
     }
 
-    public function test_step_one_does_not_ask_for_a_receiving_section(): void
+    public function test_step_one_asks_for_a_name_and_nothing_else(): void
     {
         $this->actingAs($this->counter, 'employee')
-            ->post(route('documents.store'), ['taxpayer_name' => 'Juan Dela Cruz'])
-            ->assertSessionHasErrors('document_date');
-
-        $this->actingAs($this->counter, 'employee')
-            ->post(route('documents.store'), ['document_date' => '2026-09-26'])
+            ->post(route('documents.store'), [])
             ->assertSessionHasErrors('taxpayer_name');
 
-        // Neither field is required any more.
+        // A name on its own is a complete step 1.
         $this->actingAs($this->counter, 'employee')
-            ->post(route('documents.store'), [
-                'taxpayer_name' => 'Juan Dela Cruz',
-                'document_date' => '2026-09-26',
-            ])
+            ->post(route('documents.store'), ['taxpayer_name' => 'Juan Dela Cruz'])
             ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, Document::count());
     }
 
     public function test_a_document_without_a_destination_cannot_be_received(): void
     {
         $this->actingAs($this->counter, 'employee')->post(route('documents.store'), [
             'taxpayer_name' => 'Juan Dela Cruz',
-            'document_date' => '2026-09-26',
         ]);
 
         $document = Document::first();
@@ -165,11 +158,11 @@ class RegistrationDeskTest extends TestCase
     public function test_the_desk_lists_only_what_this_account_registered(): void
     {
         $this->actingAs($this->counter, 'employee')->post(route('documents.store'), [
-            'taxpayer_name' => 'Mine', 'document_date' => '2026-09-26',
+            'taxpayer_name' => 'Mine',
         ]);
 
         $this->actingAs($this->encoder, 'employee')->post(route('documents.store'), [
-            'taxpayer_name' => 'Somebody Else', 'document_date' => '2026-09-26',
+            'taxpayer_name' => 'Somebody Else',
         ]);
 
         $page = $this->actingAs($this->counter, 'employee')
@@ -187,18 +180,14 @@ class RegistrationDeskTest extends TestCase
     {
         $this->actingAs($this->counter, 'employee')->post(route('documents.store'), [
             'taxpayer_name' => 'Juan Dela Cruz',
-            'document_date' => '2026-09-26',
         ]);
 
         $document = Document::first();
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', $document), [
-                'concerns' => ['Tax Assumption'],
-                'referred_for' => ['Approval'],
-                'remarks' => 'Processing',
+                'concern' => 'Tax Assumption',
                 'destination_section_id' => $this->assessment->section_id,
-                'addressee' => 'Chief',
             ])
             ->assertRedirect();
 
@@ -215,27 +204,24 @@ class RegistrationDeskTest extends TestCase
     {
         $this->actingAs($this->counter, 'employee')->post(route('documents.store'), [
             'taxpayer_name' => 'Juan Dela Cruz',
-            'document_date' => '2026-09-26',
         ]);
 
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', Document::first()), [
-                'concerns' => ['Tax Assumption'],
-                'referred_for' => ['Approval'],
-                'remarks' => 'Processing',
+                'concern' => 'Tax Assumption',
             ])
-            ->assertSessionHasErrors(['destination_section_id', 'addressee']);
+            ->assertSessionHasErrors('destination_section_id');
     }
 
     public function test_the_referrals_page_lists_what_is_waiting_oldest_first(): void
     {
         $this->actingAs($this->counter, 'employee');
 
-        $this->post(route('documents.store'), ['taxpayer_name' => 'First In', 'document_date' => '2026-09-24']);
+        $this->post(route('documents.store'), ['taxpayer_name' => 'First In']);
 
         $this->travel(1)->hour();
 
-        $this->post(route('documents.store'), ['taxpayer_name' => 'Second In', 'document_date' => '2026-09-25']);
+        $this->post(route('documents.store'), ['taxpayer_name' => 'Second In']);
 
         // One already finished: it belongs in History, not here.
         $done = Document::create([
@@ -281,8 +267,8 @@ class RegistrationDeskTest extends TestCase
     {
         $this->actingAs($this->counter, 'employee');
 
-        $this->post(route('documents.store'), ['taxpayer_name' => 'One', 'document_date' => '2026-09-26']);
-        $this->post(route('documents.store'), ['taxpayer_name' => 'Two', 'document_date' => '2026-09-26']);
+        $this->post(route('documents.store'), ['taxpayer_name' => 'One']);
+        $this->post(route('documents.store'), ['taxpayer_name' => 'Two']);
 
         $page = $this->actingAs($this->encoder, 'employee')
             ->get(route('referrals.index'))
@@ -294,11 +280,8 @@ class RegistrationDeskTest extends TestCase
         // Completing one takes it off the count.
         $this->actingAs($this->encoder, 'employee')
             ->patch(route('documents.complete', Document::first()), [
-                'concerns' => ['Tax Assumption'],
-                'referred_for' => ['Approval'],
-                'remarks' => 'Processing',
+                'concern' => 'Tax Assumption',
                 'destination_section_id' => $this->assessment->section_id,
-                'addressee' => 'Chief',
             ]);
 
         $page = $this->actingAs($this->encoder, 'employee')

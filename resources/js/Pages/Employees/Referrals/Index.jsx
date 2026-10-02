@@ -11,6 +11,7 @@ import { useNotice } from "@/Components/Employee/Notice";
 import { urgencyOf } from "@/Components/Employee/urgency";
 
 import ReferralFormPanel from "@/Components/Employee/Referrals/ReferralFormPanel";
+import SectionReferralPanel from "@/Components/Employee/Referrals/SectionReferralPanel";
 import DetailsFormModal from "@/Components/Employee/Referrals/DetailsFormModal";
 import DocumentTrailModal from "@/Components/Employee/Referrals/DocumentTrailModal";
 import { exactTime } from "@/Components/Employee/Referrals/referral";
@@ -139,6 +140,7 @@ export default function Index({
     filters = {},
     frame = "list",
     openSlipFor = null,
+    usesForm2309 = true,
 }) {
     const [completing, setCompleting] = useState(null);
 
@@ -179,18 +181,31 @@ export default function Index({
     if (frame === "register") {
         return (
             <EmployeeLayout title="Register a referral">
-                <ReferralFormPanel
-                    sections={sections}
-                    options={referralOptions}
-                    fromSection={fromSection}
-                    onCancel={() => showList()}
-                    /*
-                     * Where it lands is decided by the redirect, which
-                     * carries ?slip= so the new referral's slip opens on
-                     * arrival - it can be printed and attached at once.
-                     */
-                    onRegistered={() => {}}
-                />
+                {/*
+                 * Two different forms because they produce two different
+                 * pieces of paper: the RDO issues a taxpayer's BIR Form
+                 * 2309, every other section an internal docket carrying
+                 * two signatures.
+                 *
+                 * Where either lands is decided by the redirect, which
+                 * carries ?slip= so the new referral's slip opens on
+                 * arrival - it can be printed and attached at once.
+                 */}
+                {usesForm2309 ? (
+                    <ReferralFormPanel
+                        sections={sections}
+                        options={referralOptions}
+                        fromSection={fromSection}
+                        onCancel={() => showList()}
+                        onRegistered={() => {}}
+                    />
+                ) : (
+                    <SectionReferralPanel
+                        sections={sections}
+                        fromSection={fromSection}
+                        onCancel={() => showList()}
+                    />
+                )}
             </EmployeeLayout>
         );
     }
@@ -414,6 +429,7 @@ export default function Index({
                 <DocumentTrailModal
                     documentId={opened.id}
                     openSlip={opened.slip}
+                    slipVariant={usesForm2309 ? "2309" : "section"}
                     onClose={() => setOpened(null)}
                 />
             )}

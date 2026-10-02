@@ -57,7 +57,10 @@ const REFERRED_FOR = [
  *   }
  * This file only controls the content, not the @page size.
  *
- * The seal is read from /images/bir-logo.png.
+ * The seal is the OLD one, /images/bir_old_logo_for_header.png, and
+ * only on this slip. Nothing has been issued authorising a change of
+ * logo on BIR Form 2309, so the paper keeps the seal it is approved
+ * with - the rest of the system uses the current mark.
  */
 
 /*
@@ -96,7 +99,7 @@ function ForBoxes({ document }) {
         <div>
             <div className="flex gap-3">
                 {columns.map((column, index) => (
-                    <ul key={index} className="min-w-0 flex-1 space-y-[2px]">
+                    <ul key={index} className="min-w-0 flex-1 space-y-[4px]">
                         {column.map((option) => (
                             <li
                                 key={option}
@@ -104,12 +107,12 @@ function ForBoxes({ document }) {
                             >
                                 <span
                                     aria-hidden="true"
-                                    className="flex h-[9px] w-[9px] shrink-0 items-center justify-center border border-navy-900 text-[8px] leading-none font-bold"
+                                    className="flex h-[13px] w-[13px] shrink-0 items-center justify-center border border-navy-900 text-[10px] leading-none font-bold"
                                 >
                                     {ticked(option) ? "X" : ""}
                                 </span>
 
-                                <span className="truncate text-[7.5px] uppercase">
+                                <span className="truncate text-[8.5px] uppercase">
                                     {option}
                                 </span>
                             </li>
@@ -120,17 +123,17 @@ function ForBoxes({ document }) {
 
             {/* OTHER, written in by hand like the rest of this block */}
             <div className="mt-1 flex items-end gap-1.5">
-                <span className="shrink-0 text-[7.5px] uppercase">Other</span>
+                <span className="shrink-0 text-[8.5px] uppercase">Other</span>
 
                 <span
                     aria-hidden="true"
-                    className="h-[9px] flex-1 border-b border-navy-900"
+                    className="h-[13px] flex-1 border-b border-navy-900"
                 />
             </div>
 
             <span
                 aria-hidden="true"
-                className="mt-[3px] block h-[9px] border-b border-navy-900"
+                className="mt-[4px] block h-[13px] border-b border-navy-900"
             />
         </div>
     );
@@ -157,7 +160,7 @@ export function ReferenceSlip({ document }) {
             {/* 1. Header */}
             <div className="flex shrink-0 items-center gap-3 border-b border-navy-900 px-3 py-2">
                 <img
-                    src="/images/bir-logo.png"
+                    src="/images/bir_old_logo_for_header.png"
                     alt=""
                     className="h-9 w-9 shrink-0 object-contain"
                     onError={(e) => (e.currentTarget.style.display = "none")}
@@ -219,10 +222,23 @@ export function ReferenceSlip({ document }) {
                 <ForBoxes document={document} />
             </Section>
 
-            {/* 5. Remarks */}
-            <Section title="Remarks" className="h-[2.1in] border-b">
+            {/* 5. Remarks - written by hand, like the FOR block */}
+            <div className="flex h-[2.2in] min-w-0 flex-col border-b border-navy-900 px-3 py-2">
+                <p className="mb-1 text-[9px] font-bold tracking-wider text-navy-900 uppercase">
+                    Remarks{" "}
+                    <span className="font-normal normal-case">
+                        (or additional instruction)
+                    </span>
+                </p>
+
+                {/*
+                 * Empty, because the system no longer asks for this - the
+                 * RDO or a Chief writes it on the hardcopy. A referral
+                 * recorded before that prints what was stored, so an
+                 * older slip stays true to what was filed.
+                 */}
                 <p className="whitespace-pre-wrap">{document.remarks || " "}</p>
-            </Section>
+            </div>
 
             {/* 6. From + office code */}
             <div className="flex shrink-0 items-end gap-4 px-3 py-2">

@@ -365,7 +365,18 @@ class DocumentService
             $document = Document::create([
                 'tracking_number' => $this->generateTrackingNumber(),
 
-                'document_date' => $data['document_date'],
+                /*
+                * Stamped here, never taken from the request. This is the
+                * moment the document arrived at the counter, and the
+                * office asked for a date nobody can set - which means
+                * the server has to be the one that sets it, not a
+                * disabled input.
+                *
+                * A date supplied by a caller is ignored rather than
+                * trusted; the one-pass form on the Referrals page goes
+                * through here too.
+                */
+                'document_date' => now(),
                 'taxpayer_name' => $data['taxpayer_name'],
 
                 'status_id' => 1, // Pending - the clock is running
@@ -419,6 +430,55 @@ class DocumentService
     }
 
     /**
+     * A section's own referral, registered and finished in one go.
+     *
+     * Not a taxpayer's referral: this is an internal docket moving
+     * between sections, and the paper it produces is an accountability
+     * slip with two signature blocks rather than BIR Form 2309. There is
+     * no step 2 and no taxpayer - just what it is about, and where it is
+     * going.
+     *
+     * Complete the moment it is created, so it can be forwarded at once
+     * and never appears as outstanding work on anybody's list.
+     */
+    public function registerSectionReferral(array $data, $employee): Document
+    {
+        return DB::transaction(function () use ($data, $employee) {
+
+            $document = Document::create([
+                'tracking_number' => $this->generateTrackingNumber(),
+
+                // Stamped, never accepted - as everywhere else.
+                'document_date' => now(),
+
+                'concern' => $data['concern'],
+
+                'status_id' => 1, // Pending - the clock is running
+
+                'current_section_id' => $employee->section_id,
+                'current_employee_id' => $employee->employee_id,
+
+                'destination_section_id' => $data['destination_section_id'],
+                'addressee' => 'Chief',
+
+                'created_by' => $employee->employee_id,
+                'office_code' => $employee->section?->section_code,
+
+                /*
+                * Nothing is outstanding on it. The whole referral is the
+                * one form, so it is finished the moment it is saved.
+                */
+                'details_completed_at' => now(),
+                'details_completed_by' => $employee->employee_id,
+            ]);
+
+            $this->generateQrCode($document);
+
+            return $document->fresh();
+        });
+    }
+
+    /**
      * Step 2 - fill in a referral's details.
      *
      * Records who completed them and when, so the two halves of the
@@ -432,31 +492,40 @@ class DocumentService
         $employee
     ): Document {
         $update = [
-            'concern' => $this->joinChoices(
-                $data['concerns'],
-                $data['concern_other'] ?? null
-            ),
+            'concern' => $data['concern'],
 
             /*
-            * referred_for is not set here. On BIR Form 2309 the "FOR"
-            * block is a grid of boxes ticked by hand on the hardcopy -
-            * see config('referral.referred_for'), which now only feeds
-            * the printed slip. The column stays for referrals recorded
-            * before that was understood.
+            * Neither referred_for nor remarks is written here. Both are
+            * blocks on BIR Form 2309 that the RDO or a Chief fills in by
+            * hand on the hardcopy, so the slip prints them empty and no
+            * form asks. Their columns stay for referrals recorded before
+            * that was understood, and a stored value still prints.
             */
 
-            'remarks' => $data['remarks'] === 'Other'
-                ? trim($data['remarks_other'])
-                : $data['remarks'],
+            /*
+            * Everything goes to the Chief. If the Chief is away somebody
+            * else receives it, and the movement trail records who - that
+            * is a fact about what happened, not a box on a form.
+            */
+            'addressee' => $document->addressee ?: 'Chief',
 
             'details_completed_at' => now(),
             'details_completed_by' => $employee->employee_id,
         ];
 
         /*
+        * A referral left with no date at all by the flow that predated
+        * server stamping. Stamped rather than asked for, so there is no
+        * form anywhere that accepts one.
+        */
+        if (blank($document->document_date)) {
+            $update['document_date'] = now();
+        }
+
+        /*
         * Catching up a referral the draft flow left bare.
         */
-        foreach (['taxpayer_name', 'document_date', 'destination_section_id', 'addressee'] as $field) {
+        foreach (['taxpayer_name', 'destination_section_id', 'addressee'] as $field) {
             if (blank($document->{$field}) && filled($data[$field] ?? null)) {
                 $update[$field] = $data[$field];
             }

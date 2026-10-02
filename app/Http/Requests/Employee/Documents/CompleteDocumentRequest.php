@@ -45,18 +45,11 @@ class CompleteDocumentRequest extends FormRequest
     {
         return [
 
-            'concerns' => ['required', 'array', 'min:1'],
-            'concerns.*' => ['string', Rule::in(config('referral.concerns'))],
-            'concern_other' => [
-                Rule::requiredIf(fn () => $this->ticked('concerns', 'Other')),
-                'nullable', 'string', 'max:1000',
-            ],
-
-            'remarks' => ['required', 'string', Rule::in(config('referral.remarks'))],
-            'remarks_other' => [
-                Rule::requiredIf(fn () => $this->input('remarks') === 'Other'),
-                'nullable', 'string', 'max:1000',
-            ],
+            /*
+            * Free text now, not a tick list. The office found the fixed
+            * choices never matched what was actually on the paper.
+            */
+            'concern' => ['required', 'string', 'max:1000'],
 
             /*
             * Only asked for when step 1 did not record them.
@@ -65,17 +58,9 @@ class CompleteDocumentRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->documentLacks('taxpayer_name')),
                 'nullable', 'string', 'max:255',
             ],
-            'document_date' => [
-                Rule::requiredIf(fn () => $this->documentLacks('document_date')),
-                'nullable', 'date',
-            ],
             'destination_section_id' => [
                 Rule::requiredIf(fn () => $this->documentLacks('destination_section_id')),
                 'nullable', Rule::exists('sections', 'section_id'),
-            ],
-            'addressee' => [
-                Rule::requiredIf(fn () => $this->documentLacks('addressee')),
-                'nullable', 'string', Rule::in(config('referral.addressees')),
             ],
 
         ];
@@ -84,19 +69,11 @@ class CompleteDocumentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'concerns.required' => 'Please tick at least one concern.',
-            'concerns.*.in' => 'That concern is not in the list.',
-            'concern_other.required' => 'Please say what the other concern is.',
-
-            'remarks.required' => 'Please choose a remark.',
-            'remarks.in' => 'That remark is not in the list.',
-            'remarks_other.required' => 'Please describe the status.',
-            'remarks_other.max' => 'Remarks may not exceed 1000 characters.',
+            'concern.required' => 'Please enter the details.',
+            'concern.max' => 'The details may not exceed 1000 characters.',
 
             'taxpayer_name.required' => 'Please enter the taxpayer\'s name.',
-            'document_date.required' => 'Please enter the date issued.',
             'destination_section_id.required' => 'Please choose the receiving section.',
-            'addressee.required' => 'Please choose who in that section should receive it.',
         ];
     }
 

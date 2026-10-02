@@ -123,6 +123,23 @@ return [
     ],
 
     /*
+    * Which sections issue a BIR Form 2309 referral.
+    *
+    * Only the RDO. Every other section issues the half-sheet
+    * accountability slip instead: a taxpayer's referral and an internal
+    * docket are different pieces of paper doing different jobs, and the
+    * office asked for the second to carry signatures rather than the
+    * form's blocks.
+    *
+    * Keep this in step with details_completion_sections - they are the
+    * same office today, and if that ever stops being true both lists
+    * have to be revisited together rather than one of them quietly.
+    */
+    'form_2309_sections' => [
+        'RDO',
+    ],
+
+    /*
     * Roles whose accounts do step 1 and nothing else.
     *
     * The RDO runs the counter with two accounts: one registers arrivals
