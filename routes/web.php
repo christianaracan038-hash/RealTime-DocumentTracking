@@ -218,6 +218,8 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
     Route::get('/transmittal', [TransmittalController::class, 'index'])
         ->name('transmittal.index');
 
+    Route::get('/transmittal/export', [TransmittalController::class, 'export'])->name('transmittal.export');
+
     Route::get('/documents/history', [DocumentController::class, 'history'])
         ->name('documents.history');
 
