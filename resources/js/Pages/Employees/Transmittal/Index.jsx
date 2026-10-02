@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { router } from "@inertiajs/react";
 
@@ -32,12 +33,32 @@ export default function Index({
     releasedBy = null,
     filters = {},
 }) {
+    const [range, setRange] = useState({
+        from: filters.from ?? "",
+        until: filters.until ?? "",
+    });
+    const [allSections, setAllSections] = useState(false);
+
+    const invalidRange =
+        range.from !== "" && range.until !== "" && range.from > range.until;
+
     const choose = (sectionId) =>
         router.get(
             route("transmittal.index"),
             { to: sectionId },
             { preserveState: true, preserveScroll: true },
         );
+
+    const exportExcel = () => {
+        if (invalidRange) return;
+
+        const params =
+            allSections || !toSection ? {} : { to: toSection.section_id };
+        if (range.from) params.from = range.from;
+        if (range.until) params.until = range.until;
+
+        window.location.assign(route("transmittal.export", params));
+    };
 
     return (
         <EmployeeLayout title="Transmittal">
@@ -128,6 +149,103 @@ export default function Index({
                                 section scans it in.
                             </p>
                         </div>
+                    )}
+                </EmployeeCard>
+
+                <EmployeeCard>
+                    <h3 className="text-lg font-bold text-navy-900">
+                        Export to Excel
+                    </h3>
+
+                    <p className="mt-1 text-base text-muted">
+                        Pick a date range based on when each document was
+                        registered. Leave both dates empty to export everything.
+                    </p>
+
+                    {toSection && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {[
+                                [false, sectionLabel(toSection)],
+                                [true, "All sections"],
+                            ].map(([value, label]) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => setAllSections(value)}
+                                    aria-pressed={allSections === value}
+                                    className={`min-h-12 rounded-xl px-4 py-2 text-base font-semibold transition ${
+                                        allSections === value
+                                            ? "bg-navy-900 text-white"
+                                            : "bg-sunken text-navy-800 hover:bg-brand-50"
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+                        <label className="block">
+                            <span className="text-base font-semibold text-navy-800">
+                                From
+                            </span>
+                            <input
+                                type="date"
+                                value={range.from}
+                                min={range.from || undefined}
+                                onChange={(e) =>
+                                    setRange((r) => ({
+                                        ...r,
+                                        from: e.target.value,
+                                    }))
+                                }
+                                className="mt-1 block min-h-12 w-full rounded-xl border border-line px-3 text-base text-navy-900"
+                            />
+                        </label>
+
+                        <label className="block">
+                            <span className="text-base font-semibold text-navy-800">
+                                To
+                            </span>
+                            <input
+                                type="date"
+                                value={range.until}
+                                min={range.from || undefined}
+                                onChange={(e) =>
+                                    setRange((r) => ({
+                                        ...r,
+                                        until: e.target.value,
+                                    }))
+                                }
+                                className="mt-1 block min-h-12 w-full rounded-xl border border-line px-3 text-base text-navy-900"
+                            />
+                        </label>
+
+                        <button
+                            type="button"
+                            onClick={() => setRange({ from: "", until: "" })}
+                            disabled={!range.from && !range.until}
+                            className="min-h-12 rounded-xl px-4 text-base font-semibold text-navy-800 hover:bg-brand-50 disabled:opacity-40"
+                        >
+                            Clear dates
+                        </button>
+
+                        <EmployeeButton
+                            size="lg"
+                            onClick={exportExcel}
+                            disabled={invalidRange}
+                            className="w-full lg:w-auto"
+                        >
+                            <Icon name="download" />
+                            Export to Excel
+                        </EmployeeButton>
+                    </div>
+
+                    {invalidRange && (
+                        <p className="mt-3 text-base font-semibold text-red-600">
+                            The "From" date must be on or before the "To" date.
+                        </p>
                     )}
                 </EmployeeCard>
 
