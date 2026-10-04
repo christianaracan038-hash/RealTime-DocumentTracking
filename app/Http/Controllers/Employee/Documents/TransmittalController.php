@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Employee\Documents;
 
 use App\Exports\TransmittalExport;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\Section;
 use Illuminate\Database\Eloquent\Builder;
@@ -107,6 +108,13 @@ class TransmittalController extends Controller
         ]);
     }
 
+    /**
+     * The same set, as a spreadsheet.
+     *
+     * Section labels only. The printed sheet names who released the
+     * stack because it is handed over in person and signed for; a file
+     * gets emailed and forwarded, so it carries no employee name.
+     */
     public function export(Request $request): BinaryFileResponse
     {
         $employee = Auth::guard('employee')->user();
@@ -117,20 +125,34 @@ class TransmittalController extends Controller
             'until' => ['nullable', 'date', 'after_or_equal:from'],
         ]);
 
-        $toSectionId = $validated['to'] ?? null;
+        // Cast: the `integer` rule validates a query string, it does not cast it.
+        $toSectionId = isset($validated['to']) ? (int) $validated['to'] : null;
         $from = isset($validated['from']) ? Carbon::parse($validated['from'])->startOfDay() : null;
         $until = isset($validated['until']) ? Carbon::parse($validated['until'])->endOfDay() : null;
 
+        /*
+        * The range filters created_at, which is what the screen offers:
+        * "a date range based on when each document was registered". The
+        * sheet prints that same column, so the file can be checked
+        * against the dates that produced it. Waiting Since cannot be the
+        * filtered one - it is derived from the last movement, not a
+        * column - and it is printed beside it for the ageing.
+        *
+        * `to` is optional: left off, one sheet covers every destination,
+        * which is why the receiving section is read per row rather than
+        * stamped on the whole file.
+        */
         $documents = $this->inTransit($employee)
             ->when($toSectionId, fn (Builder $query) => $query->where('destination_section_id', $toSectionId))
             ->when($from, fn (Builder $query) => $query->where('created_at', '>=', $from))
             ->when($until, fn (Builder $query) => $query->where('created_at', '<=', $until))
-            ->with(['destinationSection', 'creator.section', 'latestTrackingHistory'])
+            ->with(['destinationSection', 'latestTrackingHistory'])
             ->orderBy('destination_section_id')
             ->oldest('created_at')
             ->get();
 
         $toSection = $toSectionId ? Section::cached($toSectionId) : null;
+        $fromSection = $employee->section;
 
         $filename = sprintf(
             'transmittal-%s-%s-to-%s.xlsx',
@@ -139,11 +161,23 @@ class TransmittalController extends Controller
             $until?->format('Y-m-d') ?? now()->format('Y-m-d'),
         );
 
+        /*
+        * A list of everything in transit leaves the office as a file, so
+        * the log keeps what was taken and on what filters. record()
+        * works the actor out from the employee guard itself.
+        */
+        AuditLog::record('transmittal.exported', $toSection, [
+            'to_section_id' => $toSectionId,
+            'from' => $from?->toDateString(),
+            'until' => $until?->toDateString(),
+            'documents' => $documents->count(),
+            'filename' => $filename,
+        ]);
+
         return Excel::download(
             new TransmittalExport(
                 $documents,
-                $employee->section?->section_name ?? '',
-                $employee->display_name ?? '',
+                $fromSection?->description ?: $fromSection?->section_name ?: '',
             ),
             $filename,
         );
