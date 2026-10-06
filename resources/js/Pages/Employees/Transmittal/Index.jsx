@@ -21,10 +21,36 @@ import {
  * tick a subset would mean the paper and the system could disagree,
  * which is the one thing a receipt must never do.
  *
+ * Print and Export share one toolbar. The section chips drive both:
+ * picking a section changes what gets printed and what gets exported.
+ * "All sections" only applies to the export, so printing is paused
+ * while it is selected (a transmittal sheet is always for one section).
+ *
  * Printing renders the sheet a second time into #print-root under
  * <body>, the same way the reference slip does; the print stylesheet
  * hides everything else.
+ *
+ * All text on light grounds is black, by request of the office: grey
+ * text was hard to read on older monitors.
  */
+
+const formatDate = (value) =>
+    new Date(`${value}T00:00:00`).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+
+const chipClass = (active) =>
+    `inline-flex min-h-12 items-center gap-2 rounded-xl px-4 py-2 text-base font-semibold transition ${
+        active
+            ? "bg-navy-900 text-white"
+            : "bg-sunken text-black hover:bg-brand-50"
+    }`;
+
+const dateInputClass =
+    "mt-1 block min-h-12 w-full rounded-xl border border-line px-3 text-base text-black";
+
 export default function Index({
     documents = [],
     destinations = [],
@@ -39,21 +65,41 @@ export default function Index({
     });
     const [allSections, setAllSections] = useState(false);
 
+    const exportingAll = allSections || !toSection;
+    const canPrint = documents.length > 0 && !allSections;
+
     const invalidRange =
         range.from !== "" && range.until !== "" && range.from > range.until;
 
-    const choose = (sectionId) =>
+    const hasDates = range.from !== "" || range.until !== "";
+
+    const scopeLabel = exportingAll ? "all sections" : sectionLabel(toSection);
+
+    let summary = `Exporting all documents for ${scopeLabel}`;
+    if (range.from && range.until) {
+        summary = `Exporting ${formatDate(range.from)} – ${formatDate(range.until)} for ${scopeLabel}`;
+    } else if (range.from) {
+        summary = `Exporting from ${formatDate(range.from)} onward for ${scopeLabel}`;
+    } else if (range.until) {
+        summary = `Exporting up to ${formatDate(range.until)} for ${scopeLabel}`;
+    }
+
+    const choose = (sectionId) => {
+        setAllSections(false);
+
+        if (toSection?.section_id === sectionId) return;
+
         router.get(
             route("transmittal.index"),
             { to: sectionId },
             { preserveState: true, preserveScroll: true },
         );
+    };
 
     const exportExcel = () => {
         if (invalidRange) return;
 
-        const params =
-            allSections || !toSection ? {} : { to: toSection.section_id };
+        const params = exportingAll ? {} : { to: toSection.section_id };
         if (range.from) params.from = range.from;
         if (range.until) params.until = range.until;
 
@@ -64,42 +110,64 @@ export default function Index({
         <EmployeeLayout title="Transmittal">
             <div className="space-y-6">
                 <EmployeeCard>
+                    {/* Header: title on the left, both actions on the right */}
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-navy-900">
-                                Transmittal sheet
+                            <h2 className="text-xl font-bold text-black">
+                                Transmittal and reports
                             </h2>
 
-                            <p className="mt-1 text-base text-muted">
-                                The paper that goes with the documents. Print
-                                it, walk the stack over, and have the receiving
-                                section sign it.
+                            <p className="mt-1 text-base text-black">
+                                Print the transmittal sheet that goes with the
+                                documents, or export a report to Excel.
                             </p>
                         </div>
 
-                        {documents.length > 0 && (
+                        <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:flex">
+                            {documents.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => window.print()}
+                                    disabled={!canPrint}
+                                    title={
+                                        canPrint
+                                            ? undefined
+                                            : "Choose one section to print its sheet."
+                                    }
+                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-navy-900 bg-white px-5 text-base font-semibold text-black transition hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    <Icon name="print" />
+                                    Print sheet
+                                </button>
+                            )}
+
                             <EmployeeButton
                                 size="lg"
-                                onClick={() => window.print()}
-                                className="w-full shrink-0 lg:w-auto"
+                                onClick={exportExcel}
+                                disabled={invalidRange}
+                                className="w-full lg:w-auto"
                             >
-                                <Icon name="print" />
-                                Print sheet
+                                <Icon name="download" />
+                                Export to Excel
                             </EmployeeButton>
-                        )}
+                        </div>
                     </div>
 
+                    <div className="my-6 border-t border-line" />
+
+                    {/* Section: shared by print and export */}
                     {destinations.length > 0 ? (
-                        <>
-                            <p className="mt-6 text-base font-semibold text-navy-800">
-                                Going to
+                        <div>
+                            <p className="text-base font-semibold text-black">
+                                Section
                             </p>
 
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {destinations.map((section) => {
                                     const current =
+                                        !allSections &&
                                         toSection?.section_id ===
-                                        section.section_id;
+                                            section.section_id;
 
                                     return (
                                         <button
@@ -108,22 +176,16 @@ export default function Index({
                                             onClick={() =>
                                                 choose(section.section_id)
                                             }
-                                            aria-current={
-                                                current ? "true" : undefined
-                                            }
-                                            className={`inline-flex min-h-12 items-center gap-2 rounded-xl px-4 py-2 text-base font-semibold transition ${
-                                                current
-                                                    ? "bg-navy-900 text-white"
-                                                    : "bg-sunken text-navy-800 hover:bg-brand-50"
-                                            }`}
+                                            aria-pressed={current}
+                                            className={chipClass(current)}
                                         >
                                             {sectionLabel(section)}
 
                                             <span
                                                 className={`rounded-full px-2 py-0.5 text-sm font-bold ${
                                                     current
-                                                        ? "bg-accent-400 text-navy-900"
-                                                        : "bg-navy-200 text-navy-900"
+                                                        ? "bg-accent-400 text-black"
+                                                        : "bg-navy-200 text-black"
                                                 }`}
                                             >
                                                 {section.waiting}
@@ -131,134 +193,129 @@ export default function Index({
                                         </button>
                                     );
                                 })}
+
+                                {toSection && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setAllSections(true)}
+                                        aria-pressed={allSections}
+                                        className={chipClass(allSections)}
+                                    >
+                                        All sections
+                                    </button>
+                                )}
                             </div>
-                        </>
+
+                            {allSections && documents.length > 0 && (
+                                <p className="mt-2 text-sm text-black">
+                                    “All sections” applies only to the Excel
+                                    export. Choose one section to print its
+                                    transmittal sheet.
+                                </p>
+                            )}
+                        </div>
                     ) : (
-                        <div className="mt-6 rounded-xl border border-dashed border-line py-14 text-center">
+                        <div className="rounded-xl border border-dashed border-line py-10 text-center">
                             <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-ok-100 text-2xl text-ok-600">
                                 <Icon name="check" />
                             </span>
 
-                            <p className="text-lg font-semibold text-navy-800">
-                                Nothing waiting to go out
+                            <p className="text-lg font-semibold text-black">
+                                Nothing is waiting to be sent.
                             </p>
 
-                            <p className="mt-1 text-base text-muted">
-                                A document appears here once it has been
-                                addressed to another section and before that
-                                section scans it in.
+                            <p className="mt-1 text-base text-black">
+                                A document appears here once it is addressed to
+                                another section, and stays until that section
+                                scans it in. You can still export a report
+                                below.
                             </p>
                         </div>
                     )}
-                </EmployeeCard>
 
-                <EmployeeCard>
-                    <h3 className="text-lg font-bold text-navy-900">
-                        Export to Excel
-                    </h3>
-
-                    <p className="mt-1 text-base text-muted">
-                        Pick a date range based on when each document was
-                        registered. Leave both dates empty to export everything.
-                    </p>
-
-                    {toSection && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            {[
-                                [false, sectionLabel(toSection)],
-                                [true, "All sections"],
-                            ].map(([value, label]) => (
-                                <button
-                                    key={label}
-                                    type="button"
-                                    onClick={() => setAllSections(value)}
-                                    aria-pressed={allSections === value}
-                                    className={`min-h-12 rounded-xl px-4 py-2 text-base font-semibold transition ${
-                                        allSections === value
-                                            ? "bg-navy-900 text-white"
-                                            : "bg-sunken text-navy-800 hover:bg-brand-50"
-                                    }`}
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
-                        <label className="block">
-                            <span className="text-base font-semibold text-navy-800">
-                                From
-                            </span>
-                            <input
-                                type="date"
-                                value={range.from}
-                                min={range.from || undefined}
-                                onChange={(e) =>
-                                    setRange((r) => ({
-                                        ...r,
-                                        from: e.target.value,
-                                    }))
-                                }
-                                className="mt-1 block min-h-12 w-full rounded-xl border border-line px-3 text-base text-navy-900"
-                            />
-                        </label>
-
-                        <label className="block">
-                            <span className="text-base font-semibold text-navy-800">
-                                To
-                            </span>
-                            <input
-                                type="date"
-                                value={range.until}
-                                min={range.from || undefined}
-                                onChange={(e) =>
-                                    setRange((r) => ({
-                                        ...r,
-                                        until: e.target.value,
-                                    }))
-                                }
-                                className="mt-1 block min-h-12 w-full rounded-xl border border-line px-3 text-base text-navy-900"
-                            />
-                        </label>
-
-                        <button
-                            type="button"
-                            onClick={() => setRange({ from: "", until: "" })}
-                            disabled={!range.from && !range.until}
-                            className="min-h-12 rounded-xl px-4 text-base font-semibold text-navy-800 hover:bg-brand-50 disabled:opacity-40"
-                        >
-                            Clear dates
-                        </button>
-
-                        <EmployeeButton
-                            size="lg"
-                            onClick={exportExcel}
-                            disabled={invalidRange}
-                            className="w-full lg:w-auto"
-                        >
-                            <Icon name="download" />
-                            Export to Excel
-                        </EmployeeButton>
-                    </div>
-
-                    {invalidRange && (
-                        <p className="mt-3 text-base font-semibold text-red-600">
-                            The "From" date must be on or before the "To" date.
+                    {/* Report dates */}
+                    <div className="mt-6">
+                        <p className="text-base font-semibold text-black">
+                            Registered between
                         </p>
-                    )}
+
+                        <div className="mt-1 grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end lg:max-w-2xl">
+                            <label className="block">
+                                <span className="text-sm text-black">From</span>
+                                <input
+                                    type="date"
+                                    value={range.from}
+                                    max={range.until || undefined}
+                                    onChange={(e) =>
+                                        setRange((r) => ({
+                                            ...r,
+                                            from: e.target.value,
+                                        }))
+                                    }
+                                    className={dateInputClass}
+                                />
+                            </label>
+
+                            <span className="hidden pb-3 text-base text-black sm:block">
+                                to
+                            </span>
+
+                            <label className="block">
+                                <span className="text-sm text-black">To</span>
+                                <input
+                                    type="date"
+                                    value={range.until}
+                                    min={range.from || undefined}
+                                    onChange={(e) =>
+                                        setRange((r) => ({
+                                            ...r,
+                                            until: e.target.value,
+                                        }))
+                                    }
+                                    className={dateInputClass}
+                                />
+                            </label>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                            {invalidRange ? (
+                                <p className="text-base font-semibold text-red-600">
+                                    The “From” date must be on or before the
+                                    “To” date.
+                                </p>
+                            ) : (
+                                <p className="text-base text-black">
+                                    {summary}
+                                </p>
+                            )}
+
+                            {hasDates && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setRange({ from: "", until: "" })
+                                    }
+                                    className="text-base font-semibold text-black underline underline-offset-4 hover:text-brand-700"
+                                >
+                                    Clear dates
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </EmployeeCard>
 
                 {documents.length > 0 && (
                     <EmployeeCard>
                         <div className="flex flex-wrap items-baseline justify-between gap-3">
-                            <h3 className="text-lg font-bold text-navy-900">
+                            <h3 className="text-lg font-bold text-black">
                                 {documents.length} document
                                 {documents.length === 1 ? "" : "s"} for{" "}
                                 {sectionLabel(toSection)}
                             </h3>
 
-                            <p className="text-base text-muted">Oldest first</p>
+                            <p className="text-base text-black">
+                                Sorted oldest first
+                            </p>
                         </div>
 
                         <ul className="mt-4 divide-y divide-line rounded-xl border border-line">
@@ -267,24 +324,24 @@ export default function Index({
                                     key={document.document_id}
                                     className="flex items-center gap-4 px-4 py-3"
                                 >
-                                    <span className="w-6 shrink-0 text-base font-bold text-muted">
+                                    <span className="w-6 shrink-0 text-base font-bold text-black">
                                         {index + 1}
                                     </span>
 
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-lg font-bold text-navy-900">
+                                        <p className="truncate text-lg font-bold text-black">
                                             {document.taxpayer_name ??
                                                 "No taxpayer on record"}
                                         </p>
 
-                                        <p className="mt-0.5 font-mono text-sm text-muted">
+                                        <p className="mt-0.5 font-mono text-sm text-black">
                                             {document.tracking_number}
                                             {document.concern
                                                 ? ` · ${document.concern}`
                                                 : ""}
                                         </p>
 
-                                        <p className="mt-0.5 text-sm text-muted">
+                                        <p className="mt-0.5 text-sm text-black">
                                             Waiting since{" "}
                                             {exactTime(document.waiting_since)}
                                         </p>
@@ -295,10 +352,10 @@ export default function Index({
                             ))}
                         </ul>
 
-                        <p className="mt-4 text-base text-muted">
-                            A row leaves this list the moment{" "}
+                        <p className="mt-4 text-base text-black">
+                            A document is removed from this list as soon as{" "}
                             {sectionLabel(toSection)} scans it in, so the sheet
-                            only ever lists what they have not yet received.
+                            lists only what they have not yet received.
                         </p>
                     </EmployeeCard>
                 )}
