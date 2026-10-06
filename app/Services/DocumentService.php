@@ -173,58 +173,22 @@ class DocumentService
     public function getHistoryDocuments($employee, ?string $search = null)
     {
         return Document::query()
-            /*
-            * Only what a row shows. The movement trail used to be
-            * loaded here for every document on the page, with four
-            * relations per trail row - most of it never looked at.
-            * It is fetched one document at a time now, by
-            * findForEmployee(), when someone opens that document.
-            */
             ->with([
                 'status',
-
-                /*
-                * The aging accessor reads the last move; without this
-                * it would cost a query per row.
-                */
                 'latestTrackingHistory',
+                'creator:employee_id,username,section_id',
+                'creator.section:section_id,section_name',
+                'currentSection:section_id,section_name',
+                'currentEmployee:employee_id,username',
+                'destinationSection:section_id,section_name',
             ])
-
-            /*
-            * ==========================================================
-            * DOCUMENT VISIBILITY
-            * ==========================================================
-            */
             ->where(fn ($query) => $this->applyVisibility($query, $employee))
-
-            /*
-            * ==========================================================
-            * SEARCH
-            *
-            * Applied to the database query BEFORE pagination, so a
-            * match is found no matter which page it would have
-            * landed on.
-            * ==========================================================
-            */
             ->when(
                 filled($search),
                 fn ($query) => $this->applySearch($query, $search)
             )
-
-            /*
-            * Newest registered documents first
-            */
             ->latest('created_at')
-
-            /*
-            * Same pagination style as
-            * RecentDocumentsTable.
-            */
             ->paginate(5)
-
-            /*
-            * Preserve pagination and search query parameters.
-            */
             ->withQueryString();
     }
 

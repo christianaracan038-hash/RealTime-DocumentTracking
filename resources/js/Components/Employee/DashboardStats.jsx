@@ -10,6 +10,9 @@ import Icon from "@/Components/Employee/Icon";
  * Only the last one is coloured, and only when it is not zero. A row of
  * three red-edged cards would say nothing - the point of the colour is
  * that most mornings it is absent, so the morning it appears you notice.
+ *
+ * Everything else is black, by request of the office: grey text was hard
+ * to read on older monitors.
  */
 
 function Stat({ label, value, hint, icon, href, tone = "plain" }) {
@@ -20,7 +23,7 @@ function Stat({ label, value, hint, icon, href, tone = "plain" }) {
             <span className="flex items-start justify-between gap-3">
                 <span
                     className={`text-base font-semibold ${
-                        toned ? "text-stop-600" : "text-muted"
+                        toned ? "text-stop-600" : "text-black"
                     }`}
                 >
                     {label}
@@ -40,13 +43,13 @@ function Stat({ label, value, hint, icon, href, tone = "plain" }) {
 
             <span
                 className={`mt-2 block text-4xl font-bold ${
-                    toned ? "text-stop-600" : "text-navy-900"
+                    toned ? "text-stop-600" : "text-black"
                 }`}
             >
                 {value}
             </span>
 
-            <span className="mt-1 block text-sm text-muted">{hint}</span>
+            <span className="mt-1 block text-sm text-black">{hint}</span>
         </>
     );
 
@@ -73,12 +76,12 @@ export default function DashboardStats({ stats = {} }) {
     return (
         <div className="grid gap-4 sm:grid-cols-3">
             <Stat
-                label="Waiting to receive"
+                label="Waiting to be received"
                 value={waiting}
                 hint={
                     waiting === 0
-                        ? "Nothing has arrived"
-                        : "Sent to your section"
+                        ? "Nothing has arrived yet"
+                        : "Sent to your section but not yet received"
                 }
                 icon="inbox"
             />
@@ -88,8 +91,8 @@ export default function DashboardStats({ stats = {} }) {
                 value={onDesk}
                 hint={
                     onDesk === 0
-                        ? "You are holding nothing"
-                        : "Received, not yet moved on"
+                        ? "You have no documents on hand"
+                        : "Received but not yet forwarded"
                 }
                 icon="documents"
                 href={route("documents.index")}
@@ -100,8 +103,8 @@ export default function DashboardStats({ stats = {} }) {
                 value={overdue}
                 hint={
                     overdue === 0
-                        ? "Everything is within time"
-                        : "Waiting longer than two days"
+                        ? "All documents are within the time limit"
+                        : "Waiting for more than two days"
                 }
                 icon="warning"
                 tone="stop"

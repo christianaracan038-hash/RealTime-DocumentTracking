@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Middleware;
+use App\Models\EmployeeAcc;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -65,6 +66,8 @@ class HandleInertiaRequests extends Middleware
     {
         $employee = Auth::guard('employee')->user();
 
+        /** @var \App\Models\EmployeeAcc|null $employee */
+        $employee = Auth::guard('employee')->user();
         return [
             ...parent::share($request),
 

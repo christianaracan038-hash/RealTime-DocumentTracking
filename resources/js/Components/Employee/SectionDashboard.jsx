@@ -42,13 +42,13 @@ export default function SectionDashboard({
                             </p>
                         </div>
 
-                        <Link
+                        {/* <Link
                             href={route("referrals.index", { new: 1 })}
                             className="inline-flex min-h-13 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-7 text-lg font-semibold text-white shadow-sm transition hover:bg-brand-700 lg:w-auto"
                         >
                             <Icon name="add" />
-                            New referral
-                        </Link>
+                            New Referral
+                        </Link> */}
                     </div>
                 </div>
 

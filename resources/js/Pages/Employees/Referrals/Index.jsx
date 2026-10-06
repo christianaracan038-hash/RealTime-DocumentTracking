@@ -25,9 +25,8 @@ import { exactTime } from "@/Components/Employee/Referrals/referral";
  * remarks are a click away, and putting them in the row made a register
  * that nobody could scan down.
  *
- * Two frames rather than a dialog over the table. Registering an arrival
- * is a different job from looking through the register, done while
- * somebody stands at the counter, and it gets the screen to itself.
+ * All text on this screen is black, by request of the office: grey text
+ * was hard to read on older monitors.
  */
 
 /*
@@ -49,15 +48,15 @@ const TABS = [
     },
     {
         key: "waiting",
-        label: "Waiting for their details",
-        hint: "Registered, not yet completed",
+        label: "Waiting for details",
+        hint: "Registered but not yet completed",
         icon: "register",
         tone: "act",
     },
     {
         key: "slip",
-        label: "With a slip",
-        hint: "Finished and ready to print",
+        label: "Slip ready",
+        hint: "Completed and ready to print",
         icon: "print",
     },
 ];
@@ -77,11 +76,7 @@ function CountCard({ tab, count, current, onSelect }) {
             }`}
         >
             <span className="flex items-start justify-between gap-3">
-                <span
-                    className={`text-base font-semibold ${
-                        current ? "text-brand-700" : "text-muted"
-                    }`}
-                >
+                <span className="text-base font-semibold text-black">
                     {tab.label}
                 </span>
 
@@ -89,7 +84,7 @@ function CountCard({ tab, count, current, onSelect }) {
                     aria-hidden="true"
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                         acting
-                            ? "bg-accent-400 text-navy-900"
+                            ? "bg-accent-400 text-black"
                             : "bg-brand-50 text-brand-700"
                     }`}
                 >
@@ -97,11 +92,11 @@ function CountCard({ tab, count, current, onSelect }) {
                 </span>
             </span>
 
-            <span className="mt-2 block text-4xl font-bold text-navy-900">
+            <span className="mt-2 block text-4xl font-bold text-black">
                 {count}
             </span>
 
-            <span className="mt-1 block text-sm text-muted">{tab.hint}</span>
+            <span className="mt-1 block text-sm text-black">{tab.hint}</span>
 
             {/* Which one the list below is showing */}
             <span
@@ -117,7 +112,7 @@ function CountCard({ tab, count, current, onSelect }) {
 function StatusPill({ document }) {
     if (document.details_completed_at) {
         return (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok-100 px-3 py-1 text-sm font-bold text-ok-600">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok-600 px-3 py-1 text-sm font-bold text-white">
                 <Icon name="check" />
                 Slip ready
             </span>
@@ -125,7 +120,7 @@ function StatusPill({ document }) {
     }
 
     return (
-        <span className="shrink-0 rounded-full bg-accent-100 px-3 py-1 text-sm font-bold text-navy-900">
+        <span className="shrink-0 rounded-full bg-accent-100 px-3 py-1 text-sm font-bold text-black">
             Waiting for details
         </span>
     );
@@ -141,8 +136,11 @@ export default function Index({
     frame = "list",
     openSlipFor = null,
     usesForm2309 = true,
+    canCompleteDetails = false,
 }) {
     const [completing, setCompleting] = useState(null);
+
+    const [registering, setRegistering] = useState(frame === "register");
 
     // The document being looked at, and whether to go straight to its slip.
     const [opened, setOpened] = useState(
@@ -154,11 +152,22 @@ export default function Index({
 
     const rows = documents?.data ?? [];
 
+    const tabs = usesForm2309
+        ? TABS
+        : TABS.filter((tab) => tab.key !== "waiting");
+
     useEffect(() => {
         if (!flash?.success) return;
 
         notify({ title: "Done", message: flash.success });
     }, [flash?.id]);
+
+    useEffect(() => {
+        if (!openSlipFor) return;
+
+        setRegistering(false);
+        setOpened({ id: openSlipFor, slip: true });
+    }, [openSlipFor]);
 
     /*
      * The frame and the filter both live in the address, so the browser
@@ -170,64 +179,31 @@ export default function Index({
             preserveScroll: true,
         });
 
-    const showRegister = () => go({ frame: "register" });
-
     const showList = (status = filters.status ?? "") =>
         go({
             status: status || undefined,
             search: filters.search || undefined,
         });
 
-    if (frame === "register") {
-        return (
-            <EmployeeLayout title="Register a referral">
-                {/*
-                 * Two different forms because they produce two different
-                 * pieces of paper: the RDO issues a taxpayer's BIR Form
-                 * 2309, every other section an internal docket carrying
-                 * two signatures.
-                 *
-                 * Where either lands is decided by the redirect, which
-                 * carries ?slip= so the new referral's slip opens on
-                 * arrival - it can be printed and attached at once.
-                 */}
-                {usesForm2309 ? (
-                    <ReferralFormPanel
-                        sections={sections}
-                        options={referralOptions}
-                        fromSection={fromSection}
-                        onCancel={() => showList()}
-                        onRegistered={() => {}}
-                    />
-                ) : (
-                    <SectionReferralPanel
-                        sections={sections}
-                        fromSection={fromSection}
-                        onCancel={() => showList()}
-                    />
-                )}
-            </EmployeeLayout>
-        );
-    }
-
     return (
         <EmployeeLayout title="Referrals">
             <EmployeeCard>
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                        <h2 className="text-xl font-bold text-navy-900">
+                        <h2 className="text-xl font-bold text-black">
                             Referrals
                         </h2>
 
-                        <p className="mt-1 text-base text-muted">
-                            Everything this section has registered. Tap one to
-                            see it in full, or to print its reference slip.
+                        <p className="mt-1 text-base text-black">
+                            Everything this section has registered. Tap a
+                            referral to see its full details or to print its
+                            reference slip.
                         </p>
                     </div>
 
                     <EmployeeButton
                         size="lg"
-                        onClick={showRegister}
+                        onClick={() => setRegistering(true)}
                         className="w-full shrink-0 lg:w-auto"
                     >
                         <Icon name="add" />
@@ -239,8 +215,12 @@ export default function Index({
                  * The counts are the filter. Pressing one shows just
                  * those below.
                  */}
-                <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                    {TABS.map((tab) => (
+                <div
+                    className={`mt-6 grid gap-4 ${
+                        tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                    }`}
+                >
+                    {tabs.map((tab) => (
                         <CountCard
                             key={tab.key || "all"}
                             tab={tab}
@@ -259,10 +239,16 @@ export default function Index({
                 <div className="mt-5">
                     <SearchInput
                         size="lg"
-                        label="Find a taxpayer"
+                        label={
+                            usesForm2309 ? "Find a taxpayer" : "Find a referral"
+                        }
                         initialValue={filters.search}
-                        placeholder="Type a name, or a reference number"
-                        hint="Any part of the name will do - the whole register is searched, not just this page."
+                        placeholder={
+                            usesForm2309
+                                ? "Type a name or a reference number"
+                                : "Type part of the description or a reference number"
+                        }
+                        hint="You can type any part of it. The search covers the whole register, not just this page."
                         only={["documents", "counts", "filters"]}
                     />
                 </div>
@@ -299,16 +285,35 @@ export default function Index({
                                         }
                                         className="min-w-0 flex-1 px-4 py-4 text-left transition hover:bg-brand-50"
                                     >
-                                        <p className="truncate text-lg font-bold text-navy-900">
-                                            {document.taxpayer_name ??
-                                                "No taxpayer on record"}
-                                        </p>
+                                        {usesForm2309 ? (
+                                            <p className="truncate text-lg font-bold text-black">
+                                                {document.taxpayer_name ??
+                                                    "No taxpayer on record"}
+                                            </p>
+                                        ) : (
+                                            <p className="line-clamp-2 text-lg font-bold text-black">
+                                                {document.concern ||
+                                                    "No description"}
+                                            </p>
+                                        )}
 
-                                        <p className="mt-0.5 font-mono text-sm text-muted">
+                                        <p className="mt-0.5 font-mono text-sm text-black">
                                             {document.tracking_number}
                                         </p>
 
-                                        <p className="mt-1 text-base text-muted">
+                                        {!usesForm2309 &&
+                                            document.destination_section && (
+                                                <p className="mt-1 text-base font-semibold text-black">
+                                                    To{" "}
+                                                    {
+                                                        document
+                                                            .destination_section
+                                                            .section_name
+                                                    }
+                                                </p>
+                                            )}
+
+                                        <p className="mt-1 text-base text-black">
                                             Registered{" "}
                                             {exactTime(document.created_at)}
                                         </p>
@@ -321,15 +326,19 @@ export default function Index({
                                             <>
                                                 <AgeBadge document={document} />
 
-                                                <EmployeeButton
-                                                    variant="secondary"
-                                                    onClick={() =>
-                                                        setCompleting(document)
-                                                    }
-                                                >
-                                                    <Icon name="register" />
-                                                    Complete details
-                                                </EmployeeButton>
+                                                {canCompleteDetails && (
+                                                    <EmployeeButton
+                                                        variant="secondary"
+                                                        onClick={() =>
+                                                            setCompleting(
+                                                                document,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Icon name="register" />
+                                                        Complete details
+                                                    </EmployeeButton>
+                                                )}
                                             </>
                                         ) : (
                                             <EmployeeButton
@@ -352,31 +361,33 @@ export default function Index({
                     </ul>
                 ) : (
                     <div className="mt-5 rounded-xl border border-dashed border-line py-14 text-center">
-                        <p className="text-lg font-semibold text-navy-800">
+                        <p className="text-lg font-semibold text-black">
                             {filters.search
-                                ? "Nothing matches that search"
+                                ? "No referrals match your search."
                                 : filters.status === "waiting"
-                                  ? "Nothing waiting for details"
-                                  : "No referrals registered yet"}
+                                  ? "No referrals are waiting for details."
+                                  : "No referrals have been registered yet."}
                         </p>
 
-                        <p className="mt-1 text-base text-muted">
+                        <p className="mt-1 text-base text-black">
                             {filters.search
-                                ? "Try the taxpayer's name or the reference number."
-                                : "Press Register a referral when a document comes in."}
+                                ? usesForm2309
+                                    ? "Try the taxpayer's name or the reference number."
+                                    : "Try part of the description or the reference number."
+                                : "Press “Register a referral” when a new document comes in."}
                         </p>
                     </div>
                 )}
 
                 {documents?.links?.length > 3 && (
                     <div className="mt-5 flex flex-col gap-4 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-base text-muted">
+                        <p className="text-base text-black">
                             Showing{" "}
-                            <span className="font-semibold text-navy-900">
+                            <span className="font-semibold text-black">
                                 {documents.from ?? 0}–{documents.to ?? 0}
                             </span>{" "}
                             of{" "}
-                            <span className="font-semibold text-navy-900">
+                            <span className="font-semibold text-black">
                                 {documents.total ?? 0}
                             </span>
                         </p>
@@ -400,7 +411,7 @@ export default function Index({
                                     className={`min-h-11 rounded-xl border px-4 text-base font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                         link.active
                                             ? "border-brand-600 bg-brand-600 text-white"
-                                            : "border-line bg-white text-navy-800 hover:bg-sunken"
+                                            : "border-line bg-white text-black hover:bg-sunken"
                                     }`}
                                 />
                             ))}
@@ -408,6 +419,32 @@ export default function Index({
                     </div>
                 )}
             </EmployeeCard>
+
+            {registering && (
+                <div
+                    className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:p-8"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div className="w-full max-w-2xl">
+                        {usesForm2309 ? (
+                            <ReferralFormPanel
+                                sections={sections}
+                                options={referralOptions}
+                                fromSection={fromSection}
+                                onCancel={() => setRegistering(false)}
+                                onRegistered={() => {}}
+                            />
+                        ) : (
+                            <SectionReferralPanel
+                                sections={sections}
+                                fromSection={fromSection}
+                                onCancel={() => setRegistering(false)}
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
 
             <DetailsFormModal
                 open={Boolean(completing)}

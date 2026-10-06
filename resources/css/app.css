@@ -61,9 +61,9 @@
     * Only small controls - inputs, quiet buttons, choice tiles - sit at
     * pure white, which is what makes a field look like somewhere to type.
     */
-    --color-paper: #b4b4b4;
-    --color-surface: #f8fafd;
-    --color-sunken: #e7edf8;
+    --color-paper: #d5dbe5; /* background ng page */
+    --color-surface: #f8fafc; /* mga card */
+    --color-sunken: #eef2f7;
     --color-line: #ccd6ea;
     --color-muted: #626d8f;
 
@@ -202,7 +202,7 @@
     }
 
     #print-root .section-slip {
-        page: sectionslip;
+        zoom: 0.85;
     }
 
     #print-root .reference-slip {

@@ -83,18 +83,13 @@ export default function GreetingClock({ className = "" }) {
 
     return (
         <div className={`text-right ${className}`}>
-            <p className="text-base font-semibold text-navy-900">
+            <p className="text-base font-semibold text-white">
                 {greetingFor(now)}
                 {name ? `, ${name}` : ""}
             </p>
 
-            <p className="mt-0.5 text-sm text-muted">
+            <p className="mt-0.5 text-sm text-navy-200">
                 {DATE.format(now)} &middot; {clockTime(now)}
-                {/*
-                 * The account, for a machine several people share - and
-                 * the only thing identifying them when nobody has put a
-                 * name on the account yet.
-                 */}
                 {!name && employee.username ? (
                     <> &middot; {employee.username}</>
                 ) : null}

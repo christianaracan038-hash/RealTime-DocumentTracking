@@ -5,8 +5,8 @@ export default function Dashboard(props) {
         <SectionDashboard
             {...props}
             title="RDO Dashboard"
-            eyebrow="RDO's/ARDO's Office"
-            blurb="Anything sent to the RDO's/ARDO's Office waits here until someone scans it in."
+            eyebrow="RDO / ARDO Office"
+            blurb="Documents sent to the RDO / ARDO Office stay here until someone scans them in."
         />
     );
 }

@@ -7,50 +7,102 @@ import ReferenceSlipModal from "./ReferenceSlipModal";
 import SectionSlipModal from "./SectionSlipModal";
 import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
 
-/*
- * Everything about one document, fetched when it is opened.
- *
- * History lists only a taxpayer and a date. The rest - the referral's
- * details and its whole movement trail - is loaded from
- * documents.detail on demand, so a page of history stays small however
- * many times a document has moved and however long the archive grows.
- */
+const ACTION_TONE = {
+    REGISTERED: "bg-accent-400",
+    RECEIVED: "bg-ok-100",
+    FORWARDED: "bg-brand-100",
+    COMPLETED: "bg-navy-200",
+};
+
+const buildTimeline = (document) => {
+    const trail = document.tracking_histories ?? [];
+    const creator = document.creator;
+
+    let section = creator?.section?.section_name ?? null;
+    let holder = creator?.username ?? null;
+
+    const steps = [
+        {
+            key: "registered",
+            action: "REGISTERED",
+            time: document.created_at,
+            from: null,
+            to: section,
+            by: creator?.username,
+            remarks: null,
+            section,
+            holder,
+        },
+    ];
+
+    trail.forEach((move) => {
+        const action = (move.action ?? "").toUpperCase();
+        const toSection = move.to_section?.section_name;
+        const fromSection = move.from_section?.section_name;
+        const actor = move.employee?.username ?? null;
+
+        if (action === "FORWARDED") {
+            section = toSection ?? section;
+            holder = null;
+        } else if (action === "RECEIVED") {
+            section = toSection ?? fromSection ?? section;
+            holder = actor;
+        } else {
+            section = toSection ?? fromSection ?? section;
+            holder = actor ?? holder;
+        }
+
+        steps.push({
+            key: move.tracking_history_id,
+            action,
+            time: move.tracked_at,
+            from: fromSection,
+            to: toSection,
+            by: actor,
+            remarks: move.remarks,
+            section,
+            holder,
+        });
+    });
+
+    return steps;
+};
 
 function Row({ label, children }) {
     if (!children) return null;
 
     return (
         <div className="contents">
-            <dt className="text-sm font-semibold text-muted">{label}</dt>
-            <dd className="text-base text-navy-900">{children}</dd>
+            <dt className="text-sm font-semibold text-black">{label}</dt>
+            <dd className="text-base text-black">{children}</dd>
         </div>
     );
 }
 
-const ACTION_TONE = {
-    RECEIVED: "bg-ok-100 text-ok-600",
-    FORWARDED: "bg-brand-100 text-brand-700",
-    COMPLETED: "bg-navy-200 text-navy-900",
-};
+function StepDetail({ label, value, sub, fallback }) {
+    return (
+        <div className="min-w-0">
+            <dt className="text-xs font-medium uppercase tracking-wide text-black">
+                {label}
+            </dt>
+            <dd
+                className={`truncate text-base text-black ${
+                    value ? "font-semibold" : "italic"
+                }`}
+            >
+                {value || fallback}
+            </dd>
+            {value && sub && (
+                <dd className="truncate text-sm text-black">{sub}</dd>
+            )}
+        </div>
+    );
+}
 
 export default function DocumentTrailModal({
     documentId,
     onClose,
-
-    /*
-     * Go straight to the reference slip once the document has loaded.
-     * The register offers "Reference slip" on a row, and the row is too
-     * light to build a slip from - it has to be fetched first, so the
-     * fetch happens here and the slip opens on top of it.
-     */
     openSlip = false,
-
-    /*
-     * Which paper this document is printed on. "2309" is the taxpayer's
-     * referral the RDO issues; "section" is the half-sheet
-     * accountability slip every other section issues. They are different
-     * forms, not two renderings of one.
-     */
     slipVariant = "2309",
 }) {
     const [document, setDocument] = useState(null);
@@ -78,8 +130,8 @@ export default function DocumentTrailModal({
                 if (!response.ok) {
                     throw new Error(
                         response.status === 404
-                            ? "That document is not available to you."
-                            : "Could not load this document.",
+                            ? "This document is not available to you."
+                            : "This document could not be loaded.",
                     );
                 }
 
@@ -99,7 +151,9 @@ export default function DocumentTrailModal({
         };
     }, [documentId]);
 
-    const trail = document?.tracking_histories ?? [];
+    const timeline = document ? buildTimeline(document) : [];
+    const creatorName = document?.creator?.username;
+    const creatorSection = document?.creator?.section?.section_name;
 
     return (
         <>
@@ -107,17 +161,21 @@ export default function DocumentTrailModal({
                 className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center sm:p-8"
                 role="dialog"
                 aria-modal="true"
-                aria-label="Document detail"
+                aria-label="Document details"
             >
                 <div className="w-full max-w-2xl rounded-2xl bg-surface">
                     <div className="flex items-start justify-between gap-4 border-b border-line px-7 py-5">
                         <div className="min-w-0">
-                            <h2 className="text-2xl font-bold text-navy-900">
-                                {document?.taxpayer_name ?? "Loading..."}
+                            <h2 className="text-2xl font-bold text-black">
+                                {document
+                                    ? (document.taxpayer_name ??
+                                      document.concern ??
+                                      "No taxpayer on record")
+                                    : "Loading..."}
                             </h2>
 
                             {document && (
-                                <p className="mt-1 font-mono text-sm text-muted">
+                                <p className="mt-1 font-mono text-sm text-black">
                                     {document.tracking_number}
                                 </p>
                             )}
@@ -127,7 +185,7 @@ export default function DocumentTrailModal({
                             type="button"
                             onClick={onClose}
                             aria-label="Close"
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-muted transition hover:bg-sunken hover:text-navy-900"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl leading-none text-black transition hover:bg-sunken"
                         >
                             <Icon name="close" />
                         </button>
@@ -140,8 +198,8 @@ export default function DocumentTrailModal({
                     )}
 
                     {!document && !error && (
-                        <p className="px-7 py-10 text-center text-base text-muted">
-                            Loading the document...
+                        <p className="px-7 py-10 text-center text-base text-black">
+                            Loading document...
                         </p>
                     )}
 
@@ -151,13 +209,7 @@ export default function DocumentTrailModal({
                                 <Row label="Date issued">
                                     {longDate(document.document_date)}
                                 </Row>
-                                <Row label="Concerns">{document.concern}</Row>
-
-                                {/*
-                                 * Only for referrals recorded before
-                                 * "For" became a hand-ticked block on the
-                                 * printed slip. Nothing stores it now.
-                                 */}
+                                <Row label="Concern">{document.concern}</Row>
                                 {document.referred_for && (
                                     <Row label="For">
                                         {document.referred_for}
@@ -179,7 +231,7 @@ export default function DocumentTrailModal({
                                 </Row>
 
                                 <div className="contents">
-                                    <dt className="text-sm font-semibold text-muted">
+                                    <dt className="text-sm font-semibold text-black">
                                         Status
                                     </dt>
                                     <dd>
@@ -189,7 +241,7 @@ export default function DocumentTrailModal({
                                             }
                                         />
                                         {document.awaiting_details && (
-                                            <span className="ml-2 rounded-full bg-accent-400 px-2.5 py-0.5 text-xs font-bold text-navy-900">
+                                            <span className="ml-2 rounded-full bg-accent-400 px-2.5 py-0.5 text-xs font-bold text-black">
                                                 Awaiting details
                                             </span>
                                         )}
@@ -197,66 +249,104 @@ export default function DocumentTrailModal({
                                 </div>
                             </dl>
 
-                            {/* Where it has been */}
                             <div className="border-t border-line px-7 py-6">
-                                <h3 className="text-base font-bold text-navy-900">
+                                <h3 className="text-base font-bold text-black">
                                     Movement history
                                 </h3>
 
-                                {trail.length > 0 ? (
-                                    <ol className="mt-4 space-y-3">
-                                        {trail.map((move) => (
+                                <ol className="mt-4 space-y-3">
+                                    {timeline.map((step, index) => {
+                                        const isLatest =
+                                            index === timeline.length - 1;
+
+                                        return (
                                             <li
-                                                key={move.tracking_history_id}
-                                                className="rounded-xl border border-line p-4"
+                                                key={step.key}
+                                                className={`rounded-xl border p-4 ${
+                                                    isLatest
+                                                        ? "border-brand-600 bg-brand-50"
+                                                        : "border-line"
+                                                }`}
                                             >
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <span
-                                                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-                                                            ACTION_TONE[
-                                                                move.action
-                                                            ] ??
-                                                            "bg-sunken text-navy-800"
-                                                        }`}
-                                                    >
-                                                        {move.action}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span
+                                                            className={`rounded-full px-2.5 py-1 text-xs font-bold text-black ${
+                                                                ACTION_TONE[
+                                                                    step.action
+                                                                ] ?? "bg-sunken"
+                                                            }`}
+                                                        >
+                                                            {step.action}
+                                                        </span>
 
-                                                    <span className="text-sm text-muted">
-                                                        {exactTime(
-                                                            move.tracked_at,
+                                                        {isLatest && (
+                                                            <span className="rounded-full border border-brand-600 px-2.5 py-1 text-xs font-bold text-black">
+                                                                Latest
+                                                            </span>
                                                         )}
+                                                    </div>
+
+                                                    <span className="text-sm text-black">
+                                                        {exactTime(step.time)}
                                                     </span>
                                                 </div>
 
-                                                <p className="mt-2 text-base text-navy-900">
-                                                    {move.from_section
-                                                        ?.section_name ??
-                                                        "—"}{" "}
-                                                    <Icon
-                                                        name="forward"
-                                                        className="mx-1 text-muted"
-                                                    />{" "}
-                                                    {move.to_section
-                                                        ?.section_name ?? "—"}
-                                                </p>
+                                                {(step.from || step.to) && (
+                                                    <p className="mt-2 text-base font-semibold text-black">
+                                                        {step.from ? (
+                                                            <>
+                                                                {step.from}{" "}
+                                                                <Icon
+                                                                    name="forward"
+                                                                    className="mx-1 text-black"
+                                                                />{" "}
+                                                                {step.to ?? "—"}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Registered in{" "}
+                                                                {step.to}
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                )}
 
-                                                <p className="mt-1 text-sm text-muted">
-                                                    By{" "}
-                                                    {move.employee?.username ??
-                                                        "—"}
-                                                    {move.remarks
-                                                        ? ` · ${move.remarks}`
-                                                        : ""}
-                                                </p>
+                                                <dl className="mt-3 grid grid-cols-1 gap-3 rounded-lg bg-white px-3 py-3 sm:grid-cols-3">
+                                                    <StepDetail
+                                                        label="Created by"
+                                                        value={creatorName}
+                                                        sub={creatorSection}
+                                                        fallback="Unknown"
+                                                    />
+
+                                                    <StepDetail
+                                                        label="Current section"
+                                                        value={step.section}
+                                                        fallback="No section assigned"
+                                                    />
+
+                                                    <StepDetail
+                                                        label="Current holder"
+                                                        value={step.holder}
+                                                        fallback="Not yet received"
+                                                    />
+                                                </dl>
+
+                                                {(step.by || step.remarks) && (
+                                                    <p className="mt-2 text-sm text-black">
+                                                        {step.by &&
+                                                            `Action by ${step.by}`}
+                                                        {step.by &&
+                                                            step.remarks &&
+                                                            " · "}
+                                                        {step.remarks}
+                                                    </p>
+                                                )}
                                             </li>
-                                        ))}
-                                    </ol>
-                                ) : (
-                                    <p className="mt-3 text-base text-muted">
-                                        It has not moved yet.
-                                    </p>
-                                )}
+                                        );
+                                    })}
+                                </ol>
                             </div>
 
                             <div className="flex flex-col-reverse gap-3 border-t border-line px-7 py-5 sm:flex-row sm:justify-end">
