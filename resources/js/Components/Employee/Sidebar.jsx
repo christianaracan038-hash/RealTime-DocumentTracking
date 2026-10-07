@@ -21,7 +21,11 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
         auth?.employee?.registers_only
             ? registrationMenu
             : (navigation[sectionName] ?? [])
-    ).filter((item) => route().has(item.route));
+    )
+        .filter((item) => route().has(item.route))
+        .filter(
+            (item) => !item.permission || auth?.employee?.[item.permission],
+        );
 
     return (
         <>

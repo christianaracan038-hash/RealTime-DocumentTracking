@@ -6,7 +6,6 @@ import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
 import Icon from "@/Components/Employee/Icon";
 import SearchInput from "@/Components/Employee/SearchInput";
-S;
 import DocumentTrailModal from "@/Components/Employee/Referrals/DocumentTrailModal";
 import { longDate } from "@/Components/Employee/Referrals/referral";
 

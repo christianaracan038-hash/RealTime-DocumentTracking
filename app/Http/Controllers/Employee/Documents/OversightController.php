@@ -126,7 +126,7 @@ class OversightController extends Controller
         Request $request,
         DocumentService $documentService
     ): Response {
-        $employee = $this->authorised();
+         $employee = Auth::guard('employee')->user();
 
         $search = $request->string('search')->toString();
 

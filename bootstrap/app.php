@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckEmployeeSection;
+use App\Http\Middleware\EnsureCanAccessArchive;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RestrictRegistrationDesk;
 use Illuminate\Foundation\Application;
@@ -25,8 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'section' => CheckEmployeeSection::class,
             'desk' => RestrictRegistrationDesk::class,
+            'archive.access' => EnsureCanAccessArchive::class,
         ]);
-
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

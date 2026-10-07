@@ -176,4 +176,13 @@ class EmployeeAcc extends Authenticatable
             true
         );
     }
+
+    public function canAccessArchive(): bool
+    {
+        return in_array(
+            Section::cached($this->section_id)?->section_name,
+            config('referral.archive_sections', []),
+            true
+        );
+    }
 }
