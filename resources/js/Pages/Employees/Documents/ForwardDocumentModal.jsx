@@ -1,15 +1,7 @@
 import { useState } from "react";
 import ReceiveDocumentScanner from "./RecieveDocumentScanner";
 
-/*
- * Forwarding to Admin is a special case: a document lands there when
- * the taxpayer has gone unresponsive and there is nowhere further to
- * route it. Instead of the usual "who receives it" addressee, Admin
- * needs to say whether this is being filed to a person (Chief /
- * Authorized & Chief) or being archived outright — closed out, no
- * further movement.
- */
-const ADMIN_ACTIONS = ["Chief", "Authorized & Chief", "Archive"];
+const ADMIN_ACTIONS = ["Chief", "Archive"];
 
 export default function ForwardDocumentModal({
     document,
@@ -36,7 +28,10 @@ export default function ForwardDocumentModal({
     );
 
     const isAdminDestination =
+        selectedSection?.section_code?.toUpperCase() === "ADMIN" ||
         selectedSection?.section_name?.toUpperCase() === "ADMIN";
+
+    const isArchiving = isAdminDestination && adminAction === "Archive";
 
     const handleSectionChange = (value) => {
         setSelectedSectionId(value);
@@ -55,7 +50,7 @@ export default function ForwardDocumentModal({
         }
 
         if (isAdminDestination && !adminAction) {
-            setError("Please choose Chief, Authorized & Chief, or Archive.");
+            setError("Please choose Chief or Archive.");
             return;
         }
 
@@ -67,8 +62,6 @@ export default function ForwardDocumentModal({
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content");
 
-            const isArchiving = isAdminDestination && adminAction === "Archive";
-
             const response = await fetch(
                 `/api/documents/${verifiedDocument.document_id}/forward`,
                 {
@@ -77,28 +70,17 @@ export default function ForwardDocumentModal({
                     headers: {
                         "Content-Type": "application/json",
                         Accept: "application/json",
-
-                        ...(csrfToken
-                            ? {
-                                  "X-CSRF-TOKEN": csrfToken,
-                              }
-                            : {}),
+                        ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {}),
                     },
                     body: JSON.stringify({
                         destination_section_id: selectedSectionId,
-                        addressee: isAdminDestination
-                            ? isArchiving
-                                ? null
-                                : adminAction
-                            : null,
+                        addressee: isAdminDestination ? adminAction : null,
                         archive: isArchiving,
                     }),
                 },
             );
 
             const data = await response.json();
-
-            console.log("FORWARD RESPONSE:", data);
 
             if (!response.ok) {
                 throw new Error(
@@ -109,25 +91,15 @@ export default function ForwardDocumentModal({
             setSuccess(true);
             setForwarding(false);
 
-            /*
-             * Hand the result to the parent, which shows the formal
-             * notice and refreshes the page. Fall back to closing if
-             * nobody is listening.
-             */
             if (onForwarded) {
                 onForwarded(
                     data.document ?? verifiedDocument,
-                    sections.find(
-                        (s) =>
-                            String(s.section_id) === String(selectedSectionId),
-                    ) ?? null,
+                    selectedSection ?? null,
                 );
             } else {
                 setTimeout(onClose, 1500);
             }
         } catch (err) {
-            console.error("FORWARD ERROR:", err);
-
             setError(
                 err.message ||
                     "Something went wrong while forwarding the document.",
@@ -141,7 +113,6 @@ export default function ForwardDocumentModal({
         <>
             <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center">
                 <div className="w-full max-w-lg rounded-xl bg-surface shadow-xl">
-                    {/* Header */}
                     <div className="flex items-center justify-between border-b px-6 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-slate-800">
@@ -164,7 +135,6 @@ export default function ForwardDocumentModal({
                         </button>
                     </div>
 
-                    {/* Document Info */}
                     <div className="space-y-4 px-6 py-5">
                         <div>
                             <p className="text-xs font-medium text-slate-400">
@@ -234,7 +204,6 @@ export default function ForwardDocumentModal({
                             </div>
                         </div>
 
-                        {/* Scan Button */}
                         {!verifiedDocument && (
                             <div className="rounded-lg bg-blue-50 p-4">
                                 <p className="text-sm font-medium text-blue-800">
@@ -259,7 +228,6 @@ export default function ForwardDocumentModal({
                             </div>
                         )}
 
-                        {/* Verified */}
                         {verifiedDocument && !success && (
                             <div className="rounded-lg bg-green-50 p-4">
                                 <p className="text-sm font-semibold text-green-800">
@@ -273,7 +241,6 @@ export default function ForwardDocumentModal({
                             </div>
                         )}
 
-                        {/* Destination */}
                         {verifiedDocument && !success && (
                             <div>
                                 <label
@@ -314,18 +281,13 @@ export default function ForwardDocumentModal({
                             </div>
                         )}
 
-                        {/*
-                         * Admin-only follow-up: file to a person, or
-                         * archive outright because the taxpayer has
-                         * gone unresponsive and processing has stalled.
-                         */}
                         {verifiedDocument && !success && isAdminDestination && (
                             <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-4">
                                 <p className="text-sm font-semibold text-slate-800">
-                                    What should Admin do with this?
+                                    Forward to Admin for
                                 </p>
 
-                                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                <div className="mt-3 grid gap-2 sm:grid-cols-2">
                                     {ADMIN_ACTIONS.map((option) => {
                                         const selected = adminAction === option;
 
@@ -354,44 +316,43 @@ export default function ForwardDocumentModal({
                                     })}
                                 </div>
 
-                                {adminAction === "Archive" && (
+                                {isArchiving && (
                                     <p className="mt-3 text-sm text-amber-700">
-                                        Archiving closes this document out — no
-                                        further receiving or forwarding will be
-                                        possible.
+                                        Admin has to receive this document
+                                        first. It will be archived as soon as
+                                        Admin receives it, and you will be
+                                        recorded as the one who forwarded it for
+                                        archiving.
                                     </p>
                                 )}
                             </div>
                         )}
 
-                        {/* Error */}
                         {error && (
                             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
                                 {error}
                             </div>
                         )}
 
-                        {/* Success */}
                         {success && (
                             <div className="rounded-lg bg-green-50 p-4 text-center">
                                 <div className="text-4xl">✓</div>
 
                                 <p className="mt-2 font-semibold text-green-700">
-                                    {adminAction === "Archive"
-                                        ? "Document Archived"
+                                    {isArchiving
+                                        ? "Forwarded for Archiving"
                                         : "Document Forwarded Successfully"}
                                 </p>
 
                                 <p className="mt-1 text-sm text-green-600">
-                                    {adminAction === "Archive"
-                                        ? "This document is now closed out."
+                                    {isArchiving
+                                        ? "It will be archived once Admin receives it."
                                         : "Tracking history has been recorded."}
                                 </p>
                             </div>
                         )}
                     </div>
 
-                    {/* Footer */}
                     {!success && (
                         <div className="flex justify-end gap-3 border-t px-6 py-4">
                             <button
@@ -416,8 +377,8 @@ export default function ForwardDocumentModal({
                                 >
                                     {forwarding
                                         ? "Forwarding..."
-                                        : adminAction === "Archive"
-                                          ? "Archive Document"
+                                        : isArchiving
+                                          ? "Forward for Archiving"
                                           : "Forward Document"}
                                 </button>
                             )}
@@ -426,21 +387,14 @@ export default function ForwardDocumentModal({
                 </div>
             </div>
 
-            {/* QR Scanner */}
             {showScanner && (
                 <ReceiveDocumentScanner
                     document={document}
                     mode="forward"
                     onClose={() => setShowScanner(false)}
                     onForwarded={(scannedDocument, availableSections) => {
-                        console.log("VERIFIED DOCUMENT:", scannedDocument);
-
-                        console.log("AVAILABLE SECTIONS:", availableSections);
-
                         setVerifiedDocument(scannedDocument);
-
                         setSections(availableSections || []);
-
                         setSelectedSectionId("");
                         setAdminAction("");
                         setShowScanner(false);

@@ -42,21 +42,18 @@ import { exactTime } from "@/Components/Employee/Referrals/referral";
 const TABS = [
     {
         key: "",
-        label: "All referrals",
-        hint: "Everything this section has issued",
+        label: <span className="text-xl">All Referrals</span>,
         icon: "referrals",
     },
     {
         key: "waiting",
-        label: "Waiting for details",
-        hint: "Registered but not yet completed",
+        label: <span className="text-xl">Waiting for Details</span>,
         icon: "register",
         tone: "act",
     },
     {
         key: "slip",
-        label: "Slip ready",
-        hint: "Completed and ready to print",
+        label: <span className="text-xl">Slip Ready</span>,
         icon: "print",
     },
 ];
@@ -190,15 +187,9 @@ export default function Index({
             <EmployeeCard>
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                        <h2 className="text-xl font-bold text-black">
+                        {/* <h2 className="text-xl font-bold text-black">
                             Referrals
-                        </h2>
-
-                        <p className="mt-1 text-base text-black">
-                            Everything this section has registered. Tap a
-                            referral to see its full details or to print its
-                            reference slip.
-                        </p>
+                        </h2> */}
                     </div>
 
                     <EmployeeButton
@@ -207,7 +198,7 @@ export default function Index({
                         className="w-full shrink-0 lg:w-auto"
                     >
                         <Icon name="add" />
-                        Register a referral
+                        New Referral
                     </EmployeeButton>
                 </div>
 
@@ -240,7 +231,7 @@ export default function Index({
                     <SearchInput
                         size="lg"
                         label={
-                            usesForm2309 ? "Find a taxpayer" : "Find a referral"
+                            usesForm2309 ? "Find a Taxpayer" : "Find a referral"
                         }
                         initialValue={filters.search}
                         placeholder={
@@ -248,7 +239,6 @@ export default function Index({
                                 ? "Type a name or a reference number"
                                 : "Type part of the description or a reference number"
                         }
-                        hint="You can type any part of it. The search covers the whole register, not just this page."
                         only={["documents", "counts", "filters"]}
                     />
                 </div>

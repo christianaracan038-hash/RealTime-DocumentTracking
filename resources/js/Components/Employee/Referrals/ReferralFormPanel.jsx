@@ -19,8 +19,7 @@ import { longDate, sectionLabel } from "./referral";
  */
 
 const FIELD =
-    "min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-navy-900 placeholder:text-muted focus:border-brand-600";
-
+    "min-h-12 w-full rounded-xl border border-[#228B22] bg-[#228B22] px-4 py-3 text-base font-bold text-white placeholder:text-white/60 focus:border-white";
 function Field({ label, hint, error, children }) {
     return (
         <div>
@@ -73,14 +72,8 @@ export default function ReferralFormPanel({
         <EmployeeCard>
             <div className="mx-auto max-w-2xl">
                 <h2 className="text-2xl font-bold text-navy-900">
-                    Register a referral
+                    Register a Referral
                 </h2>
-
-                <p className="mt-1 text-base text-muted">
-                    Everything at once. Saving starts the clock, creates the
-                    reference number, and produces a slip you can print
-                    immediately.
-                </p>
 
                 <form onSubmit={submit} className="mt-6 space-y-6">
                     <Field label="Taxpayer's Name" error={errors.taxpayer_name}>

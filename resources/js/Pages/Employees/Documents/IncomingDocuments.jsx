@@ -32,14 +32,9 @@ export default function IncomingDocuments({ documents = [] }) {
             <EmployeeCard>
                 <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <h2 className="text-xl font-bold text-navy-900">
+                        <h2 className="text-xl font-bold text-black">
                             Waiting for you to receive
                         </h2>
-
-                        <p className="mt-1 text-base text-muted">
-                            Referrals sent to your section. Open one, then scan
-                            its QR code to accept it.
-                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -86,7 +81,7 @@ export default function IncomingDocuments({ documents = [] }) {
 
                                         <div className="min-w-0 flex-1 p-5">
                                             <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <p className="text-lg font-bold text-navy-900">
+                                                <p className="text-lg font-bold text-black">
                                                     {document.taxpayer_name ??
                                                         "No taxpayer on record"}
                                                 </p>
@@ -95,27 +90,27 @@ export default function IncomingDocuments({ documents = [] }) {
                                             </div>
 
                                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                <span className="rounded-lg bg-white/70 px-2.5 py-1 font-mono text-sm font-medium text-muted ring-1 ring-line">
+                                                <span className="rounded-lg bg-white/70 px-2.5 py-1 font-mono text-sm font-medium text-black ring-1 ring-line">
                                                     {document.tracking_number}
                                                 </span>
 
                                                 {(document.concern ??
                                                     document.transaction_type) && (
-                                                    <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-sm font-medium text-brand-700">
+                                                    <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-sm font-medium text-black">
                                                         {document.concern ??
                                                             document.transaction_type}
                                                     </span>
                                                 )}
 
                                                 {document.referred_for && (
-                                                    <span className="rounded-lg bg-white/70 px-2.5 py-1 text-sm font-medium text-navy-800 ring-1 ring-line">
+                                                    <span className="rounded-lg bg-white/70 px-2.5 py-1 text-sm font-medium text-black ring-1 ring-line">
                                                         For:{" "}
                                                         {document.referred_for}
                                                     </span>
                                                 )}
 
                                                 {document.awaiting_details && (
-                                                    <span className="rounded-lg bg-accent-400 px-2.5 py-1 text-sm font-bold text-navy-900">
+                                                    <span className="rounded-lg bg-accent-400 px-2.5 py-1 text-sm font-bold text-black">
                                                         Awaiting details
                                                     </span>
                                                 )}
@@ -123,16 +118,16 @@ export default function IncomingDocuments({ documents = [] }) {
 
                                             {(document.remarks ??
                                                 document.description) && (
-                                                <p className="mt-3 text-base text-navy-800">
+                                                <p className="mt-3 text-base text-black">
                                                     {document.remarks ??
                                                         document.description}
                                                 </p>
                                             )}
 
                                             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                                                <p className="text-sm text-muted">
+                                                <p className="text-sm text-black">
                                                     From{" "}
-                                                    <span className="font-semibold text-navy-800">
+                                                    <span className="font-semibold text-black">
                                                         {forwardedBy(
                                                             document,
                                                         ) || "-"}
@@ -142,7 +137,7 @@ export default function IncomingDocuments({ documents = [] }) {
                                                             {" "}
                                                             &middot; addressed
                                                             to{" "}
-                                                            <span className="font-semibold text-navy-800">
+                                                            <span className="font-semibold text-black">
                                                                 {addressedTo(
                                                                     document,
                                                                 )}
@@ -159,7 +154,7 @@ export default function IncomingDocuments({ documents = [] }) {
                                                 />
                                             </div>
 
-                                            <p className="mt-2 text-sm text-muted">
+                                            <p className="mt-2 text-sm text-black">
                                                 Sent{" "}
                                                 {exactTime(
                                                     document.waiting_since,
@@ -167,7 +162,7 @@ export default function IncomingDocuments({ documents = [] }) {
                                             </p>
                                         </div>
 
-                                        <span className="flex items-center self-stretch pr-4 text-muted">
+                                        <span className="flex items-center self-stretch pr-4 text-black">
                                             <Icon name="next" />
                                         </span>
                                     </button>
@@ -181,11 +176,11 @@ export default function IncomingDocuments({ documents = [] }) {
                             <Icon name="check" />
                         </span>
 
-                        <p className="text-lg font-semibold text-navy-800">
-                            Nothing waiting right now
+                        <p className="text-lg font-semibold text-black">
+                            Nothing is waiting right now
                         </p>
 
-                        <p className="mt-1 text-base text-muted">
+                        <p className="mt-1 text-base text-black">
                             Referrals sent to your section will appear here.
                         </p>
                     </div>

@@ -40,7 +40,7 @@ function CommentBox({ document, onDone }) {
 
     return (
         <form onSubmit={submit} className="mt-4 border-t border-line pt-4">
-            <label className="mb-1.5 block text-sm font-semibold text-navy-800">
+            <label className="mb-1.5 block text-sm font-semibold text-black">
                 Message to {sectionLabel(document.current_section)}
             </label>
 
@@ -49,8 +49,8 @@ function CommentBox({ document, onDone }) {
                 value={data.body}
                 onChange={(e) => setData("body", e.target.value)}
                 autoFocus
-                placeholder="e.g. This has been with you five days. Please forward it to Collection or tell us what is holding it."
-                className="w-full resize-none rounded-xl border border-line bg-white px-4 py-3 text-base text-navy-900 placeholder:text-muted focus:border-brand-600"
+                placeholder="e.g. This has been with you for five days. Please forward it to Collection or tell us what is holding it up."
+                className="w-full resize-none rounded-xl border border-line bg-white px-4 py-3 text-base text-black placeholder:text-muted focus:border-brand-600"
             />
 
             {errors.body && (
@@ -89,15 +89,9 @@ export default function Comments({ stuck = [], sent = [] }) {
                 <EmployeeCard>
                     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h2 className="text-xl font-bold text-navy-900">
-                                Documents with other sections
+                            <h2 className="text-xl font-bold text-black">
+                                Records of overdued Documents/Process
                             </h2>
-
-                            <p className="mt-1 text-base text-muted">
-                                Longest wait first. Write to whoever is holding
-                                one to ask why it is stuck, or tell them where
-                                it should go next.
-                            </p>
                         </div>
 
                         {overdue > 0 && (
@@ -133,12 +127,12 @@ export default function Comments({ stuck = [], sent = [] }) {
                                         <div className="min-w-0 flex-1 p-5">
                                             <div className="flex flex-wrap items-start justify-between gap-3">
                                                 <div className="min-w-0">
-                                                    <p className="text-lg font-bold text-navy-900">
+                                                    <p className="text-lg font-bold text-black">
                                                         {document.taxpayer_name ??
                                                             "No taxpayer on record"}
                                                     </p>
 
-                                                    <p className="mt-0.5 font-mono text-sm text-muted">
+                                                    <p className="mt-0.5 font-mono text-sm text-black">
                                                         {
                                                             document.tracking_number
                                                         }
@@ -148,7 +142,7 @@ export default function Comments({ stuck = [], sent = [] }) {
                                                 <AgeBadge document={document} />
                                             </div>
 
-                                            <p className="mt-3 text-base text-navy-800">
+                                            <p className="mt-3 text-base text-black">
                                                 Sitting with{" "}
                                                 <span className="font-bold">
                                                     {sectionLabel(
@@ -171,23 +165,23 @@ export default function Comments({ stuck = [], sent = [] }) {
                                                                 }
                                                                 className="rounded-lg bg-white/70 px-3 py-2 text-sm ring-1 ring-line"
                                                             >
-                                                                <p className="text-navy-900">
+                                                                <p className="text-black">
                                                                     {
                                                                         comment.body
                                                                     }
                                                                 </p>
 
-                                                                <p className="mt-1 text-xs text-muted">
+                                                                <p className="mt-1 text-xs text-black">
                                                                     {exactTime(
                                                                         comment.created_at,
                                                                     )}{" "}
                                                                     &middot;{" "}
                                                                     {comment.acknowledged ? (
-                                                                        <span className="font-semibold text-ok-600">
+                                                                        <span className="font-semibold text-black">
                                                                             Seen
                                                                         </span>
                                                                     ) : (
-                                                                        <span className="font-semibold text-warn-700">
+                                                                        <span className="font-semibold text-black">
                                                                             Not
                                                                             yet
                                                                             seen
@@ -235,11 +229,11 @@ export default function Comments({ stuck = [], sent = [] }) {
                                 <Icon name="check" />
                             </span>
 
-                            <p className="text-lg font-semibold text-navy-800">
+                            <p className="text-lg font-semibold text-black">
                                 Nothing is sitting elsewhere
                             </p>
 
-                            <p className="mt-1 text-base text-muted">
+                            <p className="mt-1 text-base text-black">
                                 Every document is either here or finished.
                             </p>
                         </div>
@@ -249,7 +243,7 @@ export default function Comments({ stuck = [], sent = [] }) {
                 {/* What has been sent, and whether it landed */}
                 {sent.length > 0 && (
                     <EmployeeCard>
-                        <h2 className="text-xl font-bold text-navy-900">
+                        <h2 className="text-xl font-bold text-black">
                             Comments you have sent
                         </h2>
 
@@ -258,13 +252,13 @@ export default function Comments({ stuck = [], sent = [] }) {
                                 <li key={comment.comment_id} className="p-4">
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-navy-900">
+                                            <p className="font-semibold text-black">
                                                 {comment.document
                                                     ?.taxpayer_name ??
                                                     "No taxpayer on record"}
                                             </p>
 
-                                            <p className="mt-0.5 font-mono text-sm text-muted">
+                                            <p className="mt-0.5 font-mono text-sm text-black">
                                                 {
                                                     comment.document
                                                         ?.tracking_number
@@ -273,7 +267,7 @@ export default function Comments({ stuck = [], sent = [] }) {
                                         </div>
 
                                         {comment.acknowledged ? (
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-ok-100 px-3 py-1 text-sm font-bold text-ok-600">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-ok-100 px-3 py-1 text-sm font-bold text-black">
                                                 <Icon name="check" />
                                                 Seen by{" "}
                                                 {comment.reader?.username ??
@@ -282,17 +276,17 @@ export default function Comments({ stuck = [], sent = [] }) {
                                                     )}
                                             </span>
                                         ) : (
-                                            <span className="rounded-full bg-warn-100 px-3 py-1 text-sm font-bold text-warn-700">
+                                            <span className="rounded-full bg-warn-100 px-3 py-1 text-sm font-bold text-black">
                                                 Not yet seen
                                             </span>
                                         )}
                                     </div>
 
-                                    <p className="mt-2 text-base text-navy-800">
+                                    <p className="mt-2 text-base text-black">
                                         {comment.body}
                                     </p>
 
-                                    <p className="mt-1 text-sm text-muted">
+                                    <p className="mt-1 text-sm text-black">
                                         To {sectionLabel(comment.to_section)}{" "}
                                         &middot; {exactTime(comment.created_at)}
                                     </p>

@@ -75,7 +75,7 @@ export default function Index({
 
     const scopeLabel = exportingAll ? "all sections" : sectionLabel(toSection);
 
-    let summary = `Exporting all documents for ${scopeLabel}`;
+    let summary = ` ${scopeLabel}`;
     if (range.from && range.until) {
         summary = `Exporting ${formatDate(range.from)} – ${formatDate(range.until)} for ${scopeLabel}`;
     } else if (range.from) {
@@ -114,13 +114,8 @@ export default function Index({
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div>
                             <h2 className="text-xl font-bold text-black">
-                                Transmittal and reports
+                                Transmittal and Reports
                             </h2>
-
-                            <p className="mt-1 text-base text-black">
-                                Print the transmittal sheet that goes with the
-                                documents, or export a report to Excel.
-                            </p>
                         </div>
 
                         <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:flex">
@@ -308,7 +303,7 @@ export default function Index({
                     <EmployeeCard>
                         <div className="flex flex-wrap items-baseline justify-between gap-3">
                             <h3 className="text-lg font-bold text-black">
-                                {documents.length} document
+                                {documents.length} Document
                                 {documents.length === 1 ? "" : "s"} for{" "}
                                 {sectionLabel(toSection)}
                             </h3>
@@ -352,11 +347,11 @@ export default function Index({
                             ))}
                         </ul>
 
-                        <p className="mt-4 text-base text-black">
+                        {/* <p className="mt-4 text-base text-black">
                             A document is removed from this list as soon as{" "}
                             {sectionLabel(toSection)} scans it in, so the sheet
                             lists only what they have not yet received.
-                        </p>
+                        </p> */}
                     </EmployeeCard>
                 )}
             </div>

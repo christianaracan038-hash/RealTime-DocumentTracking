@@ -11,29 +11,22 @@ export default function Documents({ documents = [] }) {
         <EmployeeLayout title="Documents">
             <div className="p-6">
                 <div className="mb-6">
-                    <h1 className="text-2xl font-semibold text-slate-900">
+                    <h1 className="text-2xl font-semibold text-black">
                         Documents
                     </h1>
-
-                    <p className="mt-1 text-sm text-slate-500">
-                        Documents currently assigned to your section.
-                    </p>
                 </div>
 
                 <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
                     <div className="mb-5 flex items-center justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold text-slate-800">
+                            <h2 className="text-lg font-semibold text-black">
                                 My Documents
                             </h2>
-
-                            <p className="text-sm text-slate-500">
-                                Documents currently under your section.
-                            </p>
                         </div>
 
-                        <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700">
-                            {documents.length} Documents
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-black">
+                            {documents.length}{" "}
+                            {documents.length === 1 ? "Document" : "Documents"}
                         </span>
                     </div>
 
@@ -50,31 +43,31 @@ export default function Documents({ documents = [] }) {
                                 >
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
-                                            <p className="font-semibold text-slate-900">
+                                            <p className="font-semibold text-black">
                                                 {document.taxpayer_name ??
                                                     "No taxpayer on record"}
                                             </p>
 
                                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                                                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-black">
                                                     {document.tracking_number}
                                                 </span>
 
                                                 {(document.concern ??
                                                     document.transaction_type) && (
-                                                    <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                                                    <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-black">
                                                         {document.concern ??
                                                             document.transaction_type}
                                                     </span>
                                                 )}
                                             </div>
 
-                                            <p className="mt-2 text-sm text-slate-600">
+                                            <p className="mt-2 text-sm text-black">
                                                 {document.remarks ??
                                                     document.description}
                                             </p>
 
-                                            <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-500">
+                                            <div className="mt-2 flex flex-wrap gap-4 text-xs text-black">
                                                 <span>
                                                     From:{" "}
                                                     <strong>
@@ -98,7 +91,7 @@ export default function Documents({ documents = [] }) {
                                         </div>
 
                                         <div className="flex shrink-0 flex-col items-end gap-2">
-                                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-black">
                                                 {document.status?.status_name ??
                                                     "Unknown"}
                                             </span>
@@ -106,7 +99,7 @@ export default function Documents({ documents = [] }) {
                                         </div>
                                     </div>
 
-                                    <p className="mt-3 text-sm text-slate-500">
+                                    <p className="mt-3 text-sm text-black">
                                         Received{" "}
                                         {exactTime(document.received_at)}
                                     </p>
@@ -115,8 +108,9 @@ export default function Documents({ documents = [] }) {
                         </div>
                     ) : (
                         <div className="py-12 text-center">
-                            <p className="text-sm text-slate-400">
-                                No documents currently assigned to your section.
+                            <p className="text-sm text-black">
+                                No documents are currently assigned to your
+                                section.
                             </p>
                         </div>
                     )}

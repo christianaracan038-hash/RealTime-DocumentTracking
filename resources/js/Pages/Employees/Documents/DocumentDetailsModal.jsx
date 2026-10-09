@@ -20,7 +20,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
     const [showScanner, setShowScanner] = useState(false);
     const [showForwardModal, setShowForwardModal] = useState(false);
 
-    // Completing is final, so it asks once before it acts.
     const [confirmingComplete, setConfirmingComplete] = useState(false);
     const [completing, setCompleting] = useState(false);
     const [completeError, setCompleteError] = useState(null);
@@ -31,11 +30,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
         return null;
     }
 
-    /*
-     * Every action ends the same way: a formal notice saying what
-     * happened, then the page data refreshes so the document moves to
-     * where it now belongs.
-     */
     const finish = (title, message, extra = []) => {
         notify({
             title,
@@ -56,13 +50,14 @@ export default function DocumentDetailsModal({ document, onClose }) {
 
     const status = document.status?.status_name;
     const isCompleted = status === "Completed";
+    const isArchived = status === "Archived";
+    const isClosed = isCompleted || isArchived;
 
     const complete = async () => {
         setCompleting(true);
         setCompleteError(null);
 
         try {
-            // Same CSRF handling as the forward request.
             const csrfToken = window.document
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content");
@@ -98,6 +93,8 @@ export default function DocumentDetailsModal({ document, onClose }) {
 
     const isReceived = status === "Received";
     const isPending = status === "Pending";
+    const isForArchiving = status === "For Archiving";
+    const isAwaitingReceipt = isPending || isForArchiving;
 
     const urgency = urgencyOf(document);
 
@@ -105,14 +102,9 @@ export default function DocumentDetailsModal({ document, onClose }) {
         <>
             <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:items-center">
                 <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-surface shadow-2xl">
-                    {/*
-                     * The header states what this document needs, in the
-                     * colour of how urgent it is - so the dialog itself
-                     * carries the message rather than a badge inside it.
-                     */}
                     <div
                         className={`px-6 py-5 text-white ${
-                            isPending
+                            isAwaitingReceipt
                                 ? (urgency?.band ?? "bg-navy-900")
                                 : "bg-navy-900"
                         }`}
@@ -120,11 +112,13 @@ export default function DocumentDetailsModal({ document, onClose }) {
                         <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
                                 <p className="text-xs font-semibold tracking-widest uppercase opacity-90">
-                                    {isPending
-                                        ? "Waiting for you to receive"
-                                        : isReceived
-                                          ? "On your desk"
-                                          : "Document"}
+                                    {isForArchiving
+                                        ? "Waiting for you to receive · For archiving"
+                                        : isPending
+                                          ? "Waiting for you to receive"
+                                          : isReceived
+                                            ? "On your desk"
+                                            : "Document"}
                                 </p>
 
                                 <h2 className="mt-1 text-2xl font-bold">
@@ -147,8 +141,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             </button>
                         </div>
 
-                        {/* How long it has been sitting there */}
-                        {isPending && document.aging && (
+                        {isAwaitingReceipt && document.aging && (
                             <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-white/15 px-4 py-3">
                                 <Icon
                                     name={urgency?.icon ?? "date"}
@@ -165,13 +158,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
                         )}
                     </div>
 
-                    {/* Content */}
                     <div className="space-y-4 px-6 py-5">
-                        {/*
-                         * Anything the RDO has said about this document
-                         * comes before the details - it is the reason
-                         * someone is looking at it.
-                         */}
                         <DocumentComments document={document} />
 
                         <div className="grid grid-cols-2 gap-4">
@@ -242,9 +229,11 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                         ? "bg-brand-100 text-brand-700"
                                         : isReceived
                                           ? "bg-green-100 text-green-700"
-                                          : isPending
-                                            ? "bg-yellow-100 text-yellow-700"
-                                            : "bg-slate-100 text-slate-700"
+                                          : isForArchiving
+                                            ? "bg-amber-100 text-amber-800"
+                                            : isPending
+                                              ? "bg-yellow-100 text-yellow-700"
+                                              : "bg-slate-100 text-slate-700"
                                 }`}
                             >
                                 {status ?? "Unknown"}
@@ -286,23 +275,39 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                     </p>
                                 </div>
                             )}
+
+                            {document.archived_at && (
+                                <div>
+                                    <p className="text-xs font-medium text-slate-400">
+                                        Archived
+                                    </p>
+                                    <p className="text-slate-700">
+                                        {exactTime(document.archived_at)}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/*
-                     * Pending: receiving is the only thing worth doing
-                     * here, so it is one large button across the dialog
-                     * rather than a small one competing in a row.
-                     */}
-                    {isPending && (
+                    {isAwaitingReceipt && (
                         <div className="border-t border-line bg-sunken px-6 py-5">
+                            {isForArchiving && (
+                                <p className="mb-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    This document was forwarded for archiving.
+                                    It will be archived as soon as you receive
+                                    it.
+                                </p>
+                            )}
+
                             <EmployeeButton
                                 size="lg"
                                 onClick={() => setShowScanner(true)}
                                 className="w-full"
                             >
                                 <Icon name="scan" />
-                                Scan QR to receive this document
+                                {isForArchiving
+                                    ? "Scan QR to receive and archive"
+                                    : "Scan QR to receive this document"}
                             </EmployeeButton>
 
                             <button
@@ -315,7 +320,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
                         </div>
                     )}
 
-                    {/* Received: forward it on, or end its journey here */}
                     {isReceived && !confirmingComplete && (
                         <div className="flex flex-col-reverse gap-3 border-t border-line bg-sunken px-6 py-5 sm:flex-row sm:justify-end">
                             <EmployeeButton variant="quiet" onClick={onClose}>
@@ -339,7 +343,7 @@ export default function DocumentDetailsModal({ document, onClose }) {
                         </div>
                     )}
 
-                    {isCompleted && (
+                    {isClosed && (
                         <div className="border-t border-line bg-sunken px-6 py-5">
                             <EmployeeButton
                                 variant="quiet"
@@ -351,7 +355,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
                         </div>
                     )}
 
-                    {/* Confirm before completing - there is no undo */}
                     {isReceived && confirmingComplete && (
                         <div className="border-t bg-brand-50 px-6 py-5">
                             <p className="text-base font-semibold text-navy-900">
@@ -396,29 +399,56 @@ export default function DocumentDetailsModal({ document, onClose }) {
                 </div>
             </div>
 
-            {/* Receive Scanner */}
             {showScanner && (
                 <ReceiveDocumentScanner
                     document={document}
                     mode="receive"
                     onClose={() => setShowScanner(false)}
-                    onReceived={() =>
-                        finish("Document received", "It is now on your desk.", [
-                            ["From", sectionLabel(document.current_section)],
-                        ])
+                    onReceived={(received) =>
+                        received?.status?.status_name === "Archived"
+                            ? finish(
+                                  "Document archived",
+                                  "Received and moved to the archive. No further movement is possible.",
+                                  [
+                                      [
+                                          "From",
+                                          sectionLabel(
+                                              document.current_section,
+                                          ),
+                                      ],
+                                  ],
+                              )
+                            : finish(
+                                  "Document received",
+                                  "It is now on your desk.",
+                                  [
+                                      [
+                                          "From",
+                                          sectionLabel(
+                                              document.current_section,
+                                          ),
+                                      ],
+                                  ],
+                              )
                     }
                 />
             )}
 
-            {/* Forward Modal */}
             {showForwardModal && (
                 <ForwardDocumentModal
                     document={document}
                     onClose={() => setShowForwardModal(false)}
-                    onForwarded={(forwarded, section) =>
+                    onForwarded={(forwarded, section) => {
+                        const forArchiving =
+                            forwarded?.status?.status_name === "For Archiving";
+
                         finish(
-                            "Document forwarded",
-                            "The receiving section will scan it in.",
+                            forArchiving
+                                ? "Forwarded for archiving"
+                                : "Document forwarded",
+                            forArchiving
+                                ? "It will be archived once Admin receives it."
+                                : "The receiving section will scan it in.",
                             [
                                 [
                                     "To",
@@ -429,8 +459,8 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                           ),
                                 ],
                             ],
-                        )
-                    }
+                        );
+                    }}
                 />
             )}
         </>

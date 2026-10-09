@@ -34,7 +34,7 @@ export default function SectionDashboard({
                             </p>
 
                             <h2 className="mt-2 text-2xl font-bold text-white">
-                                Documents on your desk
+                                Documents on your Desk
                             </h2>
 
                             <p className="mt-2 max-w-2xl text-base text-navy-200">
@@ -42,13 +42,13 @@ export default function SectionDashboard({
                             </p>
                         </div>
 
-                        {/* <Link
+                        <Link
                             href={route("referrals.index", { new: 1 })}
                             className="inline-flex min-h-13 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-7 text-lg font-semibold text-white shadow-sm transition hover:bg-brand-700 lg:w-auto"
                         >
                             <Icon name="add" />
                             New Referral
-                        </Link> */}
+                        </Link>
                     </div>
                 </div>
 

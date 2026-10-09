@@ -48,11 +48,11 @@ const HOUR = new Intl.DateTimeFormat("en-GB", {
 function greetingFor(now) {
     const hour = Number(HOUR.format(now));
 
-    if (hour < 12) return "Good morning";
+    if (hour < 12) return "Good Morning";
 
-    if (hour < 18) return "Good afternoon";
+    if (hour < 18) return "Good Afternoon";
 
-    return "Good evening";
+    return "Good Evening";
 }
 
 /** "9:14AM", the office's own format - no space before the meridiem. */
