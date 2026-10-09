@@ -6,7 +6,6 @@ import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
 import Icon from "@/Components/Employee/Icon";
 import SearchInput from "@/Components/Employee/SearchInput";
-S;
 import DocumentTrailModal from "@/Components/Employee/Referrals/DocumentTrailModal";
 import { longDate } from "@/Components/Employee/Referrals/referral";
 
@@ -29,22 +28,15 @@ export default function History({ documents, filters = {} }) {
                         <h2 className="text-xl font-bold text-black">
                             Document History
                         </h2>
-
-                        <p className="mt-1 text-base text-black">
-                            Documents you created or that passed through your
-                            section. Tap a document to see its full details and
-                            where it has been.
-                        </p>
                     </div>
                 </div>
 
                 <div className="mt-5 mb-5">
                     <SearchInput
                         size="lg"
-                        label="Find a document"
+                        label="Find a Document"
                         initialValue={filters.search}
                         placeholder="Type a taxpayer name, concern, or reference number"
-                        hint="Any part of the text will do. All of your history is searched, not just this page."
                     />
                 </div>
 

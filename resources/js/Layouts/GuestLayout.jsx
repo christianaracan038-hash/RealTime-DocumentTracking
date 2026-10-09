@@ -41,21 +41,24 @@ export default function GuestLayout({ children }) {
             )}
 
             {/* Identity */}
-            <div className="flex flex-col justify-center px-8 py-10 lg:w-2/5 lg:px-14 lg:py-16">
-                <Logos size="lg" className="mb-6" />
+            <div className="flex flex-col justify-center px-8 py-10 lg:w-1/2 lg:px-16 lg:py-16 xl:px-24">
+                <Logos
+                    size="lg"
+                    className="mb-8 lg:mb-10 [&_img]:h-24 [&_img]:w-auto lg:[&_img]:h-32 xl:[&_img]:h-40"
+                />
 
-                <p className="text-sm font-semibold tracking-widest text-accent-400 uppercase [text-shadow:0_1px_3px_rgba(5,10,36,0.7)]">
-                    Revenue District Office NO. 111
+                <p className="text-base font-semibold tracking-widest text-accent-400 uppercase lg:text-xl [text-shadow:0_1px_3px_rgba(5,10,36,0.7)]">
+                    Revenue District Office No. 111
                 </p>
-                <p className="text-sm font-semibold tracking-widest text-accent-400 uppercase [text-shadow:0_1px_3px_rgba(5,10,36,0.7)]">
+                <p className="mt-1 text-base font-semibold tracking-widest text-accent-400 uppercase lg:text-xl [text-shadow:0_1px_3px_rgba(5,10,36,0.7)]">
                     South Cotabato
                 </p>
 
-                <h1 className="mt-4 text-3xl font-bold text-white lg:text-4xl [text-shadow:0_2px_6px_rgba(5,10,36,0.7)]">
-                    Document Tracking Referral-Based
+                <h1 className="mt-6 text-4xl leading-tight font-bold text-white lg:text-6xl xl:text-7xl [text-shadow:0_2px_6px_rgba(5,10,36,0.7)]">
+                    Referral-Based Document Tracking
                 </h1>
 
-                <p className="mt-4 max-w-md text-lg text-white [text-shadow:0_1px_4px_rgba(5,10,36,0.7)]">
+                <p className="mt-6 max-w-xl text-xl text-white lg:text-2xl lg:leading-relaxed [text-shadow:0_1px_4px_rgba(5,10,36,0.7)]">
                     Register a referral, scan its QR code to receive it, and see
                     where every document has been.
                 </p>

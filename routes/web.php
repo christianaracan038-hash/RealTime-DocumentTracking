@@ -198,7 +198,8 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
         ->name('comments.store');
 
     Route::get('/archive', [OversightController::class, 'archive'])
-        ->name('archive.index');
+    ->middleware('archive.access')
+    ->name('archive.index');
 
     /*
     * The other half of the conversation, and the one every section has:

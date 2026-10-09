@@ -34,12 +34,6 @@ export default function Archive({ documents, filters = {} }) {
                         <h2 className="text-xl font-bold text-navy-900">
                             Archived documents
                         </h2>
-
-                        <p className="mt-1 text-base text-muted">
-                            Closed out because the taxpayer went unresponsive.
-                            Kept for the record. Tap one to see its full detail
-                            and where it went.
-                        </p>
                     </div>
                 </div>
 
@@ -49,7 +43,6 @@ export default function Archive({ documents, filters = {} }) {
                         label="Find a taxpayer"
                         initialValue={filters.search}
                         placeholder="Type a name, a concern, or a reference number"
-                        hint="Any part will do - the whole archive is searched, not just this page."
                     />
                 </div>
 

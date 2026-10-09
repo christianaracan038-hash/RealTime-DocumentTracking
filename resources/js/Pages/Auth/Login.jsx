@@ -110,7 +110,7 @@ export default function Login({ status }) {
                     />
 
                     <span className="text-base text-white">
-                        Keep me signed in on this computer
+                        Keep me signed-in on this computer
                     </span>
                 </label>
 

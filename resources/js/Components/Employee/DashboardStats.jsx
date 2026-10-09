@@ -2,27 +2,22 @@ import { Link } from "@inertiajs/react";
 
 import Icon from "@/Components/Employee/Icon";
 
-/*
- * The three numbers the office reads first thing in the morning: what has
- * arrived, what is already in your hands, and what has gone past the
- * two-day limit.
- *
- * Only the last one is coloured, and only when it is not zero. A row of
- * three red-edged cards would say nothing - the point of the colour is
- * that most mornings it is absent, so the morning it appears you notice.
- *
- * Everything else is black, by request of the office: grey text was hard
- * to read on older monitors.
- */
-
-function Stat({ label, value, hint, icon, href, tone = "plain" }) {
+function Stat({
+    label,
+    value,
+    hint,
+    icon,
+    href,
+    tone = "plain",
+    labelClassName = "text-base font-semibold",
+}) {
     const toned = tone === "stop" && value > 0;
 
     const body = (
         <>
             <span className="flex items-start justify-between gap-3">
                 <span
-                    className={`text-base font-semibold ${
+                    className={`${labelClassName} ${
                         toned ? "text-stop-600" : "text-black"
                     }`}
                 >
@@ -80,7 +75,7 @@ export default function DashboardStats({ stats = {} }) {
                 value={waiting}
                 hint={
                     waiting === 0
-                        ? "Nothing has arrived yet"
+                        ? ""
                         : "Sent to your section but not yet received"
                 }
                 icon="inbox"
@@ -89,25 +84,18 @@ export default function DashboardStats({ stats = {} }) {
             <Stat
                 label="On your desk"
                 value={onDesk}
-                hint={
-                    onDesk === 0
-                        ? "You have no documents on hand"
-                        : "Received but not yet forwarded"
-                }
+                hint={onDesk === 0 ? "You have no documents on hand" : ""}
                 icon="documents"
                 href={route("documents.index")}
             />
 
             <Stat
-                label="Past the two-day limit"
+                label="Overdue"
                 value={overdue}
-                hint={
-                    overdue === 0
-                        ? "All documents are within the time limit"
-                        : "Waiting for more than two days"
-                }
+                hint={overdue === 0 ? "" : "Waiting for more than two days"}
                 icon="warning"
                 tone="stop"
+                labelClassName="text-xl font-bold"
             />
         </div>
     );

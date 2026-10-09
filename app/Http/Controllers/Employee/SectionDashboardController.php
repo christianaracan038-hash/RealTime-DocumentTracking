@@ -46,7 +46,7 @@ class SectionDashboardController extends Controller
                 'comments.author',
             ])
             ->where('destination_section_id', $employee->section_id)
-            ->where('status_id', 1)
+            ->whereIn('status_id', [1, 5])
             ->latest('created_at')
             ->get();
 

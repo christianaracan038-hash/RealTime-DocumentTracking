@@ -35,6 +35,12 @@ const sectionMenu = (dashboardRoute, extras = []) => [
     },
     ...extras,
     {
+        label: "Archive",
+        route: "archive.index",
+        icon: "archive",
+        permission: "can_archive",
+    },
+    {
         label: "Comments",
         route: "comments.inbox",
         icon: "comment",
@@ -61,11 +67,6 @@ const oversight = [
         label: "Comments",
         route: "comments.index",
         icon: "comment",
-    },
-    {
-        label: "Archive",
-        route: "archive.index",
-        icon: "archive",
     },
 ];
 

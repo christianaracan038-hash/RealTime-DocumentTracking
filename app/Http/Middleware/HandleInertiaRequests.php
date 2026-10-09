@@ -64,7 +64,6 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $employee = Auth::guard('employee')->user();
 
         /** @var \App\Models\EmployeeAcc|null $employee */
         $employee = Auth::guard('employee')->user();
@@ -146,6 +145,8 @@ class HandleInertiaRequests extends Middleware
                         * place of the rest of the portal.
                         */
                         'registers_only' => $employee->registersOnly(),
+
+                        'can_archive' => $employee->canAccessArchive(),
                     ]
                     : null,
             ],

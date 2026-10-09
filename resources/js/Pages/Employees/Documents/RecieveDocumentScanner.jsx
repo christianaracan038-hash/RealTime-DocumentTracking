@@ -13,15 +13,8 @@ export default function ReceiveDocumentScanner({
     const isMountedRef = useRef(true);
 
     const isForward = mode === "forward";
+    const isForArchiving = Number(documentRecord?.status_id) === 5;
 
-    /*
-     * html5-qrcode's stop() and clear() THROW SYNCHRONOUSLY when the
-     * scanner is not running - "Cannot stop, scanner is not running or
-     * paused." That happens on the ordinary path: the decode callback
-     * stops the camera, then the component unmounts and tries to stop
-     * it again. A synchronous throw cannot be caught with .catch(), so
-     * it escaped the cleanup function and crashed the React tree.
-     */
     const stopCamera = async (alsoClear = false) => {
         const scanner = scannerRef.current;
 
@@ -29,23 +22,15 @@ export default function ReceiveDocumentScanner({
 
         try {
             await scanner.stop();
-        } catch {
-            // Already stopped, or never started. Nothing to do.
-        }
+        } catch {}
 
         if (!alsoClear) return;
 
         try {
             scanner.clear();
-        } catch {
-            // Throws for the same reason; equally harmless.
-        }
+        } catch {}
     };
 
-    /*
-     * The library throws plain strings, so err.message is undefined for
-     * its own errors. Keep whichever of the two carries the reason.
-     */
     const errorText = (err, fallback) =>
         (typeof err === "string" ? err : err?.message) || fallback;
 
@@ -54,6 +39,8 @@ export default function ReceiveDocumentScanner({
     const [error, setError] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [toast, setToast] = useState(null);
+    const [trackingNumber, setTrackingNumber] = useState("");
+    const [archived, setArchived] = useState(false);
 
     const notify = (type, message, duration = 3000) => {
         setToast({ type, message });
@@ -152,8 +139,26 @@ export default function ReceiveDocumentScanner({
         return data;
     };
 
-    const handleScan = async (qrValue) => {
+    const handleScan = (qrValue) => verifyDocument({ qr_value: qrValue }, "qr");
+
+    const handleManualSubmit = async () => {
+        const value = trackingNumber.trim();
+
+        if (!value) {
+            setError("Please enter a tracking number.");
+            return;
+        }
+
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+
+        await verifyDocument({ tracking_number: value }, "manual");
+    };
+
+    const verifyDocument = async (lookup, source) => {
         if (!isMountedRef.current) return;
+
+        const isManual = source === "manual";
 
         try {
             setProcessing(true);
@@ -162,7 +167,7 @@ export default function ReceiveDocumentScanner({
             const scanData = await apiFetch("/api/documents/scan", {
                 method: "POST",
                 body: JSON.stringify({
-                    qr_value: qrValue,
+                    ...lookup,
                     mode: isForward ? "forward" : "receive",
                 }),
             });
@@ -173,7 +178,9 @@ export default function ReceiveDocumentScanner({
 
             if (!scannedDocument?.document_id) {
                 throw new Error(
-                    "The scanned QR did not return a valid document.",
+                    isManual
+                        ? "That tracking number did not return a valid document."
+                        : "The scanned QR did not return a valid document.",
                 );
             }
 
@@ -182,9 +189,13 @@ export default function ReceiveDocumentScanner({
                 String(documentRecord.document_id)
             ) {
                 throw new Error(
-                    "The scanned QR code does not belong to this document.",
+                    isManual
+                        ? "That tracking number does not belong to this document."
+                        : "The scanned QR code does not belong to this document.",
                 );
             }
+
+            await stopCamera();
 
             if (isForward) {
                 if (!isMountedRef.current) return;
@@ -211,9 +222,16 @@ export default function ReceiveDocumentScanner({
 
             if (!isMountedRef.current) return;
 
+            setArchived(Boolean(actionData.archived));
             setSuccess(true);
             setProcessing(false);
-            notify("success", "Document received successfully.");
+            notify(
+                "success",
+                actionData.message ??
+                    (actionData.archived
+                        ? "Document received and archived successfully."
+                        : "Document received successfully."),
+            );
 
             if (onReceived) {
                 onReceived(actionData.document);
@@ -259,7 +277,9 @@ export default function ReceiveDocumentScanner({
                         <h2 className="text-lg font-semibold text-slate-800">
                             {isForward
                                 ? "Verify Document for Forwarding"
-                                : "Scan Document QR"}
+                                : isForArchiving
+                                  ? "Receive Document for Archiving"
+                                  : "Scan Document QR"}
                         </h2>
 
                         <p className="text-xs text-slate-500">
@@ -314,22 +334,32 @@ export default function ReceiveDocumentScanner({
                                     <p className="mt-2 text-lg font-semibold">
                                         {isForward
                                             ? "Document Verified"
-                                            : "Document Received"}
+                                            : archived
+                                              ? "Document Archived"
+                                              : "Document Received"}
                                     </p>
                                     <p className="mt-1 text-sm text-green-100">
                                         {isForward
                                             ? "Loading destination sections..."
-                                            : "Tracking history recorded."}
+                                            : archived
+                                              ? "Received and moved to the archive."
+                                              : "Tracking history recorded."}
                                     </p>
                                 </div>
                             </div>
                         )}
 
-                        {cameraError && (
+                        {cameraError && !processing && !success && (
                             <div className="absolute inset-0 flex items-center justify-center bg-slate-900 p-6 text-center">
-                                <p className="text-sm text-red-300">
-                                    {cameraError}
-                                </p>
+                                <div>
+                                    <p className="text-sm text-red-300">
+                                        {cameraError}
+                                    </p>
+                                    <p className="mt-2 text-xs text-slate-400">
+                                        You can still enter the tracking number
+                                        below.
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -338,13 +368,64 @@ export default function ReceiveDocumentScanner({
                         <p className="mt-4 text-center text-sm text-slate-500">
                             {isForward
                                 ? "Scan the QR code attached to the physical document to verify it before forwarding."
-                                : "Position the QR code attached to the physical document inside the scanner."}
+                                : isForArchiving
+                                  ? "This document was forwarded for archiving. Scan its QR code to receive it; it will be archived right after."
+                                  : "Position the QR code attached to the physical document inside the scanner."}
                         </p>
                     )}
 
                     {error && (
                         <div className="mt-4 rounded-lg bg-red-50 p-3 text-center text-sm text-red-700">
                             {error}
+                        </div>
+                    )}
+
+                    {!success && (
+                        <div className="mt-4 border-t pt-4">
+                            <label
+                                htmlFor="manual-tracking-number"
+                                className="mb-1.5 block text-xs font-medium text-slate-600"
+                            >
+                                Can't scan the QR code? Enter the tracking
+                                number instead.
+                            </label>
+
+                            <div className="flex gap-2">
+                                <input
+                                    id="manual-tracking-number"
+                                    type="text"
+                                    value={trackingNumber}
+                                    onChange={(e) => {
+                                        setTrackingNumber(e.target.value);
+                                        if (error) setError(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            handleManualSubmit();
+                                        }
+                                    }}
+                                    placeholder="Tracking number"
+                                    autoComplete="off"
+                                    disabled={processing}
+                                    className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none disabled:opacity-50"
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={handleManualSubmit}
+                                    disabled={
+                                        processing || !trackingNumber.trim()
+                                    }
+                                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {isForward
+                                        ? "Verify"
+                                        : isForArchiving
+                                          ? "Receive & Archive"
+                                          : "Receive"}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

@@ -156,4 +156,9 @@ return [
         'Registration',
     ],
 
+    'archive_sections' => [
+        'RDO',
+        'ADMIN',
+    ],
+
 ];

@@ -40,6 +40,8 @@ class Document extends Model
         'qr_value',
         'qr_path',
         'qr_generated_at',
+        'archived_at',
+        'archived_by',
     ];
 
     /*
@@ -59,6 +61,7 @@ class Document extends Model
         'completed_at' => 'datetime',
         'details_completed_at' => 'datetime',
         'qr_generated_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     public function status(): BelongsTo
