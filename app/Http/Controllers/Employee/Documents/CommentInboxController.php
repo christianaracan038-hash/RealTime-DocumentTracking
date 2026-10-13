@@ -27,23 +27,22 @@ class CommentInboxController extends Controller
     {
         $employee = Auth::guard('employee')->user();
 
-        $comments = DocumentComment::query()
-            ->with([
-                'author',
-                'reader',
-                'document:document_id,tracking_number,taxpayer_name,status_id,current_section_id',
-                'document.status:status_id,status_name',
-            ])
-            ->where('to_section_id', $employee->section_id)
+    $delayedSince = now()->subDays(2);
 
-            /*
-            * What still needs reading comes first; after that, newest.
-            * Both halves are covered by the (to_section_id,
-            * acknowledged_at) index.
-            */
-            ->orderByRaw('acknowledged_at is null desc')
-            ->latest('created_at')
-            ->paginate(15);
+    $comments = DocumentComment::query()
+        ->with([
+            'author',
+            'reader',
+            'document:document_id,tracking_number,taxpayer_name,status_id,current_section_id,updated_at',
+            'document.status:status_id,status_name',
+        ])
+        ->where('to_section_id', $employee->section_id)
+        ->whereHas('document', function ($query) use ($delayedSince) {
+            $query->where('updated_at', '<=', $delayedSince);
+        })
+        ->orderByRaw('acknowledged_at is null desc')
+        ->latest('created_at')
+        ->paginate(15);
 
         return Inertia::render('Employees/Comments/Inbox', [
             'comments' => $comments,

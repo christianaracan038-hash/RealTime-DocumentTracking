@@ -4,6 +4,8 @@ import EmployeeLayout from "@/Layouts/EmployeeLayouts";
 import Icon from "@/Components/Employee/Icon";
 import DashboardStats from "@/Components/Employee/DashboardStats";
 import IncomingDocuments from "@/Pages/Employees/Documents/IncomingDocuments";
+import { router } from "@inertiajs/react";
+import EmployeeButton from "@/Components/Employee/EmployeeButton";
 
 /*
  * The body of every section dashboard.
@@ -42,13 +44,18 @@ export default function SectionDashboard({
                             </p>
                         </div>
 
-                        <Link
-                            href={route("referrals.index", { new: 1 })}
-                            className="inline-flex min-h-13 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-7 text-lg font-semibold text-white shadow-sm transition hover:bg-brand-700 lg:w-auto"
+                        <EmployeeButton
+                            size="lg"
+                            onClick={() =>
+                                router.visit(
+                                    route("referrals.index", { new: 1 }),
+                                )
+                            }
+                            className="w-full shrink-0 !border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700 lg:w-auto"
                         >
                             <Icon name="add" />
                             New Referral
-                        </Link>
+                        </EmployeeButton>
                     </div>
                 </div>
 

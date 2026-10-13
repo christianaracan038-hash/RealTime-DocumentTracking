@@ -66,14 +66,12 @@ function CountCard({ tab, count, current, onSelect }) {
             type="button"
             onClick={onSelect}
             aria-current={current ? "true" : undefined}
-            className={`flex flex-col rounded-2xl border-2 p-5 text-left shadow-sm shadow-navy-900/5 transition ${
-                current
-                    ? "border-brand-600 bg-brand-50"
-                    : "border-line bg-surface hover:border-brand-200"
+            className={`flex flex-col rounded-2xl border-2 border-[#4169E1] bg-[#4169E1] p-5 text-left shadow-sm shadow-navy-900/5 transition hover:border-[#3457c4] hover:bg-[#3457c4] ${
+                current ? "ring-4 ring-[#4169E1]/30" : ""
             }`}
         >
             <span className="flex items-start justify-between gap-3">
-                <span className="text-base font-semibold text-black">
+                <span className="text-base font-semibold text-white">
                     {tab.label}
                 </span>
 
@@ -82,31 +80,43 @@ function CountCard({ tab, count, current, onSelect }) {
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                         acting
                             ? "bg-accent-400 text-black"
-                            : "bg-brand-50 text-brand-700"
+                            : "bg-white/20 text-white"
                     }`}
                 >
                     <Icon name={tab.icon} />
                 </span>
             </span>
 
-            <span className="mt-2 block text-4xl font-bold text-black">
+            <span className="mt-2 block text-4xl font-bold text-white">
                 {count}
             </span>
 
-            <span className="mt-1 block text-sm text-black">{tab.hint}</span>
+            <span className="mt-1 block text-sm text-white/80">{tab.hint}</span>
 
-            {/* Which one the list below is showing */}
             <span
                 aria-hidden="true"
                 className={`mt-3 block h-1 rounded-full ${
-                    current ? "bg-brand-600" : "bg-transparent"
+                    current ? "bg-white" : "bg-transparent"
                 }`}
             />
         </button>
     );
 }
 
+const isComplete = (document) =>
+    Boolean(document.completed_at) ||
+    document.status?.status_name === "Completed";
+
 function StatusPill({ document }) {
+    if (isComplete(document)) {
+        return (
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok-600 px-3 py-1 text-sm font-bold text-white">
+                <Icon name="check" />
+                Completed
+            </span>
+        );
+    }
+
     if (document.details_completed_at) {
         return (
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok-600 px-3 py-1 text-sm font-bold text-white">
@@ -136,6 +146,9 @@ export default function Index({
     canCompleteDetails = false,
 }) {
     const [completing, setCompleting] = useState(null);
+
+    const [editing, setEditing] = useState(null);
+    const [deleting, setDeleting] = useState(null);
 
     const [registering, setRegistering] = useState(frame === "register");
 
@@ -182,6 +195,16 @@ export default function Index({
             search: filters.search || undefined,
         });
 
+    const confirmDelete = () => {
+        router.delete(
+            route("referrals.section.destroy", deleting.document_id),
+            {
+                preserveScroll: true,
+                onFinish: () => setDeleting(null),
+            },
+        );
+    };
+
     return (
         <EmployeeLayout title="Referrals">
             <EmployeeCard>
@@ -195,7 +218,7 @@ export default function Index({
                     <EmployeeButton
                         size="lg"
                         onClick={() => setRegistering(true)}
-                        className="w-full shrink-0 lg:w-auto"
+                        className="w-full shrink-0 !border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700 lg:w-auto"
                     >
                         <Icon name="add" />
                         New Referral
@@ -246,7 +269,9 @@ export default function Index({
                 {rows.length > 0 ? (
                     <ul className="mt-5 divide-y divide-line rounded-xl border border-line">
                         {rows.map((document) => {
-                            const waiting = !document.details_completed_at;
+                            const complete = isComplete(document);
+                            const waiting =
+                                !complete && !document.details_completed_at;
 
                             const urgency = waiting
                                 ? urgencyOf(document)
@@ -255,13 +280,16 @@ export default function Index({
                             return (
                                 <li
                                     key={document.document_id}
-                                    className="flex items-stretch"
+                                    className={`flex items-stretch ${complete ? "bg-ok-100" : ""}`}
                                 >
-                                    {/* Only unfinished work carries urgency */}
+                                    {/* Green spine kapag complete, urgency kapag unfinished */}
                                     <span
                                         aria-hidden="true"
                                         className={`w-1.5 shrink-0 ${
-                                            urgency?.spine ?? "bg-transparent"
+                                            complete
+                                                ? "bg-ok-600"
+                                                : (urgency?.spine ??
+                                                  "bg-transparent")
                                         }`}
                                     />
 
@@ -309,10 +337,23 @@ export default function Index({
                                         </p>
                                     </button>
 
+                                    {/* RIGHT COLUMN */}
                                     <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-4 pr-4">
                                         <StatusPill document={document} />
-
-                                        {waiting ? (
+                                        {complete ? (
+                                            <EmployeeButton
+                                                variant="quiet"
+                                                onClick={() =>
+                                                    setOpened({
+                                                        id: document.document_id,
+                                                        slip: false,
+                                                    })
+                                                }
+                                            >
+                                                <Icon name="check" />
+                                                View trail
+                                            </EmployeeButton>
+                                        ) : waiting ? (
                                             <>
                                                 <AgeBadge document={document} />
 
@@ -343,6 +384,36 @@ export default function Index({
                                                 <Icon name="print" />
                                                 Reference slip
                                             </EmployeeButton>
+                                        )}
+                                        {!usesForm2309 && !complete && (
+                                            <div className="flex gap-2">
+                                                <EmployeeButton
+                                                    variant="secondary"
+                                                    disabled={
+                                                        document.can_modify ===
+                                                        false
+                                                    }
+                                                    onClick={() =>
+                                                        setEditing(document)
+                                                    }
+                                                >
+                                                    Edit
+                                                </EmployeeButton>
+
+                                                <EmployeeButton
+                                                    variant="quiet"
+                                                    disabled={
+                                                        document.can_modify ===
+                                                        false
+                                                    }
+                                                    onClick={() =>
+                                                        setDeleting(document)
+                                                    }
+                                                    className="!text-red-600"
+                                                >
+                                                    Delete
+                                                </EmployeeButton>
+                                            </div>
                                         )}
                                     </div>
                                 </li>
@@ -410,7 +481,7 @@ export default function Index({
                 )}
             </EmployeeCard>
 
-            {registering && (
+            {(registering || editing) && (
                 <div
                     className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-navy-950/70 p-4 sm:p-8"
                     role="dialog"
@@ -427,9 +498,14 @@ export default function Index({
                             />
                         ) : (
                             <SectionReferralPanel
+                                key={editing?.document_id ?? "new"}
                                 sections={sections}
                                 fromSection={fromSection}
-                                onCancel={() => setRegistering(false)}
+                                referral={editing}
+                                onCancel={() => {
+                                    setRegistering(false);
+                                    setEditing(null);
+                                }}
                             />
                         )}
                     </div>
@@ -451,6 +527,44 @@ export default function Index({
                 sections={sections}
                 options={referralOptions}
             />
+
+            {deleting && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/70 p-4"
+                    role="alertdialog"
+                    aria-modal="true"
+                >
+                    <EmployeeCard>
+                        <div className="max-w-md">
+                            <h2 className="text-xl font-bold text-black">
+                                Delete this referral?
+                            </h2>
+
+                            <p className="mt-2 text-base text-black">
+                                {deleting.concern || "This referral"} (
+                                {deleting.tracking_number}) will be removed.
+                                This cannot be undone.
+                            </p>
+
+                            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <EmployeeButton
+                                    variant="quiet"
+                                    onClick={() => setDeleting(null)}
+                                >
+                                    Cancel
+                                </EmployeeButton>
+
+                                <EmployeeButton
+                                    onClick={confirmDelete}
+                                    className="!border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700"
+                                >
+                                    Yes, delete
+                                </EmployeeButton>
+                            </div>
+                        </div>
+                    </EmployeeCard>
+                </div>
+            )}
 
             {opened && (
                 <DocumentTrailModal

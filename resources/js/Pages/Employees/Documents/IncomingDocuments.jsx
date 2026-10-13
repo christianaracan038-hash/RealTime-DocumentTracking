@@ -58,6 +58,18 @@ export default function IncomingDocuments({ documents = [] }) {
                         {documents.map((document) => {
                             const urgency = urgencyOf(document);
 
+                            const title =
+                                document.taxpayer_name ||
+                                document.concern ||
+                                document.transaction_type ||
+                                null;
+
+                            // Kung concern na ang naging title, huwag na ulitin sa badge sa ibaba
+                            const badgeText = document.taxpayer_name
+                                ? (document.concern ??
+                                  document.transaction_type)
+                                : null;
+
                             return (
                                 <li key={document.document_id}>
                                     <button
@@ -81,10 +93,13 @@ export default function IncomingDocuments({ documents = [] }) {
 
                                         <div className="min-w-0 flex-1 p-5">
                                             <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <p className="text-lg font-bold text-black">
-                                                    {document.taxpayer_name ??
-                                                        "No taxpayer on record"}
-                                                </p>
+                                                {title ? (
+                                                    <p className="text-lg font-bold text-black">
+                                                        {title}
+                                                    </p>
+                                                ) : (
+                                                    <span />
+                                                )}
 
                                                 <AgeBadge document={document} />
                                             </div>

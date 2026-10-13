@@ -62,20 +62,35 @@ function Stamped({ label, value }) {
 export default function SectionReferralPanel({
     sections = [],
     fromSection = null,
+    referral = null,
     onCancel = null,
 }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        destination_section_id: "",
-        concern: "",
+    const editing = Boolean(referral);
+
+    const { data, setData, post, put, processing, errors, reset } = useForm({
+        destination_section_id: referral?.destination_section_id ?? "",
+        concern: referral?.concern ?? "",
     });
 
     const submit = (event) => {
         event.preventDefault();
 
-        post(route("referrals.section.store"), {
+        const options = {
             preserveScroll: true,
-            onSuccess: () => reset(),
-        });
+            onSuccess: () => {
+                if (editing) onCancel?.();
+                else reset();
+            },
+        };
+
+        if (editing) {
+            put(
+                route("referrals.section.update", referral.document_id),
+                options,
+            );
+        } else {
+            post(route("referrals.section.store"), options);
+        }
     };
 
     return (
@@ -83,7 +98,7 @@ export default function SectionReferralPanel({
             <div className="mx-auto max-w-xl">
                 <div className="flex items-start justify-between gap-4">
                     <h2 className="text-2xl font-bold tracking-wide text-navy-900 uppercase">
-                        Registration
+                        {editing ? "Edit Referral" : "Registration"}
                     </h2>
 
                     <p className="shrink-0 pt-1 text-xs font-semibold tracking-widest text-muted uppercase">
@@ -99,7 +114,9 @@ export default function SectionReferralPanel({
 
                     <Stamped
                         label="Date and Time"
-                        value={longDate(new Date())}
+                        value={longDate(
+                            editing ? referral.created_at : new Date(),
+                        )}
                     />
 
                     <Field
@@ -147,7 +164,7 @@ export default function SectionReferralPanel({
                                 onClick={onCancel}
                                 disabled={processing}
                             >
-                                Back to referrals
+                                Back to Referrals
                             </EmployeeButton>
                         )}
 
@@ -157,7 +174,11 @@ export default function SectionReferralPanel({
                             disabled={processing}
                         >
                             <Icon name="register" />
-                            {processing ? "Registering..." : "Register"}
+                            {processing
+                                ? "Saving..."
+                                : editing
+                                  ? "Save changes"
+                                  : "Register"}
                         </EmployeeButton>
                     </div>
                 </form>

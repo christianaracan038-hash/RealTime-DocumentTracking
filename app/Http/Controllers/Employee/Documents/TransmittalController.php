@@ -143,7 +143,6 @@ class TransmittalController extends Controller
             new TransmittalExport(
                 $documents,
                 $employee->section?->section_name ?? '',
-                $employee->display_name ?? '',
             ),
             $filename,
         );

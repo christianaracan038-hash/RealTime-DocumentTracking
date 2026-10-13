@@ -6,6 +6,7 @@ export default function Dashboard(props) {
             {...props}
             title="RDO Dashboard"
             eyebrow="RDO / ARDO Office"
+            s
         />
     );
 }

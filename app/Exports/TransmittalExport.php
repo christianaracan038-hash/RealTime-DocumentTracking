@@ -19,7 +19,6 @@ class TransmittalExport implements FromCollection, WithHeadings, WithMapping, Sh
     public function __construct(
         private Collection $documents,
         private string $fromSection,
-        private string $toSection,
     ) {}
 
     public function collection(): Collection
@@ -34,15 +33,15 @@ class TransmittalExport implements FromCollection, WithHeadings, WithMapping, Sh
 
     public function map($document): array
     {
-        $waitingSince = data_get($document, 'waiting_since');
+        $waitingSince = $document->latestTrackingHistory?->tracked_at ?? $document->created_at;
 
         return [
             ++$this->row,
-            data_get($document, 'tracking_number'),
-            data_get($document, 'taxpayer_name') ?? 'No taxpayer on record',
-            data_get($document, 'concern') ?? '',
+            $document->tracking_number,
+            $document->taxpayer_name ?? 'No taxpayer on record',
+            $document->concern ?? '',
             $this->fromSection,
-            $this->toSection,
+            $document->destinationSection?->section_name ?? '',
             $waitingSince
                 ? Carbon::parse($waitingSince)->timezone(config('app.timezone'))->format('M d, Y h:i A')
                 : '',
