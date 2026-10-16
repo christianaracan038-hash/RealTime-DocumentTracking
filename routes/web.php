@@ -38,7 +38,7 @@ Route::get('/dashboard', fn () => redirect()->route('super.dashboard'))
 /*
 |--------------------------------------------------------------------------
 | Super administrator
-|--------------------------------------------------------------------------
+|-----------------------D---------------------------------------------------
 |
 | Everything that decides who can get into the system. Prefixed
 | /super-admin rather than /admin on purpose: the office has an Admin
