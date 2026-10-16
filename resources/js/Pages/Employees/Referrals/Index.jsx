@@ -277,6 +277,13 @@ export default function Index({
                                 ? urgencyOf(document)
                                 : null;
 
+                            console.log({
+                                status_id: document.status_id,
+                                taxpayer_name: document.taxpayer_name,
+                                creator_section: document.creator?.section_id,
+                                my_section: fromSection?.section_id,
+                            });
+
                             return (
                                 <li
                                     key={document.document_id}
@@ -385,14 +392,11 @@ export default function Index({
                                                 Reference slip
                                             </EmployeeButton>
                                         )}
-                                        {!usesForm2309 && !complete && (
+
+                                        {!complete && (
                                             <div className="flex gap-2">
                                                 <EmployeeButton
                                                     variant="secondary"
-                                                    disabled={
-                                                        document.can_modify ===
-                                                        false
-                                                    }
                                                     onClick={() =>
                                                         setEditing(document)
                                                     }
@@ -402,10 +406,6 @@ export default function Index({
 
                                                 <EmployeeButton
                                                     variant="quiet"
-                                                    disabled={
-                                                        document.can_modify ===
-                                                        false
-                                                    }
                                                     onClick={() =>
                                                         setDeleting(document)
                                                     }
@@ -558,7 +558,7 @@ export default function Index({
                                     onClick={confirmDelete}
                                     className="!border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700"
                                 >
-                                    Yes, delete
+                                    Yes, Delete
                                 </EmployeeButton>
                             </div>
                         </div>

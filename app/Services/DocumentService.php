@@ -442,6 +442,30 @@ class DocumentService
         });
     }
 
+
+    public function updateSectionReferral(Document $document, array $data): Document
+    {
+        $document->update([
+            'concern' => $data['concern'],
+            'destination_section_id' => $data['destination_section_id'],
+        ]);
+
+        return $document->fresh();
+    }
+
+    public function deleteSectionReferral(Document $document): void
+    {
+        $qrFile = $document->qr_path
+            ? 'qrcodes/'.basename($document->qr_path)
+            : null;
+
+        $document->delete();
+
+        if ($qrFile) {
+            Storage::disk('public')->delete($qrFile);
+        }
+    }
+
     /**
      * Step 2 - fill in a referral's details.
      *

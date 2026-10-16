@@ -187,6 +187,14 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
     Route::post('/referrals/section', [DocumentController::class, 'storeSectionReferral'])
         ->name('referrals.section.store');
 
+
+
+    Route::put('/referrals/section/{document}', [DocumentController::class, 'updateSectionReferral'])
+    ->name('referrals.section.update');
+
+    Route::delete('/referrals/section/{document}', [DocumentController::class, 'destroySectionReferral'])
+    ->name('referrals.section.destroy');
+
     /*
     * The RDO's oversight screens. Both check the section themselves,
     * from config('referral.oversight_sections').
