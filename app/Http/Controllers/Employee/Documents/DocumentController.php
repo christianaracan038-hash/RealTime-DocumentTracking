@@ -90,6 +90,7 @@ class DocumentController extends Controller
             ->paginate(5)
             ->withQueryString();
 
+
         return Inertia::render('Employees/Referrals/Index', [
             /*
             * A referral cannot be addressed to the section sending it.
@@ -365,5 +366,25 @@ class DocumentController extends Controller
         return redirect()
             ->route('referrals.index')
             ->with('success', 'Referral details completed.');
+    }
+
+
+    public function updateSectionReferral(
+        StoreSectionReferralRequest $request,
+        Document $document,
+        DocumentService $documentService
+    ): RedirectResponse {
+        $documentService->updateSectionReferral($document, $request->validated());
+
+        return back()->with('success', 'Referral updated.');
+    }
+
+    public function destroySectionReferral(
+        Document $document,
+        DocumentService $documentService
+    ): RedirectResponse {
+        $documentService->deleteSectionReferral($document);
+
+        return back()->with('success', 'Referral deleted.');
     }
 }

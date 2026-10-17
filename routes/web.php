@@ -38,7 +38,7 @@ Route::get('/dashboard', fn () => redirect()->route('super.dashboard'))
 /*
 |--------------------------------------------------------------------------
 | Super administrator
-|--------------------------------------------------------------------------
+|-----------------------D---------------------------------------------------
 |
 | Everything that decides who can get into the system. Prefixed
 | /super-admin rather than /admin on purpose: the office has an Admin
@@ -186,6 +186,14 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
     */
     Route::post('/referrals/section', [DocumentController::class, 'storeSectionReferral'])
         ->name('referrals.section.store');
+
+
+
+    Route::put('/referrals/section/{document}', [DocumentController::class, 'updateSectionReferral'])
+    ->name('referrals.section.update');
+
+    Route::delete('/referrals/section/{document}', [DocumentController::class, 'destroySectionReferral'])
+    ->name('referrals.section.destroy');
 
     /*
     * The RDO's oversight screens. Both check the section themselves,

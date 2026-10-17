@@ -5,6 +5,7 @@ import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
 import AgeBadge from "@/Components/Employee/AgeBadge";
 import Icon from "@/Components/Employee/Icon";
+import SearchInput from "@/Components/Employee/SearchInput";
 import { urgencyOf } from "@/Components/Employee/urgency";
 import {
     addressedTo,
@@ -12,15 +13,7 @@ import {
     forwardedBy,
 } from "@/Components/Employee/Referrals/referral";
 
-/*
- * The receiving queue.
- *
- * Urgency colours the whole row - a thick spine down its left edge and
- * a wash behind it - rather than sitting in a badge in the corner. The
- * point is that someone glancing at the screen from a metre away can
- * see there is something red on it without reading a word.
- */
-export default function IncomingDocuments({ documents = [] }) {
+export default function IncomingDocuments({ documents = [], filters = {} }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
 
     const needingAttention = documents.filter(
@@ -53,10 +46,31 @@ export default function IncomingDocuments({ documents = [] }) {
                     </div>
                 </div>
 
+                <div className="mb-5">
+                    <SearchInput
+                        size="lg"
+                        label="Find a document"
+                        initialValue={filters.search}
+                        placeholder="Type a name, concern or reference number"
+                        only={["documents", "filters"]}
+                    />
+                </div>
+
                 {documents.length > 0 ? (
                     <ul className="space-y-3">
                         {documents.map((document) => {
                             const urgency = urgencyOf(document);
+
+                            const title =
+                                document.taxpayer_name ||
+                                document.concern ||
+                                document.transaction_type ||
+                                null;
+
+                            const badgeText = document.taxpayer_name
+                                ? (document.concern ??
+                                  document.transaction_type)
+                                : null;
 
                             return (
                                 <li key={document.document_id}>
@@ -71,7 +85,6 @@ export default function IncomingDocuments({ documents = [] }) {
                                                 : "border-line"
                                         } ${urgency?.card ?? "bg-surface"}`}
                                     >
-                                        {/* The urgency reads before any text does */}
                                         <span
                                             aria-hidden="true"
                                             className={`w-1.5 shrink-0 self-stretch ${
@@ -81,10 +94,13 @@ export default function IncomingDocuments({ documents = [] }) {
 
                                         <div className="min-w-0 flex-1 p-5">
                                             <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <p className="text-lg font-bold text-black">
-                                                    {document.taxpayer_name ??
-                                                        "No taxpayer on record"}
-                                                </p>
+                                                {title ? (
+                                                    <p className="text-lg font-bold text-black">
+                                                        {title}
+                                                    </p>
+                                                ) : (
+                                                    <span />
+                                                )}
 
                                                 <AgeBadge document={document} />
                                             </div>
@@ -94,11 +110,9 @@ export default function IncomingDocuments({ documents = [] }) {
                                                     {document.tracking_number}
                                                 </span>
 
-                                                {(document.concern ??
-                                                    document.transaction_type) && (
+                                                {badgeText && (
                                                     <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-sm font-medium text-black">
-                                                        {document.concern ??
-                                                            document.transaction_type}
+                                                        {badgeText}
                                                     </span>
                                                 )}
 
@@ -177,11 +191,15 @@ export default function IncomingDocuments({ documents = [] }) {
                         </span>
 
                         <p className="text-lg font-semibold text-black">
-                            Nothing is waiting right now
+                            {filters.search
+                                ? "No documents match your search."
+                                : "Nothing is waiting right now"}
                         </p>
 
                         <p className="mt-1 text-base text-black">
-                            Referrals sent to your section will appear here.
+                            {filters.search
+                                ? "Try the taxpayer's name, the concern or the reference number."
+                                : "Referrals sent to your section will appear here."}
                         </p>
                     </div>
                 )}
