@@ -19,7 +19,7 @@ import { longDate, sectionLabel } from "./referral";
  */
 
 const FIELD =
-    "min-h-12 w-full rounded-xl border border-[#228B22] bg-[#228B22] px-4 py-3 text-base font-bold text-white placeholder:text-white/60 focus:border-white";
+    "min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3 text-base font-semibold text-navy-900 placeholder:text-muted focus:border-navy-800 focus:outline-none";
 function Field({ label, hint, error, children }) {
     return (
         <div>
