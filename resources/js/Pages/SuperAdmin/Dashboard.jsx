@@ -108,6 +108,32 @@ export default function Dashboard() {
                         />
                     </div>
 
+                    {totals.pending_deletions > 0 && (
+                        <div className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 className="font-semibold text-red-900">
+                                    {totals.pending_deletions} deletion{" "}
+                                    {totals.pending_deletions === 1
+                                        ? "request is"
+                                        : "requests are"}{" "}
+                                    waiting for your approval
+                                </h3>
+
+                                <p className="mt-1 text-sm text-red-800">
+                                    Sections cannot delete a referral on their
+                                    own. Each request comes with a reason.
+                                </p>
+                            </div>
+
+                            <Link
+                                href={route("super.deletions.index")}
+                                className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-red-700"
+                            >
+                                Review requests
+                            </Link>
+                        </div>
+                    )}
+
                     {/*
                      * Accounts with nobody's name against them. Listed
                      * rather than counted, because each one needs opening
@@ -294,6 +320,13 @@ export default function Dashboard() {
                                     className="mt-4 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-700"
                                 >
                                     Manage super admins →
+                                </Link>
+
+                                <Link
+                                    href={route("super.deletions.index")}
+                                    className="mt-4 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                                >
+                                    Deletion requests →
                                 </Link>
                             </div>
                         </div>

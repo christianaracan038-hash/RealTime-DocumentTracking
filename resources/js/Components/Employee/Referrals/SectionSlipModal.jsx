@@ -49,8 +49,8 @@ export function SectionSlip({ document }) {
                     </p>
                 </div>
 
-                <SignatureCell direction="Inbound" />
-                <SignatureCell direction="Outbound" />
+                <SignatureCell direction="Incoming" />
+                <SignatureCell direction="Outgoing" />
             </div>
 
             {/* Row 2 */}
@@ -63,7 +63,7 @@ export function SectionSlip({ document }) {
                     />
 
                     <div className="min-w-0 flex-1 text-right">
-                        <p className="font-mono text-[11px] font-bold">
+                        <p className="font-mono text-[18px] font-bold leading-tight break-all">
                             {document.tracking_number}
                         </p>
 

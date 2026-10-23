@@ -28,14 +28,14 @@ class StoreEmployeeAccountRequest extends FormRequest
                 Rule::unique('employees_acc', 'username'),
             ],
 
-            'full_name' => ['required', 'string', 'max:255'],
+            // 'full_name' => ['required', 'string', 'max:255'],
 
-            'position' => ['nullable', 'string', 'max:100'],
+            // 'position' => ['nullable', 'string', 'max:100'],
 
-            'email' => [
-                'nullable', 'email', 'max:255',
-                Rule::unique('employees_acc', 'email'),
-            ],
+            // 'email' => [
+            //     'nullable', 'email', 'max:255',
+            //     Rule::unique('employees_acc', 'email'),
+            // ],
 
             'password' => ['required', 'string', 'min:8', 'confirmed'],
 

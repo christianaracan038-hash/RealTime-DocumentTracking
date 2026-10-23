@@ -42,6 +42,13 @@ class Document extends Model
         'qr_generated_at',
         'archived_at',
         'archived_by',
+
+
+        'deletion_requested_at',
+        'deletion_requested_by',
+        'deletion_reason',
+        'deletion_approved_at',
+        'deletion_approved_by',
     ];
 
     /*
@@ -62,6 +69,8 @@ class Document extends Model
         'details_completed_at' => 'datetime',
         'qr_generated_at' => 'datetime',
         'archived_at' => 'datetime',
+        'deletion_requested_at' => 'datetime',
+        'deletion_approved_at' => 'datetime',
     ];
 
     public function status(): BelongsTo
@@ -240,5 +249,15 @@ class Document extends Model
             'document_id',
             'document_id'
         )->latestOfMany('tracked_at');
+    }
+
+    public function requester()
+    {
+        return $this->belongsTo(EmployeeAcc::class, 'deletion_requested_by', 'employee_id');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deletion_approved_by', 'id');
     }
 }

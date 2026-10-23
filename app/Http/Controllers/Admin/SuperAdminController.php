@@ -10,6 +10,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Document;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
+
 
 /**
  * Where a super administrator lands.
@@ -72,6 +76,9 @@ class SuperAdminController extends Controller
                 'administrators_active' => User::where('is_active', true)->count(),
                 'sections' => Section::count(),
                 'roles' => Role::count(),
+                'pending_deletions' => Document::whereNotNull('deletion_requested_at')
+                    ->whereNull('deletion_approved_at')
+                    ->count(),
             ],
 
             /*
@@ -98,6 +105,82 @@ class SuperAdminController extends Controller
                     'roles.role_name',
                     DB::raw('count(employees_acc.employee_id) as accounts'),
                 ]),
+        ]);
+    }
+
+    public function deletions(): Response
+    {
+        $requests = Document::query()
+            ->whereNotNull('deletion_requested_at')
+            ->whereNull('deletion_approved_at')
+            ->with(['creator.section', 'requester'])
+            ->latest('deletion_requested_at')
+            ->paginate(20);
+
+        return Inertia::render('SuperAdmin/Administrators/Deletions', [
+            'requests' => $requests,
+        ]);
+    }
+
+    public function approveDeletion(Document $document): RedirectResponse
+    {
+        abort_if($document->deletion_requested_at === null, 422, 'No deletion request on this referral.');
+        abort_if($document->deletion_approved_at !== null, 422, 'Already approved.');
+
+        $document->update([
+            'deletion_approved_at' => now(),
+            'deletion_approved_by' => Auth::id(),
+        ]);
+
+        return back()->with('success', 'Referral marked as deleted.');
+    }
+
+    public function rejectDeletion(Document $document): RedirectResponse
+    {
+        abort_if($document->deletion_requested_at === null, 422, 'No deletion request on this referral.');
+        abort_if($document->deletion_approved_at !== null, 422, 'Already approved and cannot be rejected.');
+
+        $document->update([
+            'deletion_requested_at' => null,
+            'deletion_requested_by' => null,
+            'deletion_reason' => null,
+        ]);
+
+        return back()->with('success', 'Deletion request rejected.');
+    }
+
+    public function deletionHistory(): Response
+    {
+        $history = Document::query()
+            ->select([
+                'document_id',
+                'tracking_number',
+                'deletion_requested_at',
+                'deletion_requested_by',
+                'deletion_reason',
+                'deletion_approved_at',
+                'deletion_approved_by',
+            ])
+            ->whereNotNull('deletion_approved_at')
+            ->with([
+                'requester:employee_id,username,full_name',
+                'approver:id,name',
+            ])
+            ->latest('deletion_approved_at')
+            ->paginate(20)
+            ->through(fn (Document $document) => [
+                'document_id' => $document->document_id,
+                'tracking_number' => $document->tracking_number,
+                'deletion_requested_at' => $document->deletion_requested_at,
+                'deletion_reason' => $document->deletion_reason,
+                'deletion_approved_at' => $document->deletion_approved_at,
+                'requested_by' => $document->requester?->full_name
+                    ?: $document->requester?->username,
+                'approved_by' => $document->approver?->name,
+            ]);
+
+        return Inertia::render('SuperAdmin/Administrators/DeletionHistory', [
+            'history' => $history,
         ]);
     }
 }

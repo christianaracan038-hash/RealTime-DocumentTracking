@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { router } from "@inertiajs/react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
@@ -5,6 +6,7 @@ import Icon from "@/Components/Employee/Icon";
 import DashboardStats from "@/Components/Employee/DashboardStats";
 import IncomingDocuments from "@/Pages/Employees/Documents/IncomingDocuments";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
+import BatchDocumentScanner from "@/Pages/Employees/Documents/BatchDocumentScanner";
 
 export default function SectionDashboard({
     title,
@@ -14,6 +16,20 @@ export default function SectionDashboard({
     filters = {},
     stats = {},
 }) {
+    const [showFastScan, setShowFastScan] = useState(false);
+
+    const refreshDashboard = () =>
+        router.reload({
+            only: ["documents", "stats"],
+            preserveScroll: true,
+            preserveState: true,
+        });
+
+    const handleClose = () => {
+        setShowFastScan(false);
+        refreshDashboard();
+    };
+
     return (
         <EmployeeLayout title={title}>
             <div className="space-y-6">
@@ -33,18 +49,29 @@ export default function SectionDashboard({
                             </p>
                         </div>
 
-                        <EmployeeButton
-                            size="lg"
-                            onClick={() =>
-                                router.visit(
-                                    route("referrals.index", { new: 1 }),
-                                )
-                            }
-                            className="w-full shrink-0 !border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700 lg:w-auto"
-                        >
-                            <Icon name="add" />
-                            New Referral
-                        </EmployeeButton>
+                        <div className="flex w-full shrink-0 flex-col gap-3 sm:flex-row lg:w-auto">
+                            <EmployeeButton
+                                size="lg"
+                                onClick={() => setShowFastScan(true)}
+                                className="w-full !border-yellow-400 !bg-yellow-400 !text-slate-900 hover:!border-yellow-500 hover:!bg-yellow-500 lg:w-auto"
+                            >
+                                <Icon name="scan" />
+                                Scan QR Code
+                            </EmployeeButton>
+
+                            <EmployeeButton
+                                size="lg"
+                                onClick={() =>
+                                    router.visit(
+                                        route("referrals.index", { new: 1 }),
+                                    )
+                                }
+                                className="w-full !border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700 lg:w-auto"
+                            >
+                                <Icon name="add" />
+                                New Referral
+                            </EmployeeButton>
+                        </div>
                     </div>
                 </div>
 
@@ -52,6 +79,17 @@ export default function SectionDashboard({
 
                 <IncomingDocuments documents={documents} filters={filters} />
             </div>
+
+            {showFastScan && (
+                <BatchDocumentScanner
+                    onClose={() => {
+                        setShowFastScan(false);
+                        refreshDashboard();
+                    }}
+                    onReceived={refreshDashboard}
+                    onForwarded={refreshDashboard}
+                />
+            )}
         </EmployeeLayout>
     );
 }

@@ -35,15 +35,15 @@ class UpdateEmployeeAccountRequest extends FormRequest
             * predates the name columns gets one the first time anybody
             * edits it.
             */
-            'full_name' => ['required', 'string', 'max:255'],
+            // 'full_name' => ['required', 'string', 'max:255'],
 
-            'position' => ['nullable', 'string', 'max:100'],
+            // 'position' => ['nullable', 'string', 'max:100'],
 
-            'email' => [
-                'nullable', 'email', 'max:255',
-                Rule::unique('employees_acc', 'email')
-                    ->ignore($employee->employee_id, 'employee_id'),
-            ],
+            // 'email' => [
+            //     'nullable', 'email', 'max:255',
+            //     Rule::unique('employees_acc', 'email')
+            //         ->ignore($employee->employee_id, 'employee_id'),
+            // ],
 
             'section_id' => ['required', Rule::exists('sections', 'section_id')],
 

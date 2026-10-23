@@ -515,4 +515,25 @@ class DocumentTrackingController extends Controller
             $result['status']
         );
     }
+
+    public function forwardSections(): JsonResponse
+    {
+        $employee = Auth::guard('employee')->user();
+
+        $sections = Section::query()
+            ->whereNotIn('section_id', array_filter([
+                $employee->section_id,
+            ]))
+            ->orderBy('section_name')
+            ->get([
+                'section_id',
+                'section_code',
+                'section_name',
+                'description',
+            ]);
+
+        return response()->json([
+            'sections' => $sections,
+        ]);
+    }
 }

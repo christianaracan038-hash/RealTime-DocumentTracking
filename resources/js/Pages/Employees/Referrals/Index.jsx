@@ -149,6 +149,8 @@ export default function Index({
 
     const [editing, setEditing] = useState(null);
     const [deleting, setDeleting] = useState(null);
+    const [reason, setReason] = useState("");
+    const [reasonError, setReasonError] = useState("");
 
     const [registering, setRegistering] = useState(frame === "register");
 
@@ -196,13 +198,30 @@ export default function Index({
         });
 
     const confirmDelete = () => {
-        router.delete(
-            route("referrals.section.destroy", deleting.document_id),
+        const text = reason.trim();
+
+        if (text.length < 10) {
+            setReasonError(
+                "Please type the reason for deleting this referral (at least 10 characters).",
+            );
+            return;
+        }
+
+        router.post(
+            route("referrals.section.request-deletion", deleting.document_id),
+            { reason: text },
             {
                 preserveScroll: true,
-                onFinish: () => setDeleting(null),
+                onError: (errors) => setReasonError(errors.reason ?? ""),
+                onSuccess: closeDelete,
             },
         );
+    };
+
+    const closeDelete = () => {
+        setDeleting(null);
+        setReason("");
+        setReasonError("");
     };
 
     return (
@@ -277,17 +296,29 @@ export default function Index({
                                 ? urgencyOf(document)
                                 : null;
 
-                            console.log({
-                                status_id: document.status_id,
-                                taxpayer_name: document.taxpayer_name,
-                                creator_section: document.creator?.section_id,
-                                my_section: fromSection?.section_id,
-                            });
+                            // console.log({
+                            //     status_id: document.status_id,
+                            //     taxpayer_name: document.taxpayer_name,
+                            //     creator_section: document.creator?.section_id,
+                            //     my_section: fromSection?.section_id,
+                            // });
+
+                            const deleted = Boolean(
+                                document.deletion_approved_at,
+                            );
+                            const pendingDelete =
+                                Boolean(document.deletion_requested_at) &&
+                                !deleted;
 
                             return (
                                 <li
                                     key={document.document_id}
-                                    className={`flex items-stretch ${complete ? "bg-ok-100" : ""}`}
+                                    aria-disabled={deleted}
+                                    className={`flex items-stretch transition ${complete ? "bg-ok-100" : ""} ${
+                                        deleted
+                                            ? "pointer-events-none select-none opacity-50 grayscale"
+                                            : ""
+                                    }`}
                                 >
                                     {/* Green spine kapag complete, urgency kapag unfinished */}
                                     <span
@@ -302,6 +333,8 @@ export default function Index({
 
                                     <button
                                         type="button"
+                                        disabled={deleted}
+                                        tabIndex={deleted ? -1 : undefined}
                                         onClick={() =>
                                             setOpened({
                                                 id: document.document_id,
@@ -345,75 +378,103 @@ export default function Index({
                                     </button>
 
                                     {/* RIGHT COLUMN */}
+                                    {/* RIGHT COLUMN */}
                                     <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-4 pr-4">
-                                        <StatusPill document={document} />
-                                        {complete ? (
-                                            <EmployeeButton
-                                                variant="quiet"
-                                                onClick={() =>
-                                                    setOpened({
-                                                        id: document.document_id,
-                                                        slip: false,
-                                                    })
-                                                }
-                                            >
-                                                <Icon name="check" />
-                                                View trail
-                                            </EmployeeButton>
-                                        ) : waiting ? (
+                                        {deleted ? (
+                                            <span className="shrink-0 rounded-full bg-red-600 px-3 py-1 text-sm font-bold text-white">
+                                                Deleted
+                                            </span>
+                                        ) : pendingDelete ? (
                                             <>
-                                                <AgeBadge document={document} />
+                                                <StatusPill
+                                                    document={document}
+                                                />
 
-                                                {canCompleteDetails && (
-                                                    <EmployeeButton
-                                                        variant="secondary"
-                                                        onClick={() =>
-                                                            setCompleting(
-                                                                document,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Icon name="register" />
-                                                        Complete details
-                                                    </EmployeeButton>
-                                                )}
+                                                <span className="shrink-0 rounded-full bg-accent-100 px-3 py-1 text-sm font-bold text-black">
+                                                    Deletion pending approval
+                                                </span>
                                             </>
                                         ) : (
-                                            <EmployeeButton
-                                                variant="quiet"
-                                                onClick={() =>
-                                                    setOpened({
-                                                        id: document.document_id,
-                                                        slip: true,
-                                                    })
-                                                }
-                                            >
-                                                <Icon name="print" />
-                                                Reference slip
-                                            </EmployeeButton>
-                                        )}
+                                            <>
+                                                <StatusPill
+                                                    document={document}
+                                                />
 
-                                        {!complete && (
-                                            <div className="flex gap-2">
-                                                <EmployeeButton
-                                                    variant="secondary"
-                                                    onClick={() =>
-                                                        setEditing(document)
-                                                    }
-                                                >
-                                                    Edit
-                                                </EmployeeButton>
+                                                {complete ? (
+                                                    <EmployeeButton
+                                                        variant="quiet"
+                                                        onClick={() =>
+                                                            setOpened({
+                                                                id: document.document_id,
+                                                                slip: false,
+                                                            })
+                                                        }
+                                                    >
+                                                        <Icon name="check" />
+                                                        View trail
+                                                    </EmployeeButton>
+                                                ) : waiting ? (
+                                                    <>
+                                                        <AgeBadge
+                                                            document={document}
+                                                        />
 
-                                                <EmployeeButton
-                                                    variant="quiet"
-                                                    onClick={() =>
-                                                        setDeleting(document)
-                                                    }
-                                                    className="!text-red-600"
-                                                >
-                                                    Delete
-                                                </EmployeeButton>
-                                            </div>
+                                                        {canCompleteDetails && (
+                                                            <EmployeeButton
+                                                                variant="secondary"
+                                                                onClick={() =>
+                                                                    setCompleting(
+                                                                        document,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Icon name="register" />
+                                                                Complete details
+                                                            </EmployeeButton>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <EmployeeButton
+                                                        variant="quiet"
+                                                        onClick={() =>
+                                                            setOpened({
+                                                                id: document.document_id,
+                                                                slip: true,
+                                                            })
+                                                        }
+                                                    >
+                                                        <Icon name="print" />
+                                                        Reference slip
+                                                    </EmployeeButton>
+                                                )}
+
+                                                {!complete && (
+                                                    <div className="flex gap-2">
+                                                        <EmployeeButton
+                                                            variant="secondary"
+                                                            onClick={() =>
+                                                                setEditing(
+                                                                    document,
+                                                                )
+                                                            }
+                                                        >
+                                                            Edit
+                                                        </EmployeeButton>
+
+                                                        <EmployeeButton
+                                                            variant="quiet"
+                                                            onClick={() =>
+                                                                setDeleting(
+                                                                    document,
+                                                                )
+                                                            }
+                                                            className="!text-red-600"
+                                                        >
+                                                            Delete
+                                                        </EmployeeButton>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </li>
@@ -537,28 +598,68 @@ export default function Index({
                     <EmployeeCard>
                         <div className="max-w-md">
                             <h2 className="text-xl font-bold text-black">
-                                Delete this referral?
+                                Request deletion?
                             </h2>
 
                             <p className="mt-2 text-base text-black">
                                 {deleting.concern || "This referral"} (
-                                {deleting.tracking_number}) will be removed.
-                                This cannot be undone.
+                                {deleting.tracking_number}) will be sent to the
+                                super admin for approval. It stays in the
+                                register until it is approved.
                             </p>
+
+                            <label
+                                htmlFor="deletion-reason"
+                                className="mt-4 block text-base font-semibold text-black"
+                            >
+                                Reason for deletion{" "}
+                                <span className="text-red-600">*</span>
+                            </label>
+
+                            <textarea
+                                id="deletion-reason"
+                                value={reason}
+                                onChange={(e) => {
+                                    setReason(e.target.value);
+                                    setReasonError("");
+                                }}
+                                maxLength={500}
+                                rows={4}
+                                placeholder="Type why this referral needs to be deleted"
+                                className={`mt-1 w-full rounded-xl border p-3 text-base text-black ${
+                                    reasonError
+                                        ? "border-red-600"
+                                        : "border-line"
+                                }`}
+                            />
+
+                            <div className="mt-1 flex items-start justify-between gap-3">
+                                <p
+                                    role="alert"
+                                    className="text-base font-semibold text-red-600"
+                                >
+                                    {reasonError}
+                                </p>
+
+                                <p className="shrink-0 text-sm text-black">
+                                    {reason.length}/500
+                                </p>
+                            </div>
 
                             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                                 <EmployeeButton
                                     variant="quiet"
-                                    onClick={() => setDeleting(null)}
+                                    onClick={closeDelete}
                                 >
                                     Cancel
                                 </EmployeeButton>
 
                                 <EmployeeButton
                                     onClick={confirmDelete}
+                                    disabled={reason.trim().length < 10}
                                     className="!border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700"
                                 >
-                                    Yes, Delete
+                                    Yes, Send Request
                                 </EmployeeButton>
                             </div>
                         </div>

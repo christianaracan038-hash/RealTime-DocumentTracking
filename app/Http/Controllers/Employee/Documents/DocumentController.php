@@ -379,12 +379,29 @@ class DocumentController extends Controller
         return back()->with('success', 'Referral updated.');
     }
 
-    public function destroySectionReferral(
+        public function requestSectionDeletion(
+        Request $request,
         Document $document,
         DocumentService $documentService
     ): RedirectResponse {
-        $documentService->deleteSectionReferral($document);
+        $request->merge(['reason' => trim((string) $request->input('reason'))]);
 
-        return back()->with('success', 'Referral deleted.');
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:10', 'max:500'],
+        ], [
+            'reason.required' => 'Please type the reason for deleting this referral.',
+            'reason.min' => 'The reason must be at least 10 characters.',
+        ]);
+
+        /** @var \App\Models\EmployeeAcc $employee */
+        $employee = Auth::guard('employee')->user();
+
+        $documentService->requestSectionReferralDeletion(
+            $document,
+            $employee,
+            $data['reason'],
+        );
+        return back()->with('success', 'Deletion request sent to the super admin.');
     }
+
 }

@@ -121,6 +121,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/audit', [AuditLogController::class, 'index'])
             ->name('audit.index');
 
+        Route::get('/deletions', [SuperAdminController::class, 'deletions'])
+            ->name('deletions.index');
+
+        Route::post('/deletions/{document}/approve', [SuperAdminController::class, 'approveDeletion'])
+            ->name('deletions.approve');
+
+        Route::post('/deletions/{document}/reject', [SuperAdminController::class, 'rejectDeletion'])
+            ->name('deletions.reject');
+
+        Route::get('/deletions/history', [SuperAdminController::class, 'deletionHistory'])
+        ->name('deletions.history');
+
         Route::resource('sections', SectionController::class);
         Route::resource('roles', RoleController::class);
     });
@@ -192,8 +204,8 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
     Route::put('/referrals/section/{document}', [DocumentController::class, 'updateSectionReferral'])
     ->name('referrals.section.update');
 
-    Route::delete('/referrals/section/{document}', [DocumentController::class, 'destroySectionReferral'])
-    ->name('referrals.section.destroy');
+    Route::post('/referrals/section/{document}/request-deletion', [DocumentController::class, 'requestSectionDeletion'])
+    ->name('referrals.section.request-deletion');
 
     /*
     * The RDO's oversight screens. Both check the section themselves,

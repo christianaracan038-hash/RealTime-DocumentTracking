@@ -27,6 +27,8 @@ Route::middleware(['web'])->group(function () {
             [DocumentTrackingController::class, 'complete']
         )->name('api.documents.complete');
 
+
+        Route::get('/documents/forward-sections', [DocumentTrackingController::class, 'forwardSections']);
     });
 
 });

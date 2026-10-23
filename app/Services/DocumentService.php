@@ -6,7 +6,7 @@ use App\Models\Document;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-
+use App\Models\EmployeeAcc;
 class DocumentService
 {
     /**
@@ -453,17 +453,49 @@ class DocumentService
         return $document->fresh();
     }
 
-    public function deleteSectionReferral(Document $document): void
+    
+
+        /**
+     * Refuse to touch a referral that has a deletion request on it,
+     * whether still pending or already approved.
+     */
+    public function ensureNotDeleted(Document $document): void
     {
-        $qrFile = $document->qr_path
-            ? 'qrcodes/'.basename($document->qr_path)
-            : null;
+        abort_if(
+            $document->deletion_requested_at !== null,
+            422,
+            'This referral has a deletion request and can no longer be changed.'
+        );
+    }
 
-        $document->delete();
+    public function requestSectionReferralDeletion(
+        Document $document,
+        EmployeeAcc $employee,
+        string $reason
+    ): void {
+        abort_unless(
+            $document->creator?->section_id === $employee->section_id,
+            403,
+            'Only the section that issued this referral can request its deletion.'
+        );
 
-        if ($qrFile) {
-            Storage::disk('public')->delete($qrFile);
-        }
+        abort_if(
+            $document->completed_at !== null,
+            422,
+            'Completed referrals cannot be deleted.'
+        );
+
+        abort_if(
+            $document->deletion_requested_at !== null,
+            422,
+            'A deletion request is already pending.'
+        );
+
+        $document->update([
+            'deletion_requested_at' => now(),
+            'deletion_requested_by' => $employee->employee_id,
+            'deletion_reason' => $reason,
+        ]);
     }
 
     /**
@@ -479,6 +511,7 @@ class DocumentService
         array $data,
         $employee
     ): Document {
+        $this->ensureNotDeleted($document);
         $update = [
             'concern' => $data['concern'],
 
