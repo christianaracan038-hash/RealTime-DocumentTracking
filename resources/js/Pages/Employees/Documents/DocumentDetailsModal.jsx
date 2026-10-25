@@ -185,16 +185,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             </p>
                         </div>
 
-                        <div>
-                            <p className="text-xs font-medium text-slate-400">
-                                Reference Number
-                            </p>
-
-                            <p className="text-slate-700">
-                                {document.reference_number || "—"}
-                            </p>
-                        </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <p className="text-xs font-medium text-slate-400">
