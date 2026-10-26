@@ -23,11 +23,11 @@ const sectionMenu = (dashboardRoute, extras = []) => [
         // Arrivals registered at the counter, still to be completed.
         badge: "awaitingDetailsCount",
     },
-    {
-        label: "Documents",
-        route: "documents.index",
-        icon: "documents",
-    },
+    // {
+    //     label: "Documents",
+    //     route: "documents.index",
+    //     icon: "documents",
+    // },
     {
         label: "Transmittal",
         route: "transmittal.index",
