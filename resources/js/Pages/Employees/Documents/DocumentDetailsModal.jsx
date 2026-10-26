@@ -351,12 +351,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                 Mark this document as completed?
                             </p>
 
-                            <p className="mt-1 text-sm text-navy-800">
-                                This ends its journey here. It cannot be
-                                received or forwarded afterwards, and will stay
-                                in History.
-                            </p>
-
                             {completeError && (
                                 <p className="mt-3 text-sm font-medium text-stop-600">
                                     {completeError}
