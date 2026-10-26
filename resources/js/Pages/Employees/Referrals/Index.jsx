@@ -224,6 +224,11 @@ export default function Index({
         setReasonError("");
     };
 
+    const closeForm = () => {
+        setRegistering(false);
+        setEditing(null);
+    };
+
     return (
         <EmployeeLayout title="Referrals">
             <EmployeeCard>
@@ -551,11 +556,13 @@ export default function Index({
                     <div className="w-full max-w-2xl">
                         {usesForm2309 ? (
                             <ReferralFormPanel
+                                key={editing?.document_id ?? "new"}
                                 sections={sections}
                                 options={referralOptions}
                                 fromSection={fromSection}
-                                onCancel={() => setRegistering(false)}
-                                onRegistered={() => {}}
+                                referral={editing}
+                                onCancel={closeForm}
+                                onRegistered={closeForm}
                             />
                         ) : (
                             <SectionReferralPanel
@@ -563,10 +570,7 @@ export default function Index({
                                 sections={sections}
                                 fromSection={fromSection}
                                 referral={editing}
-                                onCancel={() => {
-                                    setRegistering(false);
-                                    setEditing(null);
-                                }}
+                                onCancel={closeForm}
                             />
                         )}
                     </div>
