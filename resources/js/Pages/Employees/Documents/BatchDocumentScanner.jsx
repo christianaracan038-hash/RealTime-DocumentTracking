@@ -42,6 +42,7 @@ export default function BatchDocumentScanner({
     onClose,
     onReceived,
     onForwarded,
+    onCompleted,
     initialMode = "receive",
 }) {
     const scannerRef = useRef(null);
@@ -68,6 +69,8 @@ export default function BatchDocumentScanner({
     const [busy, setBusy] = useState(false);
     const flashTimerRef = useRef(null);
     const [flash, setFlash] = useState(null);
+    const [confirmingId, setConfirmingId] = useState(null);
+    const [completingAll, setCompletingAll] = useState(false);
 
     const isForward = mode === "forward";
 
@@ -395,8 +398,60 @@ export default function BatchDocumentScanner({
         }
     };
 
+    const canComplete = (item) =>
+        item.status === "done" &&
+        item.jobMode === "receive" &&
+        !item.completed &&
+        item.document?.status?.status_name === "Received";
+
+    const completeItem = async (item) => {
+        const documentId = item.document?.document_id;
+        if (!documentId) return;
+
+        patchItem(item.id, { completing: true, completeError: null });
+
+        try {
+            const data = await apiFetch(
+                `/api/documents/${documentId}/complete`,
+                {
+                    method: "POST",
+                },
+            );
+
+            patchItem(item.id, {
+                completing: false,
+                completed: true,
+                message: "Marked as completed",
+                document: data.document ?? item.document,
+            });
+
+            feedback(true);
+
+            if (onCompleted) onCompleted(data.document ?? item.document);
+        } catch (err) {
+            patchItem(item.id, {
+                completing: false,
+                completeError: errorText(err, "Could not complete."),
+            });
+            feedback(false);
+        }
+    };
+
+    const completeAll = async () => {
+        setCompletingAll(true);
+        setConfirmingId(null);
+
+        for (const item of items.filter(canComplete)) {
+            await completeItem(item);
+        }
+
+        if (isMountedRef.current) setCompletingAll(false);
+    };
+
     const doneCount = items.filter((item) => item.status === "done").length;
     const errorCount = items.filter((item) => item.status === "error").length;
+    const completableCount = items.filter(canComplete).length;
+    const completedCount = items.filter((item) => item.completed).length;
 
     return (
         <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-navy-950/80 p-4 sm:items-center">
@@ -618,10 +673,26 @@ export default function BatchDocumentScanner({
                     <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                         <span>
                             {doneCount} {isForward ? "forwarded" : "received"}
+                            {completedCount > 0
+                                ? ` · ${completedCount} completed`
+                                : ""}
                             {errorCount > 0 ? ` · ${errorCount} failed` : ""}
                         </span>
-                        {busy && <span>Processing...</span>}
+                        {(busy || completingAll) && <span>Processing...</span>}
                     </div>
+
+                    {!isForward && completableCount > 1 && (
+                        <button
+                            type="button"
+                            onClick={completeAll}
+                            disabled={busy || completingAll}
+                            className="mt-2 w-full rounded-lg border border-brand-600 px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                        >
+                            {completingAll
+                                ? "Completing..."
+                                : `Mark all ${completableCount} as completed`}
+                        </button>
+                    )}
 
                     <div className="mt-2 max-h-44 space-y-1.5 overflow-y-auto">
                         {items.length === 0 && (
@@ -634,7 +705,7 @@ export default function BatchDocumentScanner({
                         {items.map((item) => (
                             <div
                                 key={item.id}
-                                className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
+                                className={`rounded-lg px-3 py-2 text-sm ${
                                     item.status === "done"
                                         ? "bg-green-50 text-green-800"
                                         : item.status === "error"
@@ -642,21 +713,80 @@ export default function BatchDocumentScanner({
                                           : "bg-slate-50 text-slate-600"
                                 }`}
                             >
-                                <span className="mt-0.5">
-                                    {item.status === "done"
-                                        ? "✓"
-                                        : item.status === "error"
-                                          ? "✕"
-                                          : "…"}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate font-medium">
-                                        {item.label}
-                                    </p>
-                                    <p className="text-xs opacity-80">
-                                        {item.message}
-                                    </p>
+                                <div className="flex items-start gap-2">
+                                    <span className="mt-0.5">
+                                        {item.status === "done"
+                                            ? "✓"
+                                            : item.status === "error"
+                                              ? "✕"
+                                              : "…"}
+                                    </span>
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-medium">
+                                            {item.label}
+                                        </p>
+                                        <p className="text-xs opacity-80">
+                                            {item.message}
+                                        </p>
+
+                                        {item.completeError && (
+                                            <p className="mt-1 text-xs font-medium text-red-600">
+                                                {item.completeError}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
+
+                                {canComplete(item) && (
+                                    <div className="mt-2 pl-6">
+                                        {confirmingId === item.id ? (
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-xs font-semibold">
+                                                    Mark as completed?
+                                                </span>
+
+                                                <button
+                                                    type="button"
+                                                    disabled={item.completing}
+                                                    onClick={() => {
+                                                        setConfirmingId(null);
+                                                        completeItem(item);
+                                                    }}
+                                                    className="rounded-md bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+                                                >
+                                                    {item.completing
+                                                        ? "Completing..."
+                                                        : "Yes"}
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setConfirmingId(null)
+                                                    }
+                                                    className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                                >
+                                                    Go back
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    item.completing ||
+                                                    completingAll
+                                                }
+                                                onClick={() =>
+                                                    setConfirmingId(item.id)
+                                                }
+                                                className="rounded-md border border-brand-600 bg-white px-3 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                                            >
+                                                Mark as completed
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
