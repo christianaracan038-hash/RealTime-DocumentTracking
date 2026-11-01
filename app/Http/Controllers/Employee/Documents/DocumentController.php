@@ -19,23 +19,13 @@ use Inertia\Response;
 
 class DocumentController extends Controller
 {
-    /**
-     * Display document list.
-     */
+    protected const REPORT_LIMIT = 500;
+
     public function index(): Response
     {
         return Inertia::render('Employees/Documents/Create');
     }
 
-    /**
-     * Referrals this employee registered.
-     *
-     * Also where new ones are registered from: the dashboard's button
-     * links here with ?new=1 so the form opens on arrival. If a draft
-     * document id is passed via ?draft=, its details (tracking number,
-     * QR) are loaded so the form can complete it instead of creating
-     * a new document from scratch.
-     */
     public function referrals(
         Request $request,
         DocumentService $documentService
@@ -44,23 +34,12 @@ class DocumentController extends Controller
 
         $search = $request->string('search')->toString();
 
-        /*
-        * This section's own register of referrals, whether or not they
-        * are finished. Scoped by who registered it rather than who is
-        * holding it: once a referral is completed and forwarded it is in
-        * somebody else's hands, and it still belongs in the register of
-        * slips this office issued.
-        */
         $register = fn () => Document::query()
             ->whereHas(
                 'creator',
                 fn ($query) => $query->where('section_id', $employee->section_id)
             );
 
-        /*
-        * 'waiting' - registered at the counter, details outstanding.
-        * 'slip'    - step 2 done, so it has a reference slip.
-        */
         $filter = $request->string('status')->toString();
 
         $documents = $register()
@@ -77,11 +56,6 @@ class DocumentController extends Controller
                 filled($search),
                 fn ($query) => $documentService->applySearch($query, $search)
             )
-            /*
-            * Oldest first while looking at outstanding work, because the
-            * one that has waited longest is holding up a taxpayer.
-            * Newest first otherwise, which is how a register reads.
-            */
             ->when(
                 $filter === 'waiting',
                 fn ($query) => $query->oldest('created_at'),
@@ -90,29 +64,17 @@ class DocumentController extends Controller
             ->paginate(5)
             ->withQueryString();
 
+        $sectionColumns = ['section_id', 'section_name', 'section_code', 'description'];
 
         return Inertia::render('Employees/Referrals/Index', [
-            /*
-            * A referral cannot be addressed to the section sending it.
-            */
             'sections' => Section::query()
                 ->where('section_id', '!=', $employee->section_id)
                 ->orderBy('section_name')
-                ->get([
-                    'section_id',
-                    'section_name',
-                    'section_code',
-                    'description',
-                ]),
+                ->get($sectionColumns),
 
             'referralOptions' => config('referral'),
 
-            'fromSection' => $employee->section?->only([
-                'section_id',
-                'section_name',
-                'section_code',
-                'description',
-            ]),
+            'fromSection' => $employee->section?->only($sectionColumns),
 
             'filters' => [
                 'search' => $search,
@@ -121,41 +83,22 @@ class DocumentController extends Controller
 
             'documents' => $documents,
 
-            /*
-            * For the tabs, counted over the whole register rather than
-            * the page being shown.
-            */
             'counts' => [
                 'all' => $register()->count(),
                 'waiting' => $register()->whereNull('details_completed_at')->count(),
                 'slip' => $register()->whereNotNull('details_completed_at')->count(),
             ],
 
-            /*
-            * Which frame to open on. The dashboard's "New referral"
-            * button still arrives with ?new=1.
-            */
-            /*
-            * A referral just registered in one pass, so its slip can be
-            * printed straight away.
-            */
+            'reportDocuments' => fn () => $this->reportDocuments($request, $employee),
+
+            'releasedBy' => fn () => $employee->display_name ?? $employee->username,
+
             'openSlipFor' => $request->integer('slip') ?: null,
 
             'frame' => $request->boolean('new')
                 ? 'register'
                 : ($request->string('frame')->toString() ?: 'list'),
 
-            /*
-            * Which sections may do step 2. The frontend uses this to
-            * hide the action for everyone else, rather than letting
-            * them hit a 403 after clicking it.
-            */
-            /*
-            * Which referral this section issues. The RDO issues BIR Form
-            * 2309; everybody else issues the half-sheet accountability
-            * slip, which is a different form and a different piece of
-            * paper.
-            */
             'usesForm2309' => in_array(
                 $employee->section?->section_name,
                 config('referral.form_2309_sections', ['RDO']),
@@ -170,49 +113,78 @@ class DocumentController extends Controller
         ]);
     }
 
-    /**
-     * The old standalone registration page.
-     */
+    protected function reportDate(mixed $value): ?string
+    {
+        return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)
+            ? $value
+            : null;
+    }
+
+    protected function reportDocuments(Request $request, $employee): array
+    {
+        if (! $request->boolean('report')) {
+            return [];
+        }
+
+        $from = $this->reportDate($request->query('from'));
+        $until = $this->reportDate($request->query('until'));
+
+        if (! $from || ! $until || $from > $until) {
+            return [];
+        }
+
+        return Document::query()
+            ->with('destinationSection:section_id,section_name')
+            ->whereHas(
+                'creator',
+                fn ($query) => $query->where('section_id', $employee->section_id)
+            )
+            ->whereNull('deletion_approved_at')
+            ->whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $until)
+            ->oldest('created_at')
+            ->limit(self::REPORT_LIMIT)
+            ->get([
+                'document_id',
+                'tracking_number',
+                'taxpayer_name',
+                'concern',
+                'document_date',
+                'destination_section_id',
+                'created_at',
+            ])
+            ->map(fn (Document $document) => [
+                'document_id' => $document->document_id,
+                'tracking_number' => $document->tracking_number,
+                'taxpayer_name' => $document->taxpayer_name,
+                'concern' => $document->concern,
+                'document_date' => $document->document_date,
+                'destination' => $document->destinationSection?->section_name,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function create(): RedirectResponse
     {
         return redirect()->route('referrals.index');
     }
 
-    /**
-     * Store/register a document.
-     */
     public function store(
         StoreDocumentRequest $request,
         DocumentService $documentService
     ): RedirectResponse {
-        $document = $documentService->register(
+        $documentService->register(
             $request->validated(),
             Auth::guard('employee')->user()
         );
 
-        /*
-        * Straight back where they were - the desk for a counter
-        * account, the referrals list for everyone else - with the new
-        * arrival at the top of it.
-        *
-        * Nothing is printed here. Step 1 has not decided where the
-        * document goes, so there is no slip to attach yet; the QR
-        * leaves on the reference slip once step 2 is done.
-        */
         return back()->with(
             'success',
             'Arrival registered. The clock has started.'
         );
     }
 
-    /**
-     * Register a referral complete - both steps at once.
-     *
-     * Its own action rather than a flag on store(): step 1 deliberately
-     * accepts two fields and nothing else, and loosening it so this could
-     * share it would mean the counter's form could quietly carry routing
-     * it is not supposed to decide.
-     */
     public function storeReferral(
         StoreReferralRequest $request,
         DocumentService $documentService
@@ -227,14 +199,6 @@ class DocumentController extends Controller
             ->with('success', 'Referral registered. Its slip is ready to print.');
     }
 
-    /**
-     * A section's own referral - everything except the RDO.
-     *
-     * Its own action and its own request, because it is a different
-     * piece of paper: an internal docket with two signature blocks
-     * rather than a taxpayer's BIR Form 2309. There is no step 2 - the
-     * one form finishes it.
-     */
     public function storeSectionReferral(
         StoreSectionReferralRequest $request,
         DocumentService $documentService
@@ -249,13 +213,6 @@ class DocumentController extends Controller
             ->with('success', 'Referral registered. Its slip is ready to print.');
     }
 
-    /**
-     * Display document history visible to the employee.
-     *
-     * Search is applied in the database before pagination, so a
-     * matching document is found regardless of which page it
-     * would otherwise appear on.
-     */
     public function history(
         Request $request,
         DocumentService $documentService
@@ -274,10 +231,6 @@ class DocumentController extends Controller
             [
                 'documents' => $documents,
 
-                /*
-                * Echo the keyword back so the input stays filled
-                * after the server round-trip.
-                */
                 'filters' => [
                     'search' => $search,
                 ],
@@ -285,9 +238,6 @@ class DocumentController extends Controller
         );
     }
 
-    /**
-     * Display documents currently held by the employee.
-     */
     public function documents(): Response
     {
         $employee = Auth::guard('employee')->user();
@@ -323,14 +273,6 @@ class DocumentController extends Controller
         );
     }
 
-    /**
-     * One document with its full movement trail, as JSON.
-     *
-     * The history list carries only a taxpayer and a date; this is what
-     * the browser asks for when someone opens a row. Loading the trail
-     * for every row instead would mean sending most of the archive on
-     * every page of history.
-     */
     public function detail(
         Document $document,
         DocumentService $documentService
@@ -340,18 +282,11 @@ class DocumentController extends Controller
             Auth::guard('employee')->user()
         );
 
-        /*
-        * Not visible to this employee is answered the same as not
-        * existing, so the response does not confirm it is there.
-        */
         abort_if($found === null, 404);
 
         return response()->json(['document' => $found]);
     }
 
-    /**
-     * Step 2 - fill in a referral's details.
-     */
     public function complete(
         CompleteDocumentRequest $request,
         Document $document,
@@ -368,7 +303,6 @@ class DocumentController extends Controller
             ->with('success', 'Referral details completed.');
     }
 
-
     public function updateSectionReferral(
         StoreSectionReferralRequest $request,
         Document $document,
@@ -379,7 +313,7 @@ class DocumentController extends Controller
         return back()->with('success', 'Referral updated.');
     }
 
-        public function requestSectionDeletion(
+    public function requestSectionDeletion(
         Request $request,
         Document $document,
         DocumentService $documentService
@@ -401,7 +335,7 @@ class DocumentController extends Controller
             $employee,
             $data['reason'],
         );
+
         return back()->with('success', 'Deletion request sent to the super admin.');
     }
-
 }

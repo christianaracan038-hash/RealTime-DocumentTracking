@@ -3,6 +3,8 @@ import { Html5Qrcode } from "html5-qrcode";
 
 const ADMIN_ACTIONS = ["Chief", "Archive"];
 
+const SCAN_COOLDOWN_MS = 1500;
+
 const getCsrfToken = () =>
     window.document
         .querySelector('meta[name="csrf-token"]')
@@ -51,6 +53,8 @@ export default function BatchDocumentScanner({
     const configRef = useRef({ ready: initialMode === "receive" });
     const queueRef = useRef([]);
     const workingRef = useRef(false);
+    const lockedRef = useRef(false);
+    const unlockTimerRef = useRef(null);
     const lastSeenRef = useRef(new Map());
     const doneIdsRef = useRef(new Set());
     const successKeysRef = useRef(new Set());
@@ -232,12 +236,18 @@ export default function BatchDocumentScanner({
 
         workingRef.current = false;
         if (isMountedRef.current) setBusy(false);
+
+        clearTimeout(unlockTimerRef.current);
+        unlockTimerRef.current = setTimeout(() => {
+            lockedRef.current = false;
+        }, SCAN_COOLDOWN_MS);
     };
 
     const enqueue = (lookup, key) => {
         const config = { ...configRef.current };
 
         if (!config.ready) return false;
+        if (lockedRef.current) return false;
         if (successKeysRef.current.has(key)) return false;
 
         const now = Date.now();
@@ -246,6 +256,9 @@ export default function BatchDocumentScanner({
         if (last && now - last < 4000) return false;
 
         lastSeenRef.current.set(key, now);
+
+        lockedRef.current = true;
+        clearTimeout(unlockTimerRef.current);
 
         counterRef.current += 1;
         const id = counterRef.current;
@@ -315,6 +328,7 @@ export default function BatchDocumentScanner({
         return () => {
             isMountedRef.current = false;
             clearTimeout(flashTimerRef.current);
+            clearTimeout(unlockTimerRef.current);
 
             const current = scannerRef.current;
             scannerRef.current = null;
@@ -362,6 +376,8 @@ export default function BatchDocumentScanner({
 
         modeRef.current = nextMode;
         queueRef.current = [];
+        lockedRef.current = false;
+        clearTimeout(unlockTimerRef.current);
         lastSeenRef.current = new Map();
         doneIdsRef.current = new Set();
         successKeysRef.current = new Set();

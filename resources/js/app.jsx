@@ -7,10 +7,10 @@ import { createRoot } from "react-dom/client";
 
 import { NoticeProvider } from "@/Components/Employee/Notice";
 
-const appName = import.meta.env.VITE_APP_NAME || "Laravel";
+const appName = import.meta.env.VITE_APP_NAME || "RDO 111";
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => `${title}  ${appName}`,
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.jsx`,
@@ -26,6 +26,7 @@ createInertiaApp({
         );
     },
     progress: {
-        color: "#4B5563",
+        color: "#4169E1",
+        showSpinner: true,
     },
 });

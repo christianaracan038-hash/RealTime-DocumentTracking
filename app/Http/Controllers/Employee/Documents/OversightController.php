@@ -68,10 +68,15 @@ class OversightController extends Controller
             ->limit(self::MOST_CHASED)
             ->get()
             /*
-            * Longest wait first. Sorting here rather than in SQL
+            * Only documents that have waited long enough to be chased.
+            * Younger ones are not the RDO's to comment on yet.
+            */
+            ->filter(fn (Document $document) => $document->isCommentable())
+            /*
+            * Longest wait first. Sorted here rather than in SQL
             * because the wait is computed from the last movement.
             */
-            ->sortByDesc(fn (Document $document) => $document->aging['hours'] ?? 0)
+            ->sortBy(fn (Document $document) => $document->waiting_since?->timestamp ?? PHP_INT_MAX)
             ->values();
 
         return Inertia::render('Employees/Oversight/Comments', [
@@ -101,6 +106,20 @@ class OversightController extends Controller
             'body.required' => 'Please write the message first.',
             'body.max' => 'A comment may not exceed 1000 characters.',
         ]);
+
+        $document->load('latestTrackingHistory');
+
+        if ((int) $document->current_section_id === (int) $employee->section_id) {
+            return back()->withErrors([
+                'body' => 'That document is already with your section.',
+            ]);
+        }
+
+        if (! $document->isCommentable()) {
+            return back()->withErrors([
+                'body' => 'This document is not yet 2 days overdue, so it cannot be commented on.',
+            ]);
+        }
 
         DocumentComment::create([
             'document_id' => $document->document_id,
@@ -161,4 +180,6 @@ class OversightController extends Controller
 
         return $employee;
     }
+    
+    
 }

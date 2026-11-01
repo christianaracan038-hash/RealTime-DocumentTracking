@@ -242,6 +242,18 @@ class Document extends Model
         ];
     }
 
+    public function isCommentable(): bool
+    {
+        if (! in_array((int) $this->status_id, [1, 2], true)) {
+            return false;
+        }
+
+        $since = $this->waiting_since;
+
+        return $since !== null
+            && $since->diffInMinutes(now()) / 60 >= config('referral.aging.overdue_after');
+    }
+
     public function latestTrackingHistory()
     {
         return $this->hasOne(

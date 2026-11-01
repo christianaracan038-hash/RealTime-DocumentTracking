@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { router, usePage } from "@inertiajs/react";
 
 import EmployeeLayout from "@/Layouts/EmployeeLayouts";
@@ -14,49 +15,37 @@ import ReferralFormPanel from "@/Components/Employee/Referrals/ReferralFormPanel
 import SectionReferralPanel from "@/Components/Employee/Referrals/SectionReferralPanel";
 import DetailsFormModal from "@/Components/Employee/Referrals/DetailsFormModal";
 import DocumentTrailModal from "@/Components/Employee/Referrals/DocumentTrailModal";
-import { exactTime } from "@/Components/Employee/Referrals/referral";
+import TransmittalSheet from "@/Components/Employee/Referrals/TransmittalSheet";
+import {
+    exactTime,
+    sectionLabel,
+} from "@/Components/Employee/Referrals/referral";
 
-/*
- * The section's register of referrals.
- *
- * Every referral this office has issued, in one table, in the shape the
- * office actually needs to recognise one: the taxpayer, the reference
- * number, and when it was registered. Nothing else - the concerns and
- * remarks are a click away, and putting them in the row made a register
- * that nobody could scan down.
- *
- * All text on this screen is black, by request of the office: grey text
- * was hard to read on older monitors.
- */
-
-/*
- * The three counts, which are also the filter.
- *
- * Drawn as cards rather than pills so they carry the same weight as the
- * dashboard's: on both screens these are the numbers somebody reads
- * first, and a count that matters should not look like a tab.
- *
- * `tone: "act"` is the one with work in it - it takes the attention
- * colour, and only while it is not zero.
- */
 const TABS = [
     {
         key: "",
         label: <span className="text-xl">All Referrals</span>,
         icon: "referrals",
+        tone: "blue",
     },
     {
         key: "waiting",
         label: <span className="text-xl">Waiting for Details</span>,
         icon: "register",
-        tone: "act",
+        tone: "blue",
     },
     {
         key: "slip",
         label: <span className="text-xl">Slip Ready</span>,
         icon: "print",
+        tone: "blue",
     },
 ];
+
+const today = () => new Date().toLocaleDateString("en-CA");
+
+const dateInputClass =
+    "mt-1 block min-h-12 w-full rounded-xl border border-line bg-white px-3 text-base text-black sm:w-44";
 
 function CountCard({ tab, count, current, onSelect }) {
     const acting = tab.tone === "act" && count > 0;
@@ -66,9 +55,15 @@ function CountCard({ tab, count, current, onSelect }) {
             type="button"
             onClick={onSelect}
             aria-current={current ? "true" : undefined}
-            className={`flex flex-col rounded-2xl border-2 border-[#4169E1] bg-[#4169E1] p-5 text-left shadow-sm shadow-navy-900/5 transition hover:border-[#3457c4] hover:bg-[#3457c4] ${
-                current ? "ring-4 ring-[#4169E1]/30" : ""
-            }`}
+            className={`
+                flex flex-col rounded-2xl border p-5 text-left
+                bg-gradient-to-br from-navy-900 via-navy-800 to-blue-900
+                border-white/10
+                shadow-lg shadow-navy-900/10
+                transition-all duration-300
+                hover:from-navy-800 hover:via-navy-700 hover:to-blue-800
+                ${current ? "ring-4 ring-blue-400/40 border-blue-300/50" : ""}
+            `}
         >
             <span className="flex items-start justify-between gap-3">
                 <span className="text-base font-semibold text-white">
@@ -80,7 +75,7 @@ function CountCard({ tab, count, current, onSelect }) {
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                         acting
                             ? "bg-accent-400 text-black"
-                            : "bg-white/20 text-white"
+                            : "bg-white/15 text-white"
                     }`}
                 >
                     <Icon name={tab.icon} />
@@ -91,12 +86,12 @@ function CountCard({ tab, count, current, onSelect }) {
                 {count}
             </span>
 
-            <span className="mt-1 block text-sm text-white/80">{tab.hint}</span>
+            <span className="mt-1 block text-sm text-blue-100">{tab.hint}</span>
 
             <span
                 aria-hidden="true"
-                className={`mt-3 block h-1 rounded-full ${
-                    current ? "bg-white" : "bg-transparent"
+                className={`mt-3 block h-1 rounded-full transition ${
+                    current ? "bg-white" : "bg-white/10"
                 }`}
             />
         </button>
@@ -144,6 +139,8 @@ export default function Index({
     openSlipFor = null,
     usesForm2309 = true,
     canCompleteDetails = false,
+    reportDocuments = [],
+    releasedBy = null,
 }) {
     const [completing, setCompleting] = useState(null);
 
@@ -154,7 +151,11 @@ export default function Index({
 
     const [registering, setRegistering] = useState(frame === "register");
 
-    // The document being looked at, and whether to go straight to its slip.
+    const [range, setRange] = useState({ from: today(), until: today() });
+    const [loadingReport, setLoadingReport] = useState(false);
+    const [printing, setPrinting] = useState(false);
+    const [emptyRange, setEmptyRange] = useState(false);
+
     const [opened, setOpened] = useState(
         openSlipFor ? { id: openSlipFor, slip: true } : null,
     );
@@ -167,6 +168,16 @@ export default function Index({
     const tabs = usesForm2309
         ? TABS
         : TABS.filter((tab) => tab.key !== "waiting");
+
+    const invalidRange =
+        range.from !== "" && range.until !== "" && range.from > range.until;
+
+    const canPrint =
+        range.from !== "" &&
+        range.until !== "" &&
+        !invalidRange &&
+        !loadingReport &&
+        !printing;
 
     useEffect(() => {
         if (!flash?.success) return;
@@ -181,10 +192,19 @@ export default function Index({
         setOpened({ id: openSlipFor, slip: true });
     }, [openSlipFor]);
 
-    /*
-     * The frame and the filter both live in the address, so the browser
-     * back button behaves and a link can point at either.
-     */
+    useEffect(() => {
+        if (!printing) return;
+
+        const done = () => setPrinting(false);
+        window.addEventListener("afterprint", done);
+        const timer = setTimeout(() => window.print(), 150);
+
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener("afterprint", done);
+        };
+    }, [printing]);
+
     const go = (params) =>
         router.get(route("referrals.index"), params, {
             preserveState: true,
@@ -196,6 +216,57 @@ export default function Index({
             status: status || undefined,
             search: filters.search || undefined,
         });
+
+    const printReport = () => {
+        if (!canPrint) return;
+
+        setEmptyRange(false);
+        setLoadingReport(true);
+
+        router.get(
+            route("referrals.index"),
+            {
+                status: filters.status || undefined,
+                search: filters.search || undefined,
+                from: range.from,
+                until: range.until,
+                report: 1,
+            },
+            {
+                only: ["reportDocuments", "releasedBy"],
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onSuccess: async (page) => {
+                    const found = page.props.reportDocuments ?? [];
+
+                    if (found.length === 0) {
+                        setEmptyRange(true);
+                        setLoadingReport(false);
+                        return;
+                    }
+
+                    await Promise.all(
+                        found.map(
+                            (d) =>
+                                new Promise((resolve) => {
+                                    const img = new Image();
+                                    img.onload = img.onerror = resolve;
+                                    img.src = route(
+                                        "documents.qr",
+                                        d.document_id,
+                                    );
+                                }),
+                        ),
+                    );
+
+                    setLoadingReport(false);
+                    setPrinting(true);
+                },
+                onError: () => setLoadingReport(false),
+            },
+        );
+    };
 
     const confirmDelete = () => {
         const text = reason.trim();
@@ -232,11 +303,58 @@ export default function Index({
     return (
         <EmployeeLayout title="Referrals">
             <EmployeeCard>
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                        {/* <h2 className="text-xl font-bold text-black">
-                            Referrals
-                        </h2> */}
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <label className="block">
+                            <span className="text-sm font-semibold text-black">
+                                Report from
+                            </span>
+                            <input
+                                type="date"
+                                value={range.from}
+                                max={range.until || undefined}
+                                onChange={(e) => {
+                                    setEmptyRange(false);
+                                    setRange((r) => ({
+                                        ...r,
+                                        from: e.target.value,
+                                    }));
+                                }}
+                                className={dateInputClass}
+                            />
+                        </label>
+
+                        <label className="block">
+                            <span className="text-sm font-semibold text-black">
+                                to
+                            </span>
+                            <input
+                                type="date"
+                                value={range.until}
+                                min={range.from || undefined}
+                                onChange={(e) => {
+                                    setEmptyRange(false);
+                                    setRange((r) => ({
+                                        ...r,
+                                        until: e.target.value,
+                                    }));
+                                }}
+                                className={dateInputClass}
+                            />
+                        </label>
+
+                        <EmployeeButton
+                            size="lg"
+                            variant="secondary"
+                            onClick={printReport}
+                            disabled={!canPrint}
+                            className="w-full sm:w-auto"
+                        >
+                            <Icon name="print" />
+                            {loadingReport || printing
+                                ? "Preparing..."
+                                : "Print report"}
+                        </EmployeeButton>
                     </div>
 
                     <EmployeeButton
@@ -249,10 +367,17 @@ export default function Index({
                     </EmployeeButton>
                 </div>
 
-                {/*
-                 * The counts are the filter. Pressing one shows just
-                 * those below.
-                 */}
+                {(invalidRange || emptyRange) && (
+                    <p
+                        role="alert"
+                        className="mt-3 text-base font-semibold text-red-600"
+                    >
+                        {invalidRange
+                            ? "The “From” date must be on or before the “To” date."
+                            : "No referrals were registered by your section in that range."}
+                    </p>
+                )}
+
                 <div
                     className={`mt-6 grid gap-4 ${
                         tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
@@ -269,11 +394,6 @@ export default function Index({
                     ))}
                 </div>
 
-                {/*
-                 * Searching is how anybody actually finds one referral
-                 * among a year of them, so it gets a block of its own
-                 * rather than a thin box in a corner.
-                 */}
                 <div className="mt-5">
                     <SearchInput
                         size="lg"
@@ -301,13 +421,6 @@ export default function Index({
                                 ? urgencyOf(document)
                                 : null;
 
-                            // console.log({
-                            //     status_id: document.status_id,
-                            //     taxpayer_name: document.taxpayer_name,
-                            //     creator_section: document.creator?.section_id,
-                            //     my_section: fromSection?.section_id,
-                            // });
-
                             const deleted = Boolean(
                                 document.deletion_approved_at,
                             );
@@ -325,7 +438,6 @@ export default function Index({
                                             : ""
                                     }`}
                                 >
-                                    {/* Green spine kapag complete, urgency kapag unfinished */}
                                     <span
                                         aria-hidden="true"
                                         className={`w-1.5 shrink-0 ${
@@ -382,8 +494,6 @@ export default function Index({
                                         </p>
                                     </button>
 
-                                    {/* RIGHT COLUMN */}
-                                    {/* RIGHT COLUMN */}
                                     <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-4 pr-4">
                                         {deleted ? (
                                             <span className="shrink-0 rounded-full bg-red-600 px-3 py-1 text-sm font-bold text-white">
@@ -581,11 +691,6 @@ export default function Index({
                 open={Boolean(completing)}
                 onClose={() => setCompleting(null)}
                 onCompleted={(document) =>
-                    /*
-                     * Straight to the slip - the document can be routed
-                     * from here on, and the slip is what carries its QR
-                     * onto the paper.
-                     */
                     setOpened({ id: document.document_id, slip: true })
                 }
                 document={completing}
@@ -679,6 +784,21 @@ export default function Index({
                     onClose={() => setOpened(null)}
                 />
             )}
+
+            {printing &&
+                reportDocuments.length > 0 &&
+                createPortal(
+                    <div id="print-root" className="hidden print:block">
+                        <TransmittalSheet
+                            documents={reportDocuments}
+                            fromSection={fromSection}
+                            from={range.from}
+                            until={range.until}
+                            releasedBy={releasedBy}
+                        />
+                    </div>,
+                    window.document.body,
+                )}
         </EmployeeLayout>
     );
 }

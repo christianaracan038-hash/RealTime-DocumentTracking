@@ -13,27 +13,6 @@ import {
     sectionLabel,
 } from "@/Components/Employee/Referrals/referral";
 
-/*
- * Handing a stack of documents to another section.
- *
- * The list is not chosen - it is everything the system already says is on
- * its way to that section and has not been received. Letting somebody
- * tick a subset would mean the paper and the system could disagree,
- * which is the one thing a receipt must never do.
- *
- * Print and Export share one toolbar. The section chips drive both:
- * picking a section changes what gets printed and what gets exported.
- * "All sections" only applies to the export, so printing is paused
- * while it is selected (a transmittal sheet is always for one section).
- *
- * Printing renders the sheet a second time into #print-root under
- * <body>, the same way the reference slip does; the print stylesheet
- * hides everything else.
- *
- * All text on light grounds is black, by request of the office: grey
- * text was hard to read on older monitors.
- */
-
 const formatDate = (value) =>
     new Date(`${value}T00:00:00`).toLocaleDateString("en-PH", {
         month: "short",
@@ -63,30 +42,22 @@ export default function Index({
         from: filters.from ?? "",
         until: filters.until ?? "",
     });
-    const [allSections, setAllSections] = useState(false);
-
-    const exportingAll = allSections || !toSection;
-    const canPrint = documents.length > 0 && !allSections;
 
     const invalidRange =
         range.from !== "" && range.until !== "" && range.from > range.until;
 
     const hasDates = range.from !== "" || range.until !== "";
 
-    const scopeLabel = exportingAll ? "all sections" : sectionLabel(toSection);
-
-    let summary = ` ${scopeLabel}`;
+    let summary = `Exporting everything registered by your section`;
     if (range.from && range.until) {
-        summary = `Exporting ${formatDate(range.from)} – ${formatDate(range.until)} for ${scopeLabel}`;
+        summary = `Exporting ${formatDate(range.from)} – ${formatDate(range.until)}`;
     } else if (range.from) {
-        summary = `Exporting from ${formatDate(range.from)} onward for ${scopeLabel}`;
+        summary = `Exporting from ${formatDate(range.from)} onward`;
     } else if (range.until) {
-        summary = `Exporting up to ${formatDate(range.until)} for ${scopeLabel}`;
+        summary = `Exporting up to ${formatDate(range.until)}`;
     }
 
     const choose = (sectionId) => {
-        setAllSections(false);
-
         if (toSection?.section_id === sectionId) return;
 
         router.get(
@@ -99,7 +70,7 @@ export default function Index({
     const exportExcel = () => {
         if (invalidRange) return;
 
-        const params = exportingAll ? {} : { to: toSection.section_id };
+        const params = {};
         if (range.from) params.from = range.from;
         if (range.until) params.until = range.until;
 
@@ -110,7 +81,6 @@ export default function Index({
         <EmployeeLayout title="Transmittal">
             <div className="space-y-6">
                 <EmployeeCard>
-                    {/* Header: title on the left, both actions on the right */}
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div>
                             <h2 className="text-xl font-bold text-black">
@@ -123,13 +93,7 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={() => window.print()}
-                                    disabled={!canPrint}
-                                    title={
-                                        canPrint
-                                            ? undefined
-                                            : "Choose one section to print its sheet."
-                                    }
-                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-navy-900 bg-white px-5 text-base font-semibold text-black transition hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-navy-900 bg-white px-5 text-base font-semibold text-black transition hover:bg-brand-50"
                                 >
                                     <Icon name="print" />
                                     Print sheet
@@ -150,19 +114,17 @@ export default function Index({
 
                     <div className="my-6 border-t border-line" />
 
-                    {/* Section: shared by print and export */}
                     {destinations.length > 0 ? (
                         <div>
                             <p className="text-base font-semibold text-black">
-                                Section
+                                Print sheet for
                             </p>
 
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {destinations.map((section) => {
                                     const current =
-                                        !allSections &&
                                         toSection?.section_id ===
-                                            section.section_id;
+                                        section.section_id;
 
                                     return (
                                         <button
@@ -188,26 +150,7 @@ export default function Index({
                                         </button>
                                     );
                                 })}
-
-                                {toSection && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setAllSections(true)}
-                                        aria-pressed={allSections}
-                                        className={chipClass(allSections)}
-                                    >
-                                        All sections
-                                    </button>
-                                )}
                             </div>
-
-                            {allSections && documents.length > 0 && (
-                                <p className="mt-2 text-sm text-black">
-                                    “All sections” applies only to the Excel
-                                    export. Choose one section to print its
-                                    transmittal sheet.
-                                </p>
-                            )}
                         </div>
                     ) : (
                         <div className="rounded-xl border border-dashed border-line py-10 text-center">
@@ -228,7 +171,6 @@ export default function Index({
                         </div>
                     )}
 
-                    {/* Report dates */}
                     <div className="mt-6">
                         <p className="text-base font-semibold text-black">
                             Registered between
@@ -346,17 +288,10 @@ export default function Index({
                                 </li>
                             ))}
                         </ul>
-
-                        {/* <p className="mt-4 text-base text-black">
-                            A document is removed from this list as soon as{" "}
-                            {sectionLabel(toSection)} scans it in, so the sheet
-                            lists only what they have not yet received.
-                        </p> */}
                     </EmployeeCard>
                 )}
             </div>
 
-            {/* The print copy, outside the app's own tree */}
             {documents.length > 0 &&
                 createPortal(
                     <div id="print-root" className="hidden print:block">

@@ -22,27 +22,28 @@ class CommentInboxController extends Controller
 {
     /**
      * Notes addressed to this section, unanswered ones first.
+     *
+     * No filter on the document's age: the RDO's side already refuses
+     * to create a comment until the document is overdue, and the
+     * sidebar badge counts by section and acknowledgement only. Using
+     * the same two conditions here keeps the badge and this list in
+     * agreement.
      */
     public function index(): Response
     {
         $employee = Auth::guard('employee')->user();
 
-    $delayedSince = now()->subDays(2);
-
-    $comments = DocumentComment::query()
-        ->with([
-            'author',
-            'reader',
-            'document:document_id,tracking_number,taxpayer_name,status_id,current_section_id,updated_at',
-            'document.status:status_id,status_name',
-        ])
-        ->where('to_section_id', $employee->section_id)
-        ->whereHas('document', function ($query) use ($delayedSince) {
-            $query->where('updated_at', '<=', $delayedSince);
-        })
-        ->orderByRaw('acknowledged_at is null desc')
-        ->latest('created_at')
-        ->paginate(15);
+        $comments = DocumentComment::query()
+            ->with([
+                'author',
+                'reader',
+                'document:document_id,tracking_number,taxpayer_name,status_id,current_section_id,updated_at',
+                'document.status:status_id,status_name',
+            ])
+            ->where('to_section_id', $employee->section_id)
+            ->orderByRaw('acknowledged_at is null desc')
+            ->latest('created_at')
+            ->paginate(15);
 
         return Inertia::render('Employees/Comments/Inbox', [
             'comments' => $comments,

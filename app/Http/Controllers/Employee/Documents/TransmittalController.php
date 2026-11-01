@@ -16,21 +16,6 @@ use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/**
- * The transmittal sheet - the paper that goes with a stack of documents.
- *
- * The system already records receipt the moment somebody scans a QR
- * code. This is for the minute before that: a runner carries five
- * dockets to the Admin Section, hands them over, and wants a signature
- * saying they were handed over. The office has always kept that as a
- * logbook, and a system that cannot produce one just means they keep
- * writing the logbook by hand beside it.
- *
- * What it lists is what is genuinely in transit from this section to
- * another: forwarded or addressed there, and not yet received. That set
- * needs no choosing - the office is handing over exactly the documents
- * the system says are on their way.
- */
 class TransmittalController extends Controller
 {
     public function index(Request $request): Response
@@ -39,20 +24,8 @@ class TransmittalController extends Controller
 
         $toSectionId = $request->integer('to') ?: null;
 
-        /*
-        * In transit from us to them: still Pending, still sitting with
-        * this section, addressed somewhere else. Once the receiving
-        * section scans it the row changes hands and drops off this
-        * sheet, which is the behaviour you want - a transmittal should
-        * only ever list what has not been received yet.
-        */
         $inTransit = fn () => $this->inTransit($employee);
 
-        /*
-        * Every section we have something waiting for, with a count -
-        * so the choice of destination is made from what is actually
-        * there rather than from a list of every section in the office.
-        */
         $waiting = $inTransit()
             ->selectRaw('destination_section_id, count(*) as total')
             ->groupBy('destination_section_id')
@@ -68,10 +41,6 @@ class TransmittalController extends Controller
             ])
             ->values();
 
-        /*
-        * Nothing chosen yet: open on whichever section has the most
-        * waiting, since that is almost always the one being walked over.
-        */
         $toSectionId ??= $destinations->sortByDesc('waiting')->first()['section_id'] ?? null;
 
         $documents = $toSectionId
@@ -97,10 +66,6 @@ class TransmittalController extends Controller
                 'section_id', 'section_name', 'section_code', 'description',
             ]),
 
-            /*
-            * Printed on the sheet as who released it, so the receiving
-            * section knows who to go back to.
-            */
             'releasedBy' => $employee->display_name,
 
             'filters' => ['to' => $toSectionId],
@@ -112,17 +77,14 @@ class TransmittalController extends Controller
         $employee = Auth::guard('employee')->user();
 
         $validated = $request->validate([
-            'to' => ['nullable', 'integer', 'exists:sections,section_id'],
             'from' => ['nullable', 'date'],
             'until' => ['nullable', 'date', 'after_or_equal:from'],
         ]);
 
-        $toSectionId = $validated['to'] ?? null;
         $from = isset($validated['from']) ? Carbon::parse($validated['from'])->startOfDay() : null;
         $until = isset($validated['until']) ? Carbon::parse($validated['until'])->endOfDay() : null;
 
-        $documents = $this->inTransit($employee)
-            ->when($toSectionId, fn (Builder $query) => $query->where('destination_section_id', $toSectionId))
+        $documents = $this->registered($employee)
             ->when($from, fn (Builder $query) => $query->where('created_at', '>=', $from))
             ->when($until, fn (Builder $query) => $query->where('created_at', '<=', $until))
             ->with(['destinationSection', 'creator.section', 'latestTrackingHistory'])
@@ -130,11 +92,9 @@ class TransmittalController extends Controller
             ->oldest('created_at')
             ->get();
 
-        $toSection = $toSectionId ? Section::cached($toSectionId) : null;
-
         $filename = sprintf(
-            'transmittal-%s-%s-to-%s.xlsx',
-            Str::slug($toSection?->section_code ?: $toSection?->section_name ?: 'all-sections'),
+            'report-%s-%s-to-%s.xlsx',
+            Str::slug($employee->section?->section_code ?: $employee->section?->section_name ?: 'section'),
             $from?->format('Y-m-d') ?? 'start',
             $until?->format('Y-m-d') ?? now()->format('Y-m-d'),
         );
@@ -155,5 +115,11 @@ class TransmittalController extends Controller
             ->where('current_section_id', $employee->section_id)
             ->whereNotNull('destination_section_id')
             ->where('destination_section_id', '!=', $employee->section_id);
+    }
+
+    private function registered($employee): Builder
+    {
+        return Document::query()
+            ->whereHas('creator', fn (Builder $creator) => $creator->where('section_id', $employee->section_id));
     }
 }

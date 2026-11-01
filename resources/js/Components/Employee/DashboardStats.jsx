@@ -11,18 +11,19 @@ const TONES = {
         icon: "bg-brand-50 text-brand-700",
     },
     blue: {
-        shell: "border-blue-600 bg-blue-600 hover:bg-blue-700 hover:border-blue-700",
+        shell: "border-white/10 bg-gradient-to-br from-navy-900 via-navy-800 to-blue-900 hover:from-navy-800 hover:via-navy-700 hover:to-blue-800",
         label: "text-white",
         value: "text-white",
         hint: "text-blue-100",
-        icon: "bg-white/20 text-white",
+        icon: "bg-white/15 text-white",
     },
+
     stop: {
-        shell: "border-stop-600 bg-stop-50 hover:border-stop-600",
-        label: "text-stop-600",
-        value: "text-stop-600",
-        hint: "text-black",
-        icon: "bg-stop-600 text-white",
+        shell: "border-red-600 bg-red-600 hover:bg-red-700 hover:border-red-700",
+        label: "text-white",
+        value: "text-white",
+        hint: "text-red-100",
+        icon: "bg-white/20 text-white",
     },
 };
 
@@ -61,7 +62,7 @@ function Stat({
         </>
     );
 
-    const shell = `flex flex-col rounded-2xl border p-5 shadow-sm shadow-navy-900/5 transition ${colors.shell}`;
+    const shell = `flex flex-col rounded-2xl border p-5 shadow-lg shadow-navy-900/10 transition-all duration-300 ${colors.shell}`;
 
     if (!href) {
         return <div className={shell}>{body}</div>;

@@ -5,19 +5,6 @@ import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import Icon from "@/Components/Employee/Icon";
 import { longDate, sectionLabel } from "./referral";
 
-/*
- * Registering a referral, complete, in one frame.
- *
- * No "Step 1 of 2" here, and no passing through a shorter form first.
- * The two-step split earns its keep at the counter, where a taxpayer is
- * standing there and a name and a date are all anybody has time to take;
- * at a desk with the document in hand it only means filling one form to
- * unlock another.
- *
- * Laid out in the order of the paper it replaces (BIR Form 2309): who it
- * concerns, where it goes, what it is about.
- */
-
 const FIELD =
     "min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3 text-base font-semibold text-navy-900 placeholder:text-muted focus:border-navy-800 focus:outline-none";
 function Field({ label, hint, error, children }) {

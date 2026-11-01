@@ -1,15 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import Icon from "@/Components/Employee/Icon";
 import { addressedTo, longDate, sentFrom } from "./referral";
 
-/*
- * The fourteen boxes of the printed form, in its own order and wording.
- * Mirrors config('referral.referred_for') - the slip is the only thing
- * that uses it now.
- */
 const REFERRED_FOR = [
     "APPROVAL",
     "COMMENT",
@@ -27,56 +22,9 @@ const REFERRED_FOR = [
     "STUDY / RECOMMENDATION",
 ];
 
-/*
- * BIR Form 2309 - Reference Slip.
- *
- * Printed portrait, full sheet, stacked sections top to bottom - matching
- * the original 1971 form: Header / To / Subject / For / Remarks / From.
- * The only deliberate deviation from the original form is the QR code,
- * placed inside the "To" section next to the reference number.
- *
- * Printing: the slip is rendered a second time into a portal directly
- * under <body>, and the print stylesheet hides every other child of
- * <body>. Hiding with display:none (not visibility) is what stops the
- * rest of the page from spanning a dozen blank pages, since a hidden
- * element that still has height still gets paginated.
- *
- * On-screen preview: the slip's true size (4.3in x 8in) reads as quite
- * large at 100% browser zoom — it used to force people to zoom their
- * whole browser out to ~80% just to see it. Instead, only the preview
- * copy inside the modal is visually shrunk with CSS `zoom`, which
- * (unlike `transform: scale`) also shrinks the space it takes up, so
- * there's no leftover blank gap below it. The print copy is a
- * completely separate node (#print-root) and is never touched by this,
- * so it always prints at true size regardless of the preview's zoom.
- *
- * NOTE: page orientation (portrait) needs to be set wherever your global
- * print stylesheet lives, e.g.:
- *   @media print {
- *     @page { size: portrait; margin: 0.4in; }
- *   }
- * This file only controls the content, not the @page size.
- *
- * The seal is the OLD one, /images/bir_old_logo_for_header.png, and
- * only on this slip. Nothing has been issued authorising a change of
- * logo on BIR Form 2309, so the paper keeps the seal it is approved
- * with - the rest of the system uses the current mark.
- */
+const SLIP_WIDTH_IN = 4.3;
+const SLIP_HEIGHT_IN = 8;
 
-/*
- * The "FOR" grid, as it is printed on the paper.
- *
- * Fourteen empty boxes in two columns, plus two ruled lines for OTHER.
- * The system does not ask which of these applies and does not store an
- * answer: on the real form the RDO or a Chief ticks these with a pen, on
- * the hardcopy that travels with the document. Printing one chosen value
- * in place of the grid produced a slip that did not match the form the
- * office is required to use.
- *
- * A referral recorded before this was understood may still carry a
- * stored value, and its box is printed already ticked so the slip stays
- * true to what was filed.
- */
 function ForBoxes({ document }) {
     const options = REFERRED_FOR;
 
@@ -84,10 +32,6 @@ function ForBoxes({ document }) {
 
     const columns = [options.slice(0, half), options.slice(half)];
 
-    /*
-     * Legacy values were stored joined by ", " and in mixed case, so they
-     * are compared without case or spacing.
-     */
     const recorded = String(document.referred_for ?? "")
         .split(",")
         .map((value) => value.trim().toUpperCase())
@@ -121,7 +65,6 @@ function ForBoxes({ document }) {
                 ))}
             </div>
 
-            {/* OTHER, written in by hand like the rest of this block */}
             <div className="mt-1 flex items-end gap-1.5">
                 <span className="shrink-0 text-[8.5px] uppercase">Other</span>
 
@@ -157,7 +100,6 @@ function Section({ title, children, className = "" }) {
 export function ReferenceSlip({ document }) {
     return (
         <div className="reference-slip flex h-[8in] w-[4.300in] flex-col border-2 border-navy-900 bg-white text-[9px] leading-snug text-navy-900">
-            {/* 1. Header */}
             <div className="flex shrink-0 items-center gap-3 border-b border-navy-900 px-3 py-2">
                 <img
                     src="/images/bir_old_logo_for_header.png"
@@ -178,7 +120,6 @@ export function ReferenceSlip({ document }) {
                 </div>
             </div>
 
-            {/* 2. To (+ QR - the one intentional addition) */}
             <Section
                 title="To"
                 className="flex-row shrink-0 items-start gap-3 border-b"
@@ -208,7 +149,6 @@ export function ReferenceSlip({ document }) {
                 </div>
             </Section>
 
-            {/* 3. Subject */}
             <Section
                 title="Subject"
                 className="min-h-[0.9in] shrink-0 border-b"
@@ -217,12 +157,10 @@ export function ReferenceSlip({ document }) {
                 <p>{document.concern}</p>
             </Section>
 
-            {/* 4. For - ticked by hand, on the paper */}
             <Section title="For" className="shrink-0 border-b">
                 <ForBoxes document={document} />
             </Section>
 
-            {/* 5. Remarks - written by hand, like the FOR block */}
             <div className="flex h-[2.2in] min-w-0 flex-col border-b border-navy-900 px-3 py-2">
                 <p className="mb-1 text-[9px] font-bold tracking-wider text-navy-900 uppercase">
                     Remarks{" "}
@@ -231,26 +169,15 @@ export function ReferenceSlip({ document }) {
                     </span>
                 </p>
 
-                {/*
-                 * Empty, because the system no longer asks for this - the
-                 * RDO or a Chief writes it on the hardcopy. A referral
-                 * recorded before that prints what was stored, so an
-                 * older slip stays true to what was filed.
-                 */}
                 <p className="whitespace-pre-wrap">{document.remarks || " "}</p>
             </div>
 
-            {/* 6. From + office code */}
             <div className="flex shrink-0 items-end gap-4 px-3 py-2">
                 <div className="min-w-0 flex-1">
                     <p className="text-[7.5px] uppercase">From</p>
                     <p className="font-semibold">{sentFrom(document)}</p>
                 </div>
 
-                {/*
-                 * Left blank on purpose: the office fills this in by
-                 * hand. The stored value is not the one they use.
-                 */}
                 <div className="w-[1.8in] shrink-0">
                     <p className="text-[7.5px] uppercase">Office code</p>
                     <p
@@ -264,6 +191,10 @@ export function ReferenceSlip({ document }) {
 }
 
 export default function ReferenceSlipModal({ document, onClose }) {
+    const exportRef = useRef(null);
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState("");
+
     useEffect(() => {
         const onKey = (e) => e.key === "Escape" && onClose();
         window.addEventListener("keydown", onKey);
@@ -272,6 +203,54 @@ export default function ReferenceSlipModal({ document, onClose }) {
     }, [onClose]);
 
     if (!document) return null;
+
+    const exportPdf = async () => {
+        const node = exportRef.current;
+
+        if (!node || exporting) return;
+
+        setExporting(true);
+        setExportError("");
+
+        try {
+            const images = Array.from(node.querySelectorAll("img"));
+
+            await Promise.all(
+                images.map((img) =>
+                    img.complete
+                        ? null
+                        : new Promise((resolve) => {
+                              img.onload = img.onerror = resolve;
+                          }),
+                ),
+            );
+
+            const [{ toPng }, { jsPDF }] = await Promise.all([
+                import("html-to-image"),
+                import("jspdf"),
+            ]);
+
+            const png = await toPng(node, {
+                pixelRatio: 3,
+                backgroundColor: "#ffffff",
+                cacheBust: true,
+            });
+
+            const pdf = new jsPDF({
+                unit: "in",
+                format: [SLIP_WIDTH_IN, SLIP_HEIGHT_IN],
+                orientation: "portrait",
+            });
+
+            pdf.addImage(png, "PNG", 0, 0, SLIP_WIDTH_IN, SLIP_HEIGHT_IN);
+
+            pdf.save(`${document.tracking_number}.pdf`);
+        } catch {
+            setExportError("Could not create the PDF. Please try again.");
+        } finally {
+            setExporting(false);
+        }
+    };
 
     return (
         <>
@@ -308,23 +287,33 @@ export default function ReferenceSlipModal({ document, onClose }) {
                         </button>
                     </div>
 
-                    {/*
-                     * `zoom` (not `transform: scale`) shrinks both the
-                     * visual size AND the space reserved for it, so the
-                     * modal doesn't end up with an empty gap below a
-                     * scaled-down slip. Only this preview copy is
-                     * affected — the print copy below is a separate,
-                     * untouched node.
-                     */}
                     <div className="flex justify-center overflow-x-auto px-7 py-6">
                         <div style={{ zoom: 0.6 }}>
                             <ReferenceSlip document={document} />
                         </div>
                     </div>
 
+                    {exportError && (
+                        <p
+                            role="alert"
+                            className="px-7 pb-2 text-base font-semibold text-red-600"
+                        >
+                            {exportError}
+                        </p>
+                    )}
+
                     <div className="flex flex-col-reverse gap-3 border-t border-line px-7 py-5 sm:flex-row sm:justify-end">
                         <EmployeeButton variant="quiet" onClick={onClose}>
                             Close
+                        </EmployeeButton>
+
+                        <EmployeeButton
+                            variant="secondary"
+                            onClick={exportPdf}
+                            disabled={exporting}
+                        >
+                            <Icon name="download" />
+                            {exporting ? "Preparing..." : "Export PDF"}
                         </EmployeeButton>
 
                         <EmployeeButton onClick={() => window.print()}>
@@ -335,13 +324,16 @@ export default function ReferenceSlipModal({ document, onClose }) {
                 </div>
             </div>
 
-            {/*
-             * The copy that actually prints. It lives directly under <body>
-             * so the print stylesheet can hide everything else with
-             * display:none and leave only this. Invisible on screen.
-             * Always renders at true size — the preview's zoom above
-             * never reaches this node.
-             */}
+            <div
+                aria-hidden="true"
+                className="print:hidden"
+                style={{ position: "fixed", left: "-10000px", top: 0 }}
+            >
+                <div ref={exportRef}>
+                    <ReferenceSlip document={document} />
+                </div>
+            </div>
+
             {createPortal(
                 <>
                     <style>{`
