@@ -12,6 +12,7 @@ export default function SearchInput({
     only = ["documents", "filters"],
 }) {
     const [value, setValue] = useState(initialValue ?? "");
+    const [isSearching, setIsSearching] = useState(false);
 
     const isFirstRender = useRef(true);
 
@@ -22,6 +23,7 @@ export default function SearchInput({
         }
 
         const timeout = setTimeout(() => {
+            setIsSearching(true);
             router.get(
                 window.location.pathname,
                 value ? { search: value } : {},
@@ -30,10 +32,11 @@ export default function SearchInput({
                     preserveScroll: true,
                     replace: true,
                     only,
+                    onFinish: () => setIsSearching(false),
+                    onError: () => setIsSearching(false),
                 },
             );
-        }, 300);
-
+        }, 500); // Increased from 300ms to 500ms
         return () => clearTimeout(timeout);
     }, [value]);
 
@@ -76,6 +79,12 @@ export default function SearchInput({
                             : "min-h-11 rounded-xl border border-line py-2.5 pr-11 pl-11 text-base focus:border-brand-600"
                     }`}
                 />
+
+                {isSearching && (
+                    <span className="absolute inset-y-0 right-3 flex items-center text-xs text-brand-600 animate-pulse">
+                        Searching…
+                    </span>
+                )}
 
                 {value && (
                     <button

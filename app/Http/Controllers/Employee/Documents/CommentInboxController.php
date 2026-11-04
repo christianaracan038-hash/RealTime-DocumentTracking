@@ -37,8 +37,7 @@ class CommentInboxController extends Controller
             ->with([
                 'author',
                 'reader',
-                'document:document_id,tracking_number,taxpayer_name,status_id,current_section_id,updated_at',
-                'document.status:status_id,status_name',
+                'document:document_id,tracking_number,taxpayer_name,concern,transaction_type,status_id,current_section_id,updated_at',
             ])
             ->where('to_section_id', $employee->section_id)
             ->orderByRaw('acknowledged_at is null desc')

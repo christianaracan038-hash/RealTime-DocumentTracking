@@ -6,7 +6,10 @@ import EmployeeCard from "@/Components/Employee/EmployeeCard";
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import Icon from "@/Components/Employee/Icon";
 import DocumentTrailModal from "@/Components/Employee/Referrals/DocumentTrailModal";
-import { exactTime } from "@/Components/Employee/Referrals/referral";
+import {
+    exactTime,
+    documentTitle,
+} from "@/Components/Employee/Referrals/referral";
 
 /*
  * Notes the RDO has sent to this section.
@@ -90,8 +93,7 @@ export default function Inbox({ comments }) {
                                         className="text-left"
                                     >
                                         <p className="text-lg font-bold text-navy-900 underline-offset-4 hover:underline">
-                                            {comment.document?.taxpayer_name ??
-                                                "No taxpayer on record"}
+                                            {documentTitle(comment.document)}
                                         </p>
 
                                         <p className="mt-0.5 font-mono text-sm text-muted">

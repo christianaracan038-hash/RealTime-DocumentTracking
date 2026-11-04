@@ -10,6 +10,7 @@ import { urgencyOf } from "@/Components/Employee/urgency";
 import {
     exactTime,
     sectionLabel,
+    documentTitle,
 } from "@/Components/Employee/Referrals/referral";
 
 /*
@@ -128,8 +129,9 @@ export default function Comments({ stuck = [], sent = [] }) {
                                             <div className="flex flex-wrap items-start justify-between gap-3">
                                                 <div className="min-w-0">
                                                     <p className="text-lg font-bold text-black">
-                                                        {document.taxpayer_name ??
-                                                            "No taxpayer on record"}
+                                                        {documentTitle(
+                                                            document,
+                                                        )}
                                                     </p>
 
                                                     <p className="mt-0.5 font-mono text-sm text-black">
@@ -253,9 +255,9 @@ export default function Comments({ stuck = [], sent = [] }) {
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="min-w-0">
                                             <p className="font-semibold text-black">
-                                                {comment.document
-                                                    ?.taxpayer_name ??
-                                                    "No taxpayer on record"}
+                                                {documentTitle(
+                                                    comment.document,
+                                                )}
                                             </p>
 
                                             <p className="mt-0.5 font-mono text-sm text-black">

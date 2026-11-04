@@ -109,3 +109,12 @@ export function waitedFor(hours) {
 
     return rest > 0 ? `${days}d ${rest}h` : `${days}d`;
 }
+
+export function documentTitle(document) {
+    return (
+        document?.taxpayer_name ||
+        document?.concern ||
+        document?.transaction_type ||
+        "No details on record"
+    );
+}
