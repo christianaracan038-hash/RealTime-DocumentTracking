@@ -52,7 +52,7 @@ export default function AgeBadge({
                 ) : (
                     <Icon name={urgency.icon} />
                 )}
-                {urgency.label} &middot; {waitedFor(document.aging.hours)}
+                {urgency.label} &middot; {waitedFor(document.aging?.hours ?? 0)}
             </span>
 
             {showSince && document.waiting_since && (

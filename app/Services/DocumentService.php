@@ -198,110 +198,166 @@ class DocumentService
      * LOWER(...) LIKE is used instead of ILIKE so the same query runs
      * on PostgreSQL (production) and SQLite (the test suite).
      */
+    /**
+     * Constrain a document query to rows matching the keyword.
+     *
+     * Uses PostgreSQL Full-Text Search when available for fast keyword matching.
+     * Falls back to LOWER(...) LIKE for SQLite (test suite) compatibility.
+     */
     public function applySearch($query, string $search)
     {
-        $keyword = '%'.mb_strtolower(trim($search)).'%';
+        $keyword = mb_strtolower(trim($search));
 
         return $query->where(function ($query) use ($keyword) {
 
             /*
-            * Document's own searchable columns.
-            */
-            $columns = [
-                'taxpayer_name',
-                'concern',
-                'referred_for',
-                'remarks',
-                'office_code',
-                'tracking_number',
-                'transaction_type',
-                'description',
-                'reference_number',
-            ];
-
-            foreach ($columns as $column) {
+             * Use PostgreSQL Full-Text Search for production speed.
+             * Falls back to LIKE for SQLite test suite compatibility.
+             */
+            if (DB::getDriverName() === 'pgsql') {
                 $query->orWhereRaw(
-                    'LOWER('.$column.') LIKE ?',
+                    "to_tsvector('english', coalesce(tracking_number, '') || ' ' || coalesce(taxpayer_name, '') || ' ' || coalesce(concern, '') || ' ' || coalesce(reference_number, '') || ' ' || coalesce(description, '')) @@ plainto_tsquery('english', ?)",
                     [$keyword]
                 );
+            } else {
+                $likeKeyword = '%'.$keyword.'%';
+
+                $columns = [
+                    'taxpayer_name',
+                    'concern',
+                    'referred_for',
+                    'remarks',
+                    'office_code',
+                    'tracking_number',
+                    'transaction_type',
+                    'description',
+                    'reference_number',
+                ];
+
+                foreach ($columns as $column) {
+                    $query->orWhereRaw(
+                        'LOWER('.$column.') LIKE ?',
+                        [$likeKeyword]
+                    );
+                }
             }
 
             /*
-            * Status name, e.g. "pending".
-            */
+             * Status name, e.g. "pending".
+             */
             $query->orWhereHas('status', function ($statusQuery) use ($keyword) {
-                $statusQuery->whereRaw(
-                    'LOWER(status_name) LIKE ?',
-                    [$keyword]
-                );
+                if (DB::getDriverName() === 'pgsql') {
+                    $statusQuery->whereRaw(
+                        "to_tsvector('english', status_name) @@ plainto_tsquery('english', ?)",
+                        [$keyword]
+                    );
+                } else {
+                    $likeKeyword = '%'.$keyword.'%';
+                    $statusQuery->whereRaw(
+                        'LOWER(status_name) LIKE ?',
+                        [$likeKeyword]
+                    );
+                }
             });
 
             /*
-            * Where the document is, and where it is going.
-            */
+             * Where the document is, and where it is going.
+             */
             foreach (['currentSection', 'destinationSection'] as $relation) {
                 $query->orWhereHas(
                     $relation,
                     function ($sectionQuery) use ($keyword) {
-                        $sectionQuery->whereRaw(
-                            'LOWER(section_name) LIKE ?',
-                            [$keyword]
-                        );
+                        if (DB::getDriverName() === 'pgsql') {
+                            $sectionQuery->whereRaw(
+                                "to_tsvector('english', section_name) @@ plainto_tsquery('english', ?)",
+                                [$keyword]
+                            );
+                        } else {
+                            $likeKeyword = '%'.$keyword.'%';
+                            $sectionQuery->whereRaw(
+                                'LOWER(section_name) LIKE ?',
+                                [$likeKeyword]
+                            );
+                        }
                     }
                 );
             }
 
             /*
-            * Who registered it, and who is holding it.
-            */
+             * Who registered it, and who is holding it.
+             */
             foreach (['creator', 'currentEmployee'] as $relation) {
                 $query->orWhereHas(
                     $relation,
                     function ($employeeQuery) use ($keyword) {
-                        $employeeQuery->whereRaw(
-                            'LOWER(username) LIKE ?',
-                            [$keyword]
-                        );
+                        if (DB::getDriverName() === 'pgsql') {
+                            $employeeQuery->whereRaw(
+                                "to_tsvector('english', username) @@ plainto_tsquery('english', ?)",
+                                [$keyword]
+                            );
+                        } else {
+                            $likeKeyword = '%'.$keyword.'%';
+                            $employeeQuery->whereRaw(
+                                'LOWER(username) LIKE ?',
+                                [$likeKeyword]
+                            );
+                        }
                     }
                 );
             }
 
             /*
-            * Anywhere in the movement history.
-            *
-            * Records -> Accounting -> HR -> Legal
-            *
-            * Searching "Accounting" finds the document even though
-            * it is now sitting in Legal.
-            */
+             * Anywhere in the movement history.
+             *
+             * Records -> Accounting -> HR -> Legal
+             *
+             * Searching "Accounting" finds the document even though
+             * it is now sitting in Legal.
+             */
             $query->orWhereHas(
                 'trackingHistories',
                 function ($historyQuery) use ($keyword) {
 
                     $historyQuery->where(function ($historyQuery) use ($keyword) {
 
+                        if (DB::getDriverName() === 'pgsql') {
+                            $historyQuery->whereRaw(
+                                "to_tsvector('english', action || ' ' || remarks) @@ plainto_tsquery('english', ?)",
+                                [$keyword]
+                            );
+                        } else {
+                            $likeKeyword = '%'.$keyword.'%';
+                            $historyQuery
+                                ->whereRaw('LOWER(action) LIKE ?', [$likeKeyword])
+                                ->orWhereRaw('LOWER(remarks) LIKE ?', [$likeKeyword]);
+                        }
+
                         $historyQuery
-                            ->whereRaw('LOWER(action) LIKE ?', [$keyword])
-                            ->orWhereRaw('LOWER(remarks) LIKE ?', [$keyword])
                             ->orWhereHas(
                                 'fromSection',
                                 fn ($q) => $q->whereRaw(
-                                    'LOWER(section_name) LIKE ?',
-                                    [$keyword]
+                                    DB::getDriverName() === 'pgsql'
+                                        ? "to_tsvector('english', section_name) @@ plainto_tsquery('english', ?)"
+                                        : 'LOWER(section_name) LIKE ?',
+                                    DB::getDriverName() === 'pgsql' ? [$keyword] : [$likeKeyword]
                                 )
                             )
                             ->orWhereHas(
                                 'toSection',
                                 fn ($q) => $q->whereRaw(
-                                    'LOWER(section_name) LIKE ?',
-                                    [$keyword]
+                                    DB::getDriverName() === 'pgsql'
+                                        ? "to_tsvector('english', section_name) @@ plainto_tsquery('english', ?)"
+                                        : 'LOWER(section_name) LIKE ?',
+                                    DB::getDriverName() === 'pgsql' ? [$keyword] : [$likeKeyword]
                                 )
                             )
                             ->orWhereHas(
                                 'employee',
                                 fn ($q) => $q->whereRaw(
-                                    'LOWER(username) LIKE ?',
-                                    [$keyword]
+                                    DB::getDriverName() === 'pgsql'
+                                        ? "to_tsvector('english', username) @@ plainto_tsquery('english', ?)"
+                                        : 'LOWER(username) LIKE ?',
+                                    DB::getDriverName() === 'pgsql' ? [$keyword] : [$likeKeyword]
                                 )
                             );
                     });
@@ -325,6 +381,12 @@ class DocumentService
     public function register(array $data, $employee): Document
     {
         return DB::transaction(function () use ($data, $employee) {
+            /*
+            * Lock the latest record to prevent concurrent processes from
+            * seeing the same max(document_id) and generating duplicate
+            * tracking numbers.
+            */
+            Document::query()->lockForUpdate()->latest('document_id')->first();
 
             $document = Document::create([
                 'tracking_number' => $this->generateTrackingNumber(),
@@ -408,6 +470,10 @@ class DocumentService
     public function registerSectionReferral(array $data, $employee): Document
     {
         return DB::transaction(function () use ($data, $employee) {
+            /*
+            * Lock for tracking number generation.
+            */
+            Document::query()->lockForUpdate()->latest('document_id')->first();
 
             $document = Document::create([
                 'tracking_number' => $this->generateTrackingNumber(),
@@ -445,12 +511,16 @@ class DocumentService
 
     public function updateSectionReferral(Document $document, array $data): Document
     {
-        $document->update([
-            'concern' => $data['concern'],
-            'destination_section_id' => $data['destination_section_id'],
-        ]);
+        return DB::transaction(function () use ($document, $data) {
+            $document = Document::query()->lockForUpdate()->find($document->document_id);
 
-        return $document->fresh();
+            $document->update([
+                'concern' => $data['concern'],
+                'destination_section_id' => $data['destination_section_id'],
+            ]);
+
+            return $document->fresh();
+        });
     }
 
     
@@ -473,29 +543,33 @@ class DocumentService
         EmployeeAcc $employee,
         string $reason
     ): void {
-        abort_unless(
-            $document->creator?->section_id === $employee->section_id,
-            403,
-            'Only the section that issued this referral can request its deletion.'
-        );
+        DB::transaction(function () use ($document, $employee, $reason) {
+            $document = Document::query()->lockForUpdate()->find($document->document_id);
 
-        abort_if(
-            $document->completed_at !== null,
-            422,
-            'Completed referrals cannot be deleted.'
-        );
+            abort_unless(
+                $document->creator?->section_id === $employee->section_id,
+                403,
+                'Only the section that issued this referral can request its deletion.'
+            );
 
-        abort_if(
-            $document->deletion_requested_at !== null,
-            422,
-            'A deletion request is already pending.'
-        );
+            abort_if(
+                $document->completed_at !== null,
+                422,
+                'Completed referrals cannot be deleted.'
+            );
 
-        $document->update([
-            'deletion_requested_at' => now(),
-            'deletion_requested_by' => $employee->employee_id,
-            'deletion_reason' => $reason,
-        ]);
+            abort_if(
+                $document->deletion_requested_at !== null,
+                422,
+                'A deletion request is already pending.'
+            );
+
+            $document->update([
+                'deletion_requested_at' => now(),
+                'deletion_requested_by' => $employee->employee_id,
+                'deletion_reason' => $reason,
+            ]);
+        });
     }
 
     /**
@@ -511,50 +585,59 @@ class DocumentService
         array $data,
         $employee
     ): Document {
-        $this->ensureNotDeleted($document);
-        $update = [
-            'concern' => $data['concern'],
+        return DB::transaction(function () use ($document, $data, $employee) {
+            $document = Document::query()->lockForUpdate()->find($document->document_id);
 
-            /*
-            * Neither referred_for nor remarks is written here. Both are
-            * blocks on BIR Form 2309 that the RDO or a Chief fills in by
-            * hand on the hardcopy, so the slip prints them empty and no
-            * form asks. Their columns stay for referrals recorded before
-            * that was understood, and a stored value still prints.
-            */
+            $this->ensureNotDeleted($document);
 
-            /*
-            * Everything goes to the Chief. If the Chief is away somebody
-            * else receives it, and the movement trail records who - that
-            * is a fact about what happened, not a box on a form.
-            */
-            'addressee' => $document->addressee ?: 'Chief',
-
-            'details_completed_at' => now(),
-            'details_completed_by' => $employee->employee_id,
-        ];
-
-        /*
-        * A referral left with no date at all by the flow that predated
-        * server stamping. Stamped rather than asked for, so there is no
-        * form anywhere that accepts one.
-        */
-        if (blank($document->document_date)) {
-            $update['document_date'] = now();
-        }
-
-        /*
-        * Catching up a referral the draft flow left bare.
-        */
-        foreach (['taxpayer_name', 'destination_section_id', 'addressee'] as $field) {
-            if (blank($document->{$field}) && filled($data[$field] ?? null)) {
-                $update[$field] = $data[$field];
+            if ($document->details_completed_at) {
+                return $document;
             }
-        }
+
+            $update = [
+                'concern' => $data['concern'],
+
+                /*
+                * Neither referred_for nor remarks is written here. Both are
+                * blocks on BIR Form 2309 that the RDO or a Chief fills in by
+                * hand on the hardcopy, so the slip prints them empty and no
+                * form asks. Their columns stay for referrals recorded before
+                * that was understood, and a stored value still prints.
+                */
+
+                /*
+                * Everything goes to the Chief. If the Chief is away somebody
+                * else receives it, and the movement trail records who - that
+                * is a fact about what happened, not a box on a form.
+                */
+                'addressee' => $document->addressee ?: 'Chief',
+
+                'details_completed_at' => now(),
+                'details_completed_by' => $employee->employee_id,
+            ];
+
+            /*
+            * A referral left with no date at all by the flow that predated
+            * server stamping. Stamped rather than asked for, so there is no
+            * form anywhere that accepts one.
+            */
+            if (blank($document->document_date)) {
+                $update['document_date'] = now();
+            }
+
+            /*
+            * Catching up a referral the draft flow left bare.
+            */
+            foreach (['taxpayer_name', 'destination_section_id', 'addressee'] as $field) {
+                if (blank($document->{$field}) && filled($data[$field] ?? null)) {
+                    $update[$field] = $data[$field];
+                }
+            }
 
         $document->update($update);
 
         return $document->fresh();
+        });
     }
 
     /**

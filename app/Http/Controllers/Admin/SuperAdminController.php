@@ -113,7 +113,12 @@ class SuperAdminController extends Controller
         $requests = Document::query()
             ->whereNotNull('deletion_requested_at')
             ->whereNull('deletion_approved_at')
-            ->with(['creator.section', 'requester'])
+            ->with([
+                'status',
+                'creator.section',
+                'requester',
+                'latestTrackingHistory'
+            ])
             ->latest('deletion_requested_at')
             ->paginate(20);
 

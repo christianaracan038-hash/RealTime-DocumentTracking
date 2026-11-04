@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-
+use App\Models\TrackingHistory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 class Document extends Model
 {
     protected $primaryKey = 'document_id';
@@ -271,5 +273,38 @@ class Document extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deletion_approved_by', 'id');
+    }
+
+    /**
+     * Scope to count overdue documents for a section.
+     *
+     * A document is overdue when its latest movement is older than
+     * config('referral.aging.overdue_after') hours, or when it has
+     * never moved (null tracking history).
+     */
+    public function scopeOverdue(
+        Builder $query,
+        int $sectionId,
+        ?int $overdueHours = null
+    ): Builder {
+        $overdueHours = $overdueHours ?? config('referral.aging.overdue_after', 48);
+        $cutoff = now()->subHours($overdueHours);
+
+        return $query
+            ->where('documents.destination_section_id', $sectionId)
+            ->whereIn('documents.status_id', [1, 5])
+            ->leftJoinSub(
+                TrackingHistory::query()
+                    ->select('document_id', DB::raw('MAX(tracked_at) as tracked_at'))
+                    ->groupBy('document_id'),
+                'latest_th',
+                'latest_th.document_id',
+                '=',
+                'documents.document_id'
+            )
+            ->where(function ($q) use ($cutoff) {
+                $q->whereNull('latest_th.tracked_at')
+                    ->orWhere('latest_th.tracked_at', '<', $cutoff);
+            });
     }
 }

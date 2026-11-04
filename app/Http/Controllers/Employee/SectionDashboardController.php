@@ -4,23 +4,21 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Models\Document;
-use App\Services\DocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SectionDashboardController extends Controller
 {
-    public function index(
-        Request $request,
-        DocumentService $documentService
-    ): Response {
+    public function index(Request $request): Response
+    {
         $employee = Auth::guard('employee')->user();
 
-        $search = $request->string('search')->toString();
+        $search = trim($request->string('search')->toString());
 
-        $incoming = fn () => Document::query()
+        $documents = Document::query()
             ->with([
                 'status',
                 'currentSection',
@@ -31,38 +29,55 @@ class SectionDashboardController extends Controller
             ])
             ->where('destination_section_id', $employee->section_id)
             ->whereIn('status_id', [1, 5])
-            ->latest('created_at');
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $like = '%' . $search . '%';
+                    $op = DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
-        $all = $incoming()->get();
+                    // partial match (hal. "BIR-2026")
+                    $q->where('tracking_number', $op, $like)
+                        ->orWhere('taxpayer_name', $op, $like)
+                        ->orWhere('reference_number', $op, $like)
+                        ->orWhere('concern', $op, $like);
 
-        $documents = filled($search)
-            ? $incoming()
-                ->when(
-                    true,
-                    fn ($query) => $documentService->applySearch($query, $search)
-                )
-                ->get()
-            : $all;
+                    // full-text match (gumagamit ng GIN index mo)
+                    if (DB::getDriverName() === 'pgsql') {
+                        $q->orWhereRaw(
+                            "to_tsvector('english',
+                                coalesce(tracking_number, '') || ' ' ||
+                                coalesce(taxpayer_name, '') || ' ' ||
+                                coalesce(concern, '') || ' ' ||
+                                coalesce(reference_number, '') || ' ' ||
+                                coalesce(description, '')
+                            ) @@ plainto_tsquery('english', ?)",
+                            [$search]
+                        );
+                    }
+                });
+            })
+            ->latest('created_at')
+            ->paginate(10)
+            ->withQueryString();   // para hindi mawala ang search kapag lumipat ng page
 
         return Inertia::render(
             $request->route()->defaults['page'],
             [
-                'documents' => $documents,
+                'documents' => $documents->items(),
 
                 'filters' => [
                     'search' => $search,
                 ],
 
                 'stats' => [
-                    'waiting' => $all->count(),
+                    'waiting' => $documents->total(),
 
                     'onDesk' => Document::query()
                         ->where('current_employee_id', $employee->employee_id)
                         ->where('status_id', 2)
                         ->count(),
 
-                    'overdue' => $all
-                        ->filter(fn (Document $document) => $document->aging['overdue'] ?? false)
+                    'overdue' => Document::query()
+                        ->overdue($employee->section_id)
                         ->count(),
                 ],
             ]

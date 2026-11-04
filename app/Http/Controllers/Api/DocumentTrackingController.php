@@ -109,7 +109,7 @@ class DocumentTrackingController extends Controller
                     ? 'Document can be received. It will be archived once received.'
                     : 'Document can be received.',
                 'mode' => 'receive',
-                'document' => $document,
+                'document' => $document->load('latestTrackingHistory'),
             ]);
         }
 
@@ -145,7 +145,7 @@ class DocumentTrackingController extends Controller
             'success' => true,
             'message' => 'Document verified for forwarding.',
             'mode' => 'forward',
-            'document' => $document,
+            'document' => $document->load('latestTrackingHistory'),
             'sections' => $sections,
         ]);
     }

@@ -40,7 +40,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
 
             <aside
                 aria-label="Main menu"
-                className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 max-w-[85vw] flex-col bg-navy-900 transition-transform duration-200 lg:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col bg-navy-900 transition-transform duration-200 lg:translate-x-0 ${
                     open ? "translate-x-0" : "-translate-x-full"
                 }`}
             >
