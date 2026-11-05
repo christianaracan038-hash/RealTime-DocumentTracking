@@ -21,9 +21,13 @@ class DocumentComment extends Model
         'author_id',
         'to_section_id',
         'body',
+        'type',
         'acknowledged_at',
         'acknowledged_by',
     ];
+
+    public const TYPE_REGULAR = 'regular';
+    public const TYPE_DELAY_NOTICE = 'delay_notice';
 
     protected $casts = [
         'acknowledged_at' => 'datetime',
@@ -63,5 +67,21 @@ class DocumentComment extends Model
     public function reader(): BelongsTo
     {
         return $this->belongsTo(EmployeeAcc::class, 'acknowledged_by', 'employee_id');
+    }
+
+    /**
+     * Scope to get only delay notice comments.
+     */
+    public function scopeDelayNotices($query)
+    {
+        return $query->where('type', self::TYPE_DELAY_NOTICE);
+    }
+
+    /**
+     * Scope to get only regular comments.
+     */
+    public function scopeRegularComments($query)
+    {
+        return $query->where('type', self::TYPE_REGULAR);
     }
 }

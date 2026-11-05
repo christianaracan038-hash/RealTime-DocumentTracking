@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DocumentTrackingController;
+use App\Http\Controllers\Api\DocumentDelayReasonController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web'])->group(function () {
@@ -29,6 +30,14 @@ Route::middleware(['web'])->group(function () {
 
 
         Route::get('/documents/forward-sections', [DocumentTrackingController::class, 'forwardSections']);
+
+        /*
+         * Delay reason management
+         */
+        Route::post('/documents/{document}/delay-reason', [DocumentDelayReasonController::class, 'store'])->name('api.documents.delay-reason.store');
+        Route::get('/documents/{document}/delay-reason', [DocumentDelayReasonController::class, 'show'])->name('api.documents.delay-reason.show');
+        Route::delete('/documents/{document}/delay-reason', [DocumentDelayReasonController::class, 'destroy'])->name('api.documents.delay-reason.destroy');
     });
 
 });
+

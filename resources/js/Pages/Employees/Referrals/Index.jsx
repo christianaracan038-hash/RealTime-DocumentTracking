@@ -775,7 +775,6 @@ export default function Index({
                     </EmployeeCard>
                 </div>
             )}
-
             {opened && (
                 <DocumentTrailModal
                     documentId={opened.id}

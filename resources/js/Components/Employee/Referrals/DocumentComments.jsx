@@ -18,10 +18,15 @@ export default function DocumentComments({ document }) {
 
     const mySectionId = auth?.employee?.section_id;
 
+    const allComments = document?.comments ?? [];
+
     // Only what was addressed to this section.
-    const comments = (document?.comments ?? []).filter(
+    const comments = allComments.filter(
         (comment) => Number(comment.to_section_id) === Number(mySectionId),
     );
+
+    const delayNotices = comments.filter((c) => c.type === "delay_notice");
+    const regularComments = comments.filter((c) => c.type !== "delay_notice");
 
     if (comments.length === 0) {
         return null;
@@ -35,50 +40,109 @@ export default function DocumentComments({ document }) {
         );
     };
 
-    return (
-        <div className="rounded-xl border border-accent-400 bg-accent-100 p-4">
-            <p className="flex items-center gap-2 text-base font-bold text-navy-900">
-                <Icon name="comment" className="text-brand-700" />
-                {comments.length === 1
-                    ? "A note from the RDO's Office"
-                    : `${comments.length} notes from the RDO's Office`}
+    const renderDelayNotice = (comment) => (
+        <li
+            key={`delay-${comment.comment_id}`}
+            className="rounded-lg border border-stop-600 bg-stop-50 p-3"
+        >
+            <p className="flex items-start gap-2 text-base text-stop-900">
+                <Icon name="warning" className="text-stop-600 mt-0.5" />
+                <span className="font-bold text-sm uppercase tracking-wider text-stop-700">
+                    Delay Notice
+                </span>
+                <br />
+                {comment.body}
             </p>
 
-            <ul className="mt-3 space-y-3">
-                {comments.map((comment) => (
-                    <li
-                        key={comment.comment_id}
-                        className="rounded-lg bg-white p-3 ring-1 ring-line"
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <p className="text-muted">
+                    {comment.author?.username}
+                    {comment.author?.username && " · "}
+                    {exactTime(comment.created_at)}
+                </p>
+
+                {comment.acknowledged ? (
+                    <span className="inline-flex items-center gap-1 text-sm font-bold text-ok-600">
+                        <Icon name="check" />
+                        Acknowledged
+                    </span>
+                ) : (
+                    <EmployeeButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => acknowledge(comment)}
                     >
-                        <p className="text-base text-navy-900">
-                            {comment.body}
-                        </p>
+                        <Icon name="check" />
+                        Got it
+                    </EmployeeButton>
+                )}
+            </div>
+        </li>
+    );
 
-                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm text-muted">
-                                {comment.author?.username}
-                                {comment.author?.username && " · "}
-                                {exactTime(comment.created_at)}
-                            </p>
+    const renderRegularComment = (comment) => (
+        <li
+            key={`comment-${comment.comment_id}`}
+            className="rounded-lg bg-white p-3 ring-1 ring-line"
+        >
+            <p className="text-base text-navy-900">{comment.body}</p>
 
-                            {comment.acknowledged ? (
-                                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-ok-600">
-                                    <Icon name="check" />
-                                    Acknowledged
-                                </span>
-                            ) : (
-                                <EmployeeButton
-                                    variant="secondary"
-                                    onClick={() => acknowledge(comment)}
-                                >
-                                    <Icon name="check" />
-                                    Got it
-                                </EmployeeButton>
-                            )}
-                        </div>
-                    </li>
-                ))}
-            </ul>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted">
+                    {comment.author?.username}
+                    {comment.author?.username && " · "}
+                    {exactTime(comment.created_at)}
+                </p>
+
+                {comment.acknowledged ? (
+                    <span className="inline-flex items-center gap-1.5 text-sm font-bold text-ok-600">
+                        <Icon name="check" />
+                        Acknowledged
+                    </span>
+                ) : (
+                    <EmployeeButton
+                        variant="secondary"
+                        onClick={() => acknowledge(comment)}
+                    >
+                        <Icon name="check" />
+                        Got it
+                    </EmployeeButton>
+                )}
+            </div>
+        </li>
+    );
+
+    return (
+        <div className="rounded-xl border border-accent-400 bg-accent-100 p-4">
+            {delayNotices.length > 0 && (
+                <>
+                    <p className="flex items-start gap-2 text-base font-bold text-stop-900 mb-3">
+                        <Icon name="warning" className="text-stop-600 mt-0.5" />
+                        <span>
+                            ⚠️ Delay Notice{delayNotices.length > 1 ? "s" : ""}
+                        </span>
+                    </p>
+
+                    <ul className="mt-0 space-y-3 mb-6">
+                        {delayNotices.map(renderDelayNotice)}
+                    </ul>
+                </>
+            )}
+
+            {regularComments.length > 0 && (
+                <>
+                    <p className="flex items-center gap-2 text-base font-bold text-navy-900 mb-3">
+                        <Icon name="comment" className="text-brand-700" />
+                        {regularComments.length === 1
+                            ? "A note from the RDO's Office"
+                            : `${regularComments.length} notes from the RDO's Office`}
+                    </p>
+
+                    <ul className="mt-0 space-y-3">
+                        {regularComments.map(renderRegularComment)}
+                    </ul>
+                </>
+            )}
         </div>
     );
 }

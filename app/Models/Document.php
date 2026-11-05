@@ -62,6 +62,7 @@ class Document extends Model
         'waiting_since',
         'aging',
         'awaiting_details',
+        'delay_reason', 
     ];
 
     protected $casts = [
@@ -209,16 +210,21 @@ class Document extends Model
      * Returns the band name, the hours waited, and whether it has
      * passed the overdue line, so the frontend only has to colour it.
      */
+        /**
+     * How the current wait compares to the office's overdue target.
+     *
+     * Returns the band name, the hours waited, and whether it has
+     * passed the overdue line, so the frontend only has to colour it.
+     */
     public function getAgingAttribute(): ?array
     {
         /*
-        * A draft and a pending document are both waiting on someone —
-        * a draft on whoever completes Step 2, a pending one on the
-        * destination section. Once received, the office considers the
-        * clock stopped - the exact times stay in the history, but no
-        * badge nags the holder.
+        * A draft and a pending document are waiting on someone, and a
+        * received document is waiting on its holder to act. The clock
+        * for a received document runs from received_at, so every new
+        * forward and receive starts a fresh count.
         */
-        if (! in_array((int) $this->status_id, [0, 1], true)) {
+        if (! in_array((int) $this->status_id, [0, 1, 2], true)) {
             return null;
         }
 
@@ -273,6 +279,28 @@ class Document extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deletion_approved_by', 'id');
+    }
+
+    /**
+     * Get the latest delay notice comment for this document.
+     *
+     * Returns null when there is no delay notice.
+     */
+    /**
+ * Pinakabagong delay reason ng document, galing sa document_comments
+ * na may type = 'delay'.
+ */
+    public function getDelayReasonAttribute(): ?string
+    {
+        $comments = $this->relationLoaded('comments')
+            ? $this->comments
+            : $this->comments()->get();
+
+        return $comments
+            ->where('type', 'delay')
+            ->sortByDesc('created_at')
+            ->first()
+            ?->body;
     }
 
     /**

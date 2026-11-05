@@ -159,6 +159,60 @@ export default function DocumentDetailsModal({ document, onClose }) {
                     </div>
 
                     <div className="space-y-4 px-6 py-5">
+                        {/* Delay Notice Banner */}
+                        {document.delay_reason && (
+                            <div className="rounded-lg border border-stop-600 bg-stop-50 p-4 mb-2">
+                                <div className="flex items-start gap-3">
+                                    <Icon
+                                        name="warning"
+                                        className="text-stop-600 mt-0.5"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="flex items-start gap-1 text-base font-bold text-stop-900">
+                                            <span className="font-semibold uppercase tracking-wider text-stop-700 text-sm">
+                                                Delay Notice
+                                            </span>
+                                            {document.delay_reason.days && (
+                                                <span className="font-semibold text-stop-700">
+                                                    Delayed{" "}
+                                                    {document.delay_reason.days}{" "}
+                                                    day
+                                                    {document.delay_reason
+                                                        .days > 1
+                                                        ? "s"
+                                                        : ""}
+                                                </span>
+                                            )}
+                                        </p>
+                                        <p className="mt-1 text-stop-800 text-sm whitespace-pre-line">
+                                            {document.delay_reason.body}
+                                        </p>
+                                        <p className="mt-2 text-xs text-stop-600 flex items-center gap-1">
+                                            <span>
+                                                {
+                                                    document.delay_reason
+                                                        .author_name
+                                                }
+                                            </span>
+                                            <span>·</span>
+                                            <span>
+                                                {new Date(
+                                                    document.delay_reason
+                                                        .created_at,
+                                                ).toLocaleDateString()}
+                                            </span>
+                                            {!document.delay_reason
+                                                .acknowledged && (
+                                                <span className="text-stop-600 font-bold">
+                                                    Not yet acknowledged
+                                                </span>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <DocumentComments document={document} />
 
                         <div className="grid grid-cols-2 gap-4">
@@ -190,13 +244,11 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                 <p className="text-xs font-medium text-slate-400">
                                     From
                                 </p>
-
                                 <p className="text-slate-700">
                                     {document.current_section?.section_name ??
                                         "—"}
                                 </p>
                             </div>
-
                             <div>
                                 <p className="text-xs font-medium text-slate-400">
                                     To
@@ -228,7 +280,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             >
                                 {status ?? "Unknown"}
                             </span>
-
                             <div className="mt-2">
                                 <AgeBadge document={document} showSince />
                             </div>
@@ -243,7 +294,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                     {exactTime(document.created_at)}
                                 </p>
                             </div>
-
                             {document.received_at && (
                                 <div>
                                     <p className="text-xs font-medium text-slate-400">
@@ -332,7 +382,6 @@ export default function DocumentDetailsModal({ document, onClose }) {
                             </EmployeeButton>
                         </div>
                     )}
-
                     {isClosed && (
                         <div className="border-t border-line bg-sunken px-6 py-5">
                             <EmployeeButton

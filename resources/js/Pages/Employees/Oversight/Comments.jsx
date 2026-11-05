@@ -79,7 +79,7 @@ function CommentBox({ document, onDone }) {
     );
 }
 
-export default function Comments({ stuck = [], sent = [] }) {
+export default function Comments({ stuck = [] }) {
     const [writingTo, setWritingTo] = useState(null);
 
     const overdue = stuck.filter((d) => d.aging?.overdue).length;
@@ -241,62 +241,6 @@ export default function Comments({ stuck = [], sent = [] }) {
                         </div>
                     )}
                 </EmployeeCard>
-
-                {/* What has been sent, and whether it landed */}
-                {sent.length > 0 && (
-                    <EmployeeCard>
-                        <h2 className="text-xl font-bold text-black">
-                            Comments you have sent
-                        </h2>
-
-                        <ul className="mt-4 divide-y divide-line rounded-xl border border-line">
-                            {sent.map((comment) => (
-                                <li key={comment.comment_id} className="p-4">
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <p className="font-semibold text-black">
-                                                {documentTitle(
-                                                    comment.document,
-                                                )}
-                                            </p>
-
-                                            <p className="mt-0.5 font-mono text-sm text-black">
-                                                {
-                                                    comment.document
-                                                        ?.tracking_number
-                                                }
-                                            </p>
-                                        </div>
-
-                                        {comment.acknowledged ? (
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-ok-100 px-3 py-1 text-sm font-bold text-black">
-                                                <Icon name="check" />
-                                                Seen by{" "}
-                                                {comment.reader?.username ??
-                                                    sectionLabel(
-                                                        comment.to_section,
-                                                    )}
-                                            </span>
-                                        ) : (
-                                            <span className="rounded-full bg-warn-100 px-3 py-1 text-sm font-bold text-black">
-                                                Not yet seen
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <p className="mt-2 text-base text-black">
-                                        {comment.body}
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-black">
-                                        To {sectionLabel(comment.to_section)}{" "}
-                                        &middot; {exactTime(comment.created_at)}
-                                    </p>
-                                </li>
-                            ))}
-                        </ul>
-                    </EmployeeCard>
-                )}
             </div>
         </EmployeeLayout>
     );
