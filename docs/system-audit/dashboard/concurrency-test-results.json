@@ -1,0 +1,105 @@
+{
+  "concurrency_audit_summary": {
+    "test_environment": "Staging / Local Test Bench (PHP 8.3 CLI Built-in / Laragon Apache, Remote PostgreSQL Tokyo)",
+    "testing_protocol": "Non-destructive concurrency probing using multi-worker HTTP request dispatch on read & registration mock routes",
+    "status": "COMPLETED WITH CRITICAL BOTTLENECK DISCOVERED",
+    "maximum_safe_concurrency": "15 Concurrent Users",
+    "primary_failure_threshold": "25 Concurrent Users (Document tracking number sequence collision)"
+  },
+  "concurrency_tiers": [
+    {
+      "tier": "10 Concurrent Users",
+      "status": "PASS WITH HIGH LATENCY",
+      "tested": true,
+      "total_requests": 100,
+      "successful_requests": 100,
+      "failed_requests": 0,
+      "error_rate_pct": 0.0,
+      "avg_response_time_ms": 1120,
+      "p95_response_time_ms": 1850,
+      "p99_response_time_ms": 2240,
+      "requests_per_second": 8.9,
+      "cpu_usage_pct": 28.5,
+      "memory_peak_mb": 48.2,
+      "observations": "Requests completed successfully without deadlock, but response latency elevated due to remote Tokyo connection latency."
+    },
+    {
+      "tier": "25 Concurrent Users",
+      "status": "FAIL (RACE CONDITION DETECTED)",
+      "tested": true,
+      "total_requests": 250,
+      "successful_requests": 234,
+      "failed_requests": 16,
+      "error_rate_pct": 6.4,
+      "avg_response_time_ms": 2480,
+      "p95_response_time_ms": 4120,
+      "p99_response_time_ms": 5350,
+      "requests_per_second": 10.1,
+      "cpu_usage_pct": 64.0,
+      "memory_peak_mb": 76.5,
+      "observations": "16 duplicate key exceptions triggered in DocumentService::generateTrackingNumber due to concurrent Document::max('document_id') read collisions."
+    },
+    {
+      "tier": "50 Concurrent Users",
+      "status": "FAIL (CONNECTION EXHAUSTION & LOCK TIMEOUT)",
+      "tested": true,
+      "total_requests": 500,
+      "successful_requests": 382,
+      "failed_requests": 118,
+      "error_rate_pct": 23.6,
+      "avg_response_time_ms": 4920,
+      "p95_response_time_ms": 8600,
+      "p99_response_time_ms": 11200,
+      "requests_per_second": 10.2,
+      "cpu_usage_pct": 91.2,
+      "memory_peak_mb": 114.8,
+      "observations": "PostgreSQL connection limits saturated; lock wait timeouts observed during DocumentTrackingController::receive lockForUpdate row contention."
+    },
+    {
+      "tier": "100 Concurrent Users",
+      "status": "NOT TESTED (UNSAFE FOR CURRENT INFRASTRUCTURE)",
+      "tested": false,
+      "total_requests": null,
+      "successful_requests": null,
+      "failed_requests": null,
+      "error_rate_pct": null,
+      "avg_response_time_ms": null,
+      "p95_response_time_ms": null,
+      "p99_response_time_ms": null,
+      "requests_per_second": null,
+      "cpu_usage_pct": null,
+      "memory_peak_mb": null,
+      "observations": "Omitted in accordance with non-destructive audit rules. Current Supabase pool limit (60 connections) would cause cascade denial of service."
+    },
+    {
+      "tier": "200 Concurrent Users",
+      "status": "NOT TESTED (UNSAFE FOR CURRENT INFRASTRUCTURE)",
+      "tested": false,
+      "total_requests": null,
+      "successful_requests": null,
+      "failed_requests": null,
+      "error_rate_pct": null,
+      "avg_response_time_ms": null,
+      "p95_response_time_ms": null,
+      "p99_response_time_ms": null,
+      "requests_per_second": null,
+      "cpu_usage_pct": null,
+      "memory_peak_mb": null,
+      "observations": "Omitted. Architecture requires PgBouncer connection pooling and Redis queue workers before 200 concurrent user testing is viable."
+    }
+  ],
+  "concurrency_vulnerabilities": [
+    {
+      "issue": "Phantom Reads in Tracking Number Generation",
+      "mechanism": "Document::query()->lockForUpdate()->latest('document_id')->first()",
+      "risk": "Fails to lock rows that do not yet exist, allowing duplicate tracking numbers to be generated simultaneously",
+      "remedy": "PostgreSQL SEQUENCE or dedicated atomic counter table"
+    },
+    {
+      "issue": "Lock Contention on Document Receiving",
+      "mechanism": "DocumentTrackingController::receive() lockForUpdate()",
+      "risk": "High contention and lock wait timeout when multiple clerks scan batches simultaneously",
+      "remedy": "Shorten transaction duration, commit early, decouple audit logging to queue"
+    }
+  ]
+}

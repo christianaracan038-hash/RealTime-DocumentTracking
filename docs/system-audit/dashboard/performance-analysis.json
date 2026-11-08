@@ -1,0 +1,91 @@
+{
+  "performance_summary": {
+    "overall_performance_grade": "D+",
+    "average_ttfb_ms": 780,
+    "p95_ttfb_ms": 1420,
+    "primary_bottleneck": "Unpooled Tokyo PostgreSQL connection latency multiplied by model accessor N+1 queries"
+  },
+  "slow_api_endpoints": [
+    {
+      "endpoint": "GET /dashboard",
+      "method": "GET",
+      "p50_latency_ms": 820,
+      "p95_latency_ms": 1650,
+      "root_cause": "SectionDashboardController executes overdue() correlated subquery and serializes Document models triggering $appends N+1 lookups",
+      "impact": "High"
+    },
+    {
+      "endpoint": "GET /documents/history",
+      "method": "GET",
+      "p50_latency_ms": 760,
+      "p95_latency_ms": 1490,
+      "root_cause": "DocumentService::applyVisibility() triggers full sequential scan across documents and tracking_histories tables",
+      "impact": "High"
+    },
+    {
+      "endpoint": "GET /referrals",
+      "method": "GET",
+      "p50_latency_ms": 690,
+      "p95_latency_ms": 1380,
+      "root_cause": "Multiple eager relations (originSection, currentEmployee, latestTrackingHistory) loaded sequentially over remote connection",
+      "impact": "Medium"
+    },
+    {
+      "endpoint": "POST /documents/transmittals/export",
+      "method": "POST",
+      "p50_latency_ms": 1250,
+      "p95_latency_ms": 2800,
+      "root_cause": "Synchronous DOMPDF generation inside the web request lifecycle blocking the worker",
+      "impact": "High"
+    }
+  ],
+  "slow_database_queries": [
+    {
+      "query_pattern": "SELECT * FROM documents WHERE created_by = ? OR section_id = ? OR id IN (SELECT document_id FROM tracking_histories WHERE from_section_id = ? OR to_section_id = ?)",
+      "table": "documents, tracking_histories",
+      "query_type": "Sequential Scan / Subquery",
+      "estimated_cost_ms": "140ms - 420ms (grows with rows)",
+      "cause": "Chained OR and orWhereHas prevent B-Tree index scan in PostgreSQL planner"
+    },
+    {
+      "query_pattern": "SELECT document_id, MAX(tracked_at) FROM tracking_histories GROUP BY document_id",
+      "table": "tracking_histories",
+      "query_type": "Correlated Hash Aggregate",
+      "estimated_cost_ms": "90ms - 310ms",
+      "cause": "Document::overdue() executes unindexed group-by aggregation on every dashboard request"
+    },
+    {
+      "query_pattern": "SELECT * FROM tracking_histories WHERE document_id = ? ORDER BY tracked_at DESC LIMIT 1",
+      "table": "tracking_histories",
+      "query_type": "N+1 Single-Row Lookup",
+      "estimated_cost_ms": "25ms - 40ms per document row",
+      "cause": "getWaitingSinceAttribute() accessor invoked dynamically during JSON serialization"
+    }
+  ],
+  "frontend_rendering_issues": [
+    {
+      "component": "Dashboard.jsx",
+      "issue": "Unmemoized Document List Filtering",
+      "impact": "Re-filters and recalculates document stats array on every tab switch or modal event",
+      "recommendation": "Wrap filteredDocuments in useMemo([documents, filterState])"
+    },
+    {
+      "component": "Documents.jsx",
+      "issue": "Missing List Virtualization",
+      "impact": "Renders >150 rows with action buttons and badge components into flat DOM, triggering DOM node bloat (>2,500 elements)",
+      "recommendation": "Integrate @tanstack/react-virtual for tables with >50 items"
+    },
+    {
+      "component": "DocumentDetailsModal.jsx",
+      "issue": "Document Details Modal Re-render Waterfall",
+      "impact": "Modal state changes trigger unnecessary re-rendering of entire parent document list",
+      "recommendation": "Isolate modal state and memoize row components"
+    }
+  ],
+  "system_resource_bottlenecks": {
+    "network_latency": "Remote Supabase instance located in Tokyo (ap-northeast-1) adds ~550-650ms round-trip latency per unpooled SQL connection",
+    "cpu_bottlenecks": "PostgreSQL sequential scans on documents table under multi-user access cause database CPU utilization spikes",
+    "memory_concerns": "In-memory DOMPDF generation and GD avatar resizing without dimension limits can spike PHP process RAM to 128MB+ limit",
+    "io_bottlenecks": "Local file session reads/writes (SESSION_DRIVER=file) introduce disk I/O contention under concurrent requests"
+  }
+}

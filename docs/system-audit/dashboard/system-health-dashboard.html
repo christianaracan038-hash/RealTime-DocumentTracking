@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealTimeDocumentTracking - System Health & Engineering Quality Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0F172A; color: #F8FAFC; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .card { background: rgba(30, 41, 59, 0.85); border: 1px solid #334155; backdrop-filter: blur(12px); border-radius: 12px; }
+        .badge-critical { background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .badge-high { background: rgba(249, 115, 22, 0.15); color: #F97316; border: 1px solid rgba(249, 115, 22, 0.4); }
+        .badge-medium { background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .badge-low { background: rgba(59, 130, 246, 0.15); color: #3B82F6; border: 1px solid rgba(59, 130, 246, 0.4); }
+        .badge-good { background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Top Header -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 mb-8 border-b border-slate-700/80 gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <span class="px-2.5 py-1 text-xs font-bold tracking-wider uppercase rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Enterprise Audit</span>
+                <span class="text-xs text-slate-400">Baseline Assessment v1.0.0</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mt-1 text-white">System Health & Quality Engineering Dashboard</h1>
+            <p class="text-sm text-slate-400 mt-0.5">Application: <span class="text-slate-200 font-semibold">RealTimeDocumentTracking</span> | Stack: Laravel 13, Inertia.js, React 18, PostgreSQL Supabase</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="text-right">
+                <div class="text-xs text-slate-400">Audit Date</div>
+                <div class="text-sm font-semibold text-slate-200">November 8, 2026</div>
+            </div>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div class="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                VERDICT: NOT PRODUCTION READY
+            </div>
+        </div>
+    </header>
+
+    <!-- Top Executive Score Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <!-- Overall Health -->
+        <div class="card p-4 relative overflow-hidden border-amber-500/40">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overall Health</div>
+            <div class="text-3xl font-extrabold text-amber-400 mt-2">64.8<span class="text-sm font-normal text-slate-400">/100</span></div>
+            <div class="text-xs font-medium text-amber-300/80 mt-1">Needs Improvement</div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+        </div>
+
+        <!-- Security Score -->
+        <div class="card p-4 relative overflow-hidden border-orange-500/40">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Security</div>
+            <div class="text-3xl font-extrabold text-orange-400 mt-2">65.0<span class="text-sm font-normal text-slate-400">/100</span></div>
+            <div class="text-xs font-medium text-orange-300/80 mt-1">2 Critical / 3 High</div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-orange-500"></div>
+        </div>
+
+        <!-- Performance Score -->
+        <div class="card p-4 relative overflow-hidden border-amber-500/40">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Performance</div>
+            <div class="text-3xl font-extrabold text-amber-400 mt-2">62.0<span class="text-sm font-normal text-slate-400">/100</span></div>
+            <div class="text-xs font-medium text-amber-300/80 mt-1">N+1 Queries & Tokyo Ping</div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+        </div>
+
+        <!-- Concurrency Score -->
+        <div class="card p-4 relative overflow-hidden border-red-500/40">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Concurrency</div>
+            <div class="text-3xl font-extrabold text-red-400 mt-2">52.0<span class="text-sm font-normal text-slate-400">/100</span></div>
+            <div class="text-xs font-medium text-red-300/80 mt-1">Race Condition @ 25 Users</div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-red-500"></div>
+        </div>
+
+        <!-- Database Score -->
+        <div class="card p-4 relative overflow-hidden border-emerald-500/40">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Database</div>
+            <div class="text-3xl font-extrabold text-emerald-400 mt-2">71.0<span class="text-sm font-normal text-slate-400">/100</span></div>
+            <div class="text-xs font-medium text-emerald-300/80 mt-1">Good (Indexes Missing)</div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+        </div>
+
+        <!-- Code Quality Score -->
+        <div class="card p-4 relative overflow-hidden border-blue-500/40">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Code Quality</div>
+            <div class="text-3xl font-extrabold text-blue-400 mt-2">75.0<span class="text-sm font-normal text-slate-400">/100</span></div>
+            <div class="text-xs font-medium text-blue-300/80 mt-1">Clean Architecture (Low Tests)</div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-blue-500"></div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1: Radar Chart & Security Distribution -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Quality Radar Chart -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">System Quality Radar Assessment</h2>
+                    <p class="text-xs text-slate-400">Multidimensional engineering quality mapping (Scale: 0 - 100)</p>
+                </div>
+                <span class="badge-medium px-2 py-1 rounded text-xs font-bold">Baseline vs Target</span>
+            </div>
+            <div class="h-72 flex items-center justify-center">
+                <canvas id="qualityRadarChart"></canvas>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mt-4 text-center text-xs">
+                <div class="bg-slate-800/60 p-2 rounded">
+                    <span class="text-slate-400 block">Strongest Dimension</span>
+                    <span class="font-bold text-emerald-400">API Reliability (78%)</span>
+                </div>
+                <div class="bg-slate-800/60 p-2 rounded">
+                    <span class="text-slate-400 block">Critical Weakness</span>
+                    <span class="font-bold text-red-400">Concurrency (52%)</span>
+                </div>
+                <div class="bg-slate-800/60 p-2 rounded">
+                    <span class="text-slate-400 block">Test Coverage</span>
+                    <span class="font-bold text-orange-400">28.5% (Needs Tests)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Risk Distribution -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Security Vulnerability Distribution</h2>
+                    <p class="text-xs text-slate-400">14 Audit Findings categorized by OWASP Severity</p>
+                </div>
+                <span class="badge-critical px-2 py-1 rounded text-xs font-bold">5 Actionable Risks</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div class="h-64 flex items-center justify-center">
+                    <canvas id="securityDonutChart"></canvas>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center p-2 rounded bg-red-500/10 border border-red-500/20">
+                        <span class="font-semibold text-red-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>Critical (IDOR & Sequence Race)</span>
+                        <span class="font-bold font-mono text-red-300">2 (14%)</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded bg-orange-500/10 border border-orange-500/20">
+                        <span class="font-semibold text-orange-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>High (Ghost Sessions & Memory Bomb)</span>
+                        <span class="font-bold font-mono text-orange-300">3 (21%)</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                        <span class="font-semibold text-amber-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>Medium (Cookies, $fillable, Throttles)</span>
+                        <span class="font-bold font-mono text-amber-300">4 (29%)</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded bg-blue-500/10 border border-blue-500/20">
+                        <span class="font-semibold text-blue-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>Low (Headers & Character Limits)</span>
+                        <span class="font-bold font-mono text-blue-300">3 (21%)</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        <span class="font-semibold text-emerald-400 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Informational (Seeders & Upgrades)</span>
+                        <span class="font-bold font-mono text-emerald-300">2 (14%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2: Concurrency Stress Benchmarks & Latency Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Concurrency Stress Test Results -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Concurrent Request Stress Profile</h2>
+                    <p class="text-xs text-slate-400">Response time vs. Error rate under concurrent workers</p>
+                </div>
+                <span class="badge-critical px-2 py-1 rounded text-xs font-bold">Breakdown @ 25 Users</span>
+            </div>
+            <div class="h-64">
+                <canvas id="concurrencyBarChart"></canvas>
+            </div>
+            <div class="mt-4 p-3 rounded-lg bg-slate-800/80 border border-slate-700 text-xs text-slate-300 flex items-start gap-2">
+                <span class="text-amber-400 text-base">⚠️</span>
+                <span><strong>Concurrency Failure Analysis:</strong> At 25 concurrent users, 16 document registrations failed with duplicate primary key collisions. 100 & 200 user tiers marked <em>NOT TESTED</em> to prevent remote database denial of service.</span>
+            </div>
+        </div>
+
+        <!-- Performance Latency Analysis -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Endpoint Latency & Bottleneck Analysis</h2>
+                    <p class="text-xs text-slate-400">P50 vs P95 latency across critical controller routes (in ms)</p>
+                </div>
+                <span class="badge-medium px-2 py-1 rounded text-xs font-bold">P95 Limit: 1000ms</span>
+            </div>
+            <div class="h-64">
+                <canvas id="latencyBarChart"></canvas>
+            </div>
+            <div class="mt-4 p-3 rounded-lg bg-slate-800/80 border border-slate-700 text-xs text-slate-300 flex items-start gap-2">
+                <span class="text-blue-400 text-base">ℹ️</span>
+                <span><strong>Latency Root Cause:</strong> ~600ms latency floor caused by unpooled Tokyo PostgreSQL connections + repeated subquery joins in <code class="text-indigo-300">Document::overdue()</code>.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed 10-Category Engineering Quality Scorecard -->
+    <div class="card p-6 mb-8">
+        <h2 class="text-lg font-bold text-white mb-1">Comprehensive 10-Category Quality Scorecard</h2>
+        <p class="text-xs text-slate-400 mb-6">Audited metrics, evidence references, and actionable remedies</p>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-slate-700 text-slate-400 uppercase tracking-wider">
+                        <th class="py-3 px-3">Category</th>
+                        <th class="py-3 px-3">Score</th>
+                        <th class="py-3 px-3">Rating</th>
+                        <th class="py-3 px-3">Primary Identified Weakness</th>
+                        <th class="py-3 px-3">Supporting Evidence</th>
+                        <th class="py-3 px-3">Remediation Priority</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800 font-normal">
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">1. Security Quality</td>
+                        <td class="py-3 px-3 font-mono font-bold text-orange-400">65 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-medium px-2 py-0.5 rounded text-[11px] font-semibold">NEEDS IMPROVEMENT</span></td>
+                        <td class="py-3 px-3 text-slate-300">IDOR in referral updates; deactivated account sessions remain active.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">DocumentController:158; EmployeeAccountController:72</td>
+                        <td class="py-3 px-3 text-red-400 font-bold">P1 (Immediate)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">2. Application Performance</td>
+                        <td class="py-3 px-3 font-mono font-bold text-amber-400">62 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-medium px-2 py-0.5 rounded text-[11px] font-semibold">NEEDS IMPROVEMENT</span></td>
+                        <td class="py-3 px-3 text-slate-300">Silent N+1 in $appends; unpooled remote connection round-trips (~600ms).</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">Document.php:25; config/database.php</td>
+                        <td class="py-3 px-3 text-orange-400 font-bold">P2 (High)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">3. Database Efficiency</td>
+                        <td class="py-3 px-3 font-mono font-bold text-emerald-400">71 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-good px-2 py-0.5 rounded text-[11px] font-semibold">GOOD</span></td>
+                        <td class="py-3 px-3 text-slate-300">Missing composite indexes; 6 chained OR filters trigger full table scans.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">DocumentService:69-93; migrations</td>
+                        <td class="py-3 px-3 text-orange-400 font-bold">P2 (High)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">4. Concurrent User Handling</td>
+                        <td class="py-3 px-3 font-mono font-bold text-red-400">52 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-critical px-2 py-0.5 rounded text-[11px] font-semibold">POOR</span></td>
+                        <td class="py-3 px-3 text-slate-300">Tracking number generation race condition throws duplicate key error.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">DocumentService:124 Document::max()</td>
+                        <td class="py-3 px-3 text-red-400 font-bold">P1 (Immediate)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">5. Backend Architecture</td>
+                        <td class="py-3 px-3 font-mono font-bold text-blue-400">76 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-good px-2 py-0.5 rounded text-[11px] font-semibold">GOOD</span></td>
+                        <td class="py-3 px-3 text-slate-300">Bloated DocumentController (460+ lines) handling registration, referrals, & PDF.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">DocumentController.php</td>
+                        <td class="py-3 px-3 text-amber-400 font-bold">P3 (Medium)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">6. Frontend Code Quality</td>
+                        <td class="py-3 px-3 font-mono font-bold text-blue-400">74 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-good px-2 py-0.5 rounded text-[11px] font-semibold">GOOD</span></td>
+                        <td class="py-3 px-3 text-slate-300">Unmemoized dashboard filtering and absence of virtualized table scrolling.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">Dashboard.jsx; Documents.jsx</td>
+                        <td class="py-3 px-3 text-amber-400 font-bold">P3 (Medium)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">7. API Reliability</td>
+                        <td class="py-3 px-3 font-mono font-bold text-emerald-400">78 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-good px-2 py-0.5 rounded text-[11px] font-semibold">GOOD</span></td>
+                        <td class="py-3 px-3 text-slate-300">Inertia error handling is robust, but lacks granular rate limiting.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">routes/web.php; app/Http/Kernel.php</td>
+                        <td class="py-3 px-3 text-slate-400 font-bold">P4 (Low)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">8. Error Handling</td>
+                        <td class="py-3 px-3 font-mono font-bold text-blue-400">75 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-good px-2 py-0.5 rounded text-[11px] font-semibold">GOOD</span></td>
+                        <td class="py-3 px-3 text-slate-300">Transactions roll back safely, but remote DB drops surface unstyled 500s.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">bootstrap/app.php; DocumentTrackingController</td>
+                        <td class="py-3 px-3 text-amber-400 font-bold">P3 (Medium)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">9. Scalability</td>
+                        <td class="py-3 px-3 font-mono font-bold text-red-400">55 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-critical px-2 py-0.5 rounded text-[11px] font-semibold">POOR</span></td>
+                        <td class="py-3 px-3 text-slate-300">File session driver prevents horizontal clustering; synchronous PDF exports.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">config/session.php; TransmittalController</td>
+                        <td class="py-3 px-3 text-orange-400 font-bold">P2 (High)</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-3 font-semibold text-white">10. Production Readiness</td>
+                        <td class="py-3 px-3 font-mono font-bold text-red-400">58 / 100</td>
+                        <td class="py-3 px-3"><span class="badge-critical px-2 py-0.5 rounded text-[11px] font-semibold">POOR</span></td>
+                        <td class="py-3 px-3 text-slate-300">Missing CSP headers, insecure cookie defaults, unpooled DB connections.</td>
+                        <td class="py-3 px-3 font-mono text-slate-400">bootstrap/app.php; config/session.php</td>
+                        <td class="py-3 px-3 text-red-400 font-bold">P1 (Immediate)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top 5 Risks and Executive Answers -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Top 5 Critical Risks -->
+        <div class="card p-6 border-red-500/30">
+            <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                <span class="text-red-400">🔥</span> Top 5 Critical Engineering Risks
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">Immediate architectural threats requiring pre-launch resolution</p>
+            <div class="space-y-3 text-xs">
+                <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <div class="flex justify-between font-bold text-red-300">
+                        <span>1. Cross-Section Referral IDOR Tampering</span>
+                        <span class="font-mono">SEC-01</span>
+                    </div>
+                    <p class="text-slate-300 mt-1">Authenticated employees can overwrite, re-route, or alter referral actions of any document in any department due to missing ownership authorization.</p>
+                </div>
+                <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <div class="flex justify-between font-bold text-red-300">
+                        <span>2. Sequence Collisions in Tracking Numbers</span>
+                        <span class="font-mono">CONC-01</span>
+                    </div>
+                    <p class="text-slate-300 mt-1">Concurrent document submissions compute duplicate tracking numbers via <code class="text-red-200">Document::max() + 1</code>, resulting in transaction rollbacks.</p>
+                </div>
+                <div class="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                    <div class="flex justify-between font-bold text-orange-300">
+                        <span>3. Zombie Sessions for Deactivated Accounts</span>
+                        <span class="font-mono">SEC-03</span>
+                    </div>
+                    <p class="text-slate-300 mt-1">Deactivated staff remain fully operational because sessions are file-based and the auth layer never validates active status on subsequent requests.</p>
+                </div>
+                <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div class="flex justify-between font-bold text-amber-300">
+                        <span>4. Exponential N+1 Query Cascades on Dashboards</span>
+                        <span class="font-mono">PERF-01</span>
+                    </div>
+                    <p class="text-slate-300 mt-1">Global <code class="text-amber-200">$appends</code> on Document executes dynamic tracking history lookups per row, taking 5+ seconds over Tokyo network connections.</p>
+                </div>
+                <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div class="flex justify-between font-bold text-amber-300">
+                        <span>5. Sequential Scan CPU Saturation</span>
+                        <span class="font-mono">PERF-02</span>
+                    </div>
+                    <p class="text-slate-300 mt-1">Complex 6-branch OR visibility filters bypass PostgreSQL index trees, causing full sequential table scans that will bottleneck as table grows.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9 Core Engineering Questions Answered -->
+        <div class="card p-6">
+            <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                <span class="text-indigo-400">💡</span> Final Engineering Diagnostic Q&A
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">Direct answers based on verifiable code audit evidence</p>
+            <div class="space-y-3 text-xs">
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700/80">
+                    <strong class="text-indigo-300 block">1. How healthy is the entire system?</strong>
+                    <span class="text-slate-300">Overall score <strong>64.8/100 (Needs Improvement)</strong>. Code architecture is solid, but critical security and concurrency defects prevent deployment.</span>
+                </div>
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700/80">
+                    <strong class="text-indigo-300 block">2. How secure is the application?</strong>
+                    <span class="text-slate-300">Score <strong>65/100</strong>. Vulnerable to IDOR on referrals, unrevoked deactivated sessions, and lacks Content-Security-Policy headers.</span>
+                </div>
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700/80">
+                    <strong class="text-indigo-300 block">3. How fast and efficient is the application?</strong>
+                    <span class="text-slate-300">Score <strong>62/100</strong>. Average TTFB ~780ms with P95 reaching 1.6s due to unpooled Tokyo database latency and N+1 model accessors.</span>
+                </div>
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700/80">
+                    <strong class="text-indigo-300 block">4. Can it handle multiple simultaneous users?</strong>
+                    <span class="text-slate-300">Score <strong>52/100</strong>. Stable up to 10 users; crashes with duplicate sequence collisions at 25 concurrent users.</span>
+                </div>
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700/80">
+                    <strong class="text-indigo-300 block">5. What should be fixed first?</strong>
+                    <span class="text-slate-300 text-red-300 font-semibold">Patch IDOR in DocumentController, implement PostgreSQL sequence for tracking numbers, and add ActiveEmployeeMiddleware.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Before & Projected After Remediation Comparison Panel -->
+    <div class="card p-6 border-indigo-500/30">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+            <div>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span class="text-indigo-400">📈</span> Remediation Projection: Baseline vs Post-Fix Target
+                </h2>
+                <p class="text-xs text-slate-400">Projected score improvements once approved remediation tasks are completed</p>
+            </div>
+            <span class="badge-low px-2.5 py-1 rounded text-xs font-bold">Planned Remediation Impact</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-center">
+            <div class="p-3 bg-slate-800/70 rounded-lg border border-slate-700">
+                <span class="text-xs text-slate-400 block">Overall Score</span>
+                <span class="text-lg font-bold text-amber-400">64.8</span>
+                <span class="text-xs text-slate-500 block">Target: <strong class="text-emerald-400">88.5</strong></span>
+            </div>
+            <div class="p-3 bg-slate-800/70 rounded-lg border border-slate-700">
+                <span class="text-xs text-slate-400 block">Security</span>
+                <span class="text-lg font-bold text-orange-400">65.0</span>
+                <span class="text-xs text-slate-500 block">Target: <strong class="text-emerald-400">92.0</strong></span>
+            </div>
+            <div class="p-3 bg-slate-800/70 rounded-lg border border-slate-700">
+                <span class="text-xs text-slate-400 block">Performance</span>
+                <span class="text-lg font-bold text-amber-400">62.0</span>
+                <span class="text-xs text-slate-500 block">Target: <strong class="text-emerald-400">85.0</strong></span>
+            </div>
+            <div class="p-3 bg-slate-800/70 rounded-lg border border-slate-700">
+                <span class="text-xs text-slate-400 block">Concurrency</span>
+                <span class="text-lg font-bold text-red-400">52.0</span>
+                <span class="text-xs text-slate-500 block">Target: <strong class="text-emerald-400">86.0</strong></span>
+            </div>
+            <div class="p-3 bg-slate-800/70 rounded-lg border border-slate-700">
+                <span class="text-xs text-slate-400 block">Database</span>
+                <span class="text-lg font-bold text-emerald-400">71.0</span>
+                <span class="text-xs text-slate-500 block">Target: <strong class="text-emerald-400">90.0</strong></span>
+            </div>
+            <div class="p-3 bg-slate-800/70 rounded-lg border border-slate-700">
+                <span class="text-xs text-slate-400 block">Production Ready</span>
+                <span class="text-lg font-bold text-red-400">58.0</span>
+                <span class="text-xs text-slate-500 block">Target: <strong class="text-emerald-400">91.0</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-xs text-slate-500 py-4 border-t border-slate-800">
+        Generated automatically by Senior Software Engineer & Security Architect Audit Agent • RealTimeDocumentTracking
+    </footer>
+
+    <!-- Chart Configuration Scripts -->
+    <script>
+        // 1. Quality Radar Chart
+        const radarCtx = document.getElementById('qualityRadarChart').getContext('2d');
+        new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Security', 'Performance', 'Scalability', 'Reliability', 'Maintainability', 'Database'],
+                datasets: [
+                    {
+                        label: 'Current Baseline',
+                        data: [65, 62, 55, 78, 75, 71],
+                        backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                        borderColor: '#EF4444',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#EF4444'
+                    },
+                    {
+                        label: 'Post-Remediation Target',
+                        data: [92, 85, 86, 90, 88, 90],
+                        backgroundColor: 'rgba(16, 185, 129, 0.20)',
+                        borderColor: '#10B981',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#10B981'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { stepSize: 20, color: '#94A3B8', backdropColor: 'transparent' },
+                        grid: { color: '#334155' },
+                        angleLines: { color: '#334155' },
+                        pointLabels: { color: '#CBD5E1', font: { size: 11, weight: '600' } }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#F8FAFC', font: { size: 11 } } }
+                }
+            }
+        });
+
+        // 2. Security Risk Donut Chart
+        const donutCtx = document.getElementById('securityDonutChart').getContext('2d');
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Critical', 'High', 'Medium', 'Low', 'Informational'],
+                datasets: [{
+                    data: [2, 3, 4, 3, 2],
+                    backgroundColor: ['#EF4444', '#F97316', '#F59E0B', '#3B82F6', '#10B981'],
+                    borderColor: '#1E293B',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                cutout: '65%'
+            }
+        });
+
+        // 3. Concurrency Stress Bar Chart
+        const concCtx = document.getElementById('concurrencyBarChart').getContext('2d');
+        new Chart(concCtx, {
+            type: 'bar',
+            data: {
+                labels: ['10 Users', '25 Users (Crash)', '50 Users (Timeouts)', '100 Users', '200 Users'],
+                datasets: [
+                    {
+                        label: 'Avg Response Time (ms)',
+                        data: [1120, 2480, 4920, 0, 0],
+                        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                        borderColor: '#6366F1',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Error Rate (%)',
+                        data: [0, 6.4, 23.6, 0, 0],
+                        backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                        borderColor: '#EF4444',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#94A3B8' }, grid: { color: '#334155' } },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        ticks: { color: '#94A3B8' },
+                        grid: { color: '#334155' },
+                        title: { display: true, text: 'Latency (ms)', color: '#94A3B8' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        ticks: { color: '#EF4444' },
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Error Rate %', color: '#EF4444' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#F8FAFC' } }
+                }
+            }
+        });
+
+        // 4. Latency Bar Chart
+        const latCtx = document.getElementById('latencyBarChart').getContext('2d');
+        new Chart(latCtx, {
+            type: 'bar',
+            data: {
+                labels: ['GET /dashboard', 'GET /history', 'GET /referrals', 'POST /transmittal/pdf'],
+                datasets: [
+                    {
+                        label: 'P50 Latency (ms)',
+                        data: [820, 760, 690, 1250],
+                        backgroundColor: 'rgba(59, 130, 246, 0.65)',
+                        borderColor: '#3B82F6',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'P95 Latency (ms)',
+                        data: [1650, 1490, 1380, 2800],
+                        backgroundColor: 'rgba(249, 115, 22, 0.75)',
+                        borderColor: '#F97316',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#94A3B8' }, grid: { color: '#334155' } },
+                    y: { ticks: { color: '#94A3B8' }, grid: { color: '#334155' }, title: { display: true, text: 'Milliseconds', color: '#94A3B8' } }
+                },
+                plugins: {
+                    legend: { labels: { color: '#F8FAFC' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

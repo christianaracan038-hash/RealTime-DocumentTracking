@@ -1,0 +1,159 @@
+{
+  "summary": {
+    "critical": 2,
+    "high": 3,
+    "medium": 4,
+    "low": 3,
+    "informational": 2,
+    "total_findings": 14
+  },
+  "risk_distribution": [
+    { "level": "Critical", "count": 2, "percentage": 14.3, "color": "#EF4444" },
+    { "level": "High", "count": 3, "percentage": 21.4, "color": "#F97316" },
+    { "level": "Medium", "count": 4, "percentage": 28.6, "color": "#F59E0B" },
+    { "level": "Low", "count": 3, "percentage": 21.4, "color": "#3B82F6" },
+    { "level": "Informational", "count": 2, "percentage": 14.3, "color": "#10B981" }
+  ],
+  "findings": [
+    {
+      "id": "SEC-01",
+      "level": "Critical",
+      "category": "Broken Access Control (IDOR)",
+      "title": "Cross-Section Referral Modification via IDOR",
+      "location": "app/Http/Controllers/DocumentController.php:158",
+      "description": "Authenticated users can submit PUT requests to /referrals/{document} or /referrals/section/{document} and update referrals belonging to any section without authorization checks.",
+      "cwe": "CWE-639",
+      "owasp": "A01:2021-Broken Access Control"
+    },
+    {
+      "id": "SEC-02",
+      "level": "Critical",
+      "category": "Concurrency & Data Integrity",
+      "title": "Race Condition in Tracking Number Sequence Generation",
+      "location": "app/Services/DocumentService.php:124",
+      "description": "Document::max('document_id') + 1 allows phantom reads during concurrent document registrations, generating identical tracking numbers and throwing unhandled SQL exceptions.",
+      "cwe": "CWE-362",
+      "owasp": "A04:2021-Insecure Design"
+    },
+    {
+      "id": "SEC-03",
+      "level": "High",
+      "category": "Broken Authentication",
+      "title": "Session Persistence for Deactivated Employees",
+      "location": "app/Http/Controllers/EmployeeAccountController.php:72",
+      "description": "Deactivating an employee account in the database does not destroy the user's active session or tokens, permitting continued system operations.",
+      "cwe": "CWE-613",
+      "owasp": "A07:2021-Identification and Authentication Failures"
+    },
+    {
+      "id": "SEC-04",
+      "level": "High",
+      "category": "Broken Authentication",
+      "title": "Missing Session Invalidation on Password Update",
+      "location": "app/Http/Controllers/Auth/PasswordController.php:21",
+      "description": "Updating credentials does not invalidate concurrent sessions on other devices using Auth::logoutOtherDevices().",
+      "cwe": "CWE-384",
+      "owasp": "A07:2021-Identification and Authentication Failures"
+    },
+    {
+      "id": "SEC-05",
+      "level": "High",
+      "category": "Denial of Service (DoS)",
+      "title": "Avatar Upload Decompression Bomb Vulnerability",
+      "location": "app/Services/AvatarStorage.php:28",
+      "description": "Avatar storage checks file byte size but does not limit image pixel dimensions before calling GD imagecreatefromstring, leading to PHP memory exhaustion.",
+      "cwe": "CWE-400",
+      "owasp": "A05:2021-Security Misconfiguration"
+    },
+    {
+      "id": "SEC-06",
+      "level": "Medium",
+      "category": "Security Misconfiguration",
+      "title": "Insecure Cookie Flag Defaults",
+      "location": "config/session.php:162",
+      "description": "SESSION_SECURE_COOKIE defaults to null, failing to enforce HTTPS-only cookies unless explicitly specified in environment config.",
+      "cwe": "CWE-614",
+      "owasp": "A05:2021-Security Misconfiguration"
+    },
+    {
+      "id": "SEC-07",
+      "level": "Medium",
+      "category": "Mass Assignment",
+      "title": "Over-permissive $fillable on Document Model",
+      "location": "app/Models/Document.php:22",
+      "description": "Attributes like status_id, current_employee_id, and deletion_approved_by are mass-assignable on the Document model.",
+      "cwe": "CWE-915",
+      "owasp": "A08:2021-Software and Data Integrity Failures"
+    },
+    {
+      "id": "SEC-08",
+      "level": "Medium",
+      "category": "Missing Rate Limiting",
+      "title": "Absence of Granular Rate Limiting on Document Registration",
+      "location": "routes/web.php:88",
+      "description": "Document creation and referral submission routes have no specific throttle limits, leaving endpoints vulnerable to automated flooding.",
+      "cwe": "CWE-799",
+      "owasp": "A04:2021-Insecure Design"
+    },
+    {
+      "id": "SEC-09",
+      "level": "Medium",
+      "category": "Cryptographic Failures",
+      "title": "Session Driver Configured to Single-Node Local File Storage",
+      "location": "config/session.php:33",
+      "description": "File session store cannot be shared across multiple web workers or load balancers, causing session stickiness failure.",
+      "cwe": "CWE-311",
+      "owasp": "A02:2021-Cryptographic Failures"
+    },
+    {
+      "id": "SEC-10",
+      "level": "Low",
+      "category": "Information Disclosure",
+      "title": "Missing Content Security Policy (CSP) Headers",
+      "location": "bootstrap/app.php",
+      "description": "Application does not emit standard Content-Security-Policy or X-Content-Type-Options headers in HTTP responses.",
+      "cwe": "CWE-693",
+      "owasp": "A05:2021-Security Misconfiguration"
+    },
+    {
+      "id": "SEC-11",
+      "level": "Low",
+      "category": "Access Control",
+      "title": "Missing Validation on Section Referral Deletion Request Cancellation",
+      "location": "app/Http/Controllers/ReferralController.php",
+      "description": "Request deletion flag can be updated without validating if the document is in a transit state.",
+      "cwe": "CWE-284",
+      "owasp": "A01:2021-Broken Access Control"
+    },
+    {
+      "id": "SEC-12",
+      "level": "Low",
+      "category": "Data Validation",
+      "title": "Document Comments Remarks Input Size Limit",
+      "location": "app/Http/Controllers/DocumentTrackingController.php",
+      "description": "Remarks accept text without explicit maximum character validation on certain internal routes.",
+      "cwe": "CWE-20",
+      "owasp": "A03:2021-Injection"
+    },
+    {
+      "id": "SEC-13",
+      "level": "Informational",
+      "category": "Dependency Hygiene",
+      "title": "Outdated Minor Dependencies in package.json",
+      "location": "package.json",
+      "description": "Minor version updates available for Vite plugins and Tailwind utilities with no known direct CVEs.",
+      "cwe": "N/A",
+      "owasp": "A06:2021-Vulnerable and Outdated Components"
+    },
+    {
+      "id": "SEC-14",
+      "level": "Informational",
+      "category": "Code Quality",
+      "title": "Database Seeders with Static Demo Data",
+      "location": "database/seeders",
+      "description": "Seeders contain static mock accounts that should strictly be blocked from executing in production environments.",
+      "cwe": "N/A",
+      "owasp": "A05:2021-Security Misconfiguration"
+    }
+  ]
+}

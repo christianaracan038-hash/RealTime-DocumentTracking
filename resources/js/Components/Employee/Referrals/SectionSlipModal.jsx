@@ -1,26 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import Icon from "@/Components/Employee/Icon";
 import { exactTime, sectionLabel } from "./referral";
 
+const SLIP_WIDTH_IN = 8.5;
+const SLIP_HEIGHT_IN = 5.5;
+
 /*
  * The accountability slip - every section except the RDO.
- *
- * Not BIR Form 2309. That form is a taxpayer's referral and carries the
- * taxpayer's business; this is an internal docket moving between
- * sections, and what the office needs from the paper is two signatures:
- * one from whoever handed it over, one from whoever took it.
- *
- * Half a sheet, crosswise - 8.5in by 5.5in - laid out as three columns
- * and two rows, as the office drew it:
- *
- *     Details          | Signature (Inbound)  | Signature (Outbound)
- *     QR + date stamp  | Prepared: <section>  | Received: <section>
- *
- * The signature cells are deliberately empty and deliberately tall. The
- * whole point of this slip is the two names written into them by hand.
+ * (ibalik mo dito ang buong orihinal na komento mo)
  */
 
 function SignatureCell({ direction }) {
@@ -45,7 +35,7 @@ export function SectionSlip({ document }) {
                     <p className="text-[15px] font-bold">Details</p>
 
                     <p className="mt-2 flex-1 text-[13px] leading-relaxed whitespace-pre-wrap">
-                        {document.concern || " "}
+                        {document.concern || " "}
                     </p>
                 </div>
 
@@ -94,6 +84,10 @@ export function SectionSlip({ document }) {
 }
 
 export default function SectionSlipModal({ document, onClose }) {
+    const exportRef = useRef(null);
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState("");
+
     useEffect(() => {
         const onKey = (e) => e.key === "Escape" && onClose();
 
@@ -103,6 +97,54 @@ export default function SectionSlipModal({ document, onClose }) {
     }, [onClose]);
 
     if (!document) return null;
+
+    const exportPdf = async () => {
+        const node = exportRef.current;
+
+        if (!node || exporting) return;
+
+        setExporting(true);
+        setExportError("");
+
+        try {
+            const images = Array.from(node.querySelectorAll("img"));
+
+            await Promise.all(
+                images.map((img) =>
+                    img.complete
+                        ? null
+                        : new Promise((resolve) => {
+                              img.onload = img.onerror = resolve;
+                          }),
+                ),
+            );
+
+            const [{ toPng }, { jsPDF }] = await Promise.all([
+                import("html-to-image"),
+                import("jspdf"),
+            ]);
+
+            const png = await toPng(node, {
+                pixelRatio: 3,
+                backgroundColor: "#ffffff",
+                cacheBust: true,
+            });
+
+            const pdf = new jsPDF({
+                unit: "in",
+                format: [SLIP_WIDTH_IN, SLIP_HEIGHT_IN],
+                orientation: "landscape",
+            });
+
+            pdf.addImage(png, "PNG", 0, 0, SLIP_WIDTH_IN, SLIP_HEIGHT_IN);
+
+            pdf.save(`${document.tracking_number}.pdf`);
+        } catch {
+            setExportError("Could not create the PDF. Please try again.");
+        } finally {
+            setExporting(false);
+        }
+    };
 
     return (
         <>
@@ -130,21 +172,33 @@ export default function SectionSlipModal({ document, onClose }) {
                         </button>
                     </div>
 
-                    {/*
-                     * Shrunk for the preview only. `zoom` also shrinks the
-                     * space it takes up, which `transform: scale` does not,
-                     * so there is no blank gap underneath. The print copy
-                     * is a separate node and is never touched by this.
-                     */}
                     <div className="overflow-x-auto px-7 py-6">
                         <div style={{ zoom: 0.72 }}>
                             <SectionSlip document={document} />
                         </div>
                     </div>
 
+                    {exportError && (
+                        <p
+                            role="alert"
+                            className="px-7 pb-2 text-base font-semibold text-red-600"
+                        >
+                            {exportError}
+                        </p>
+                    )}
+
                     <div className="flex flex-col-reverse gap-3 border-t border-line px-7 py-5 sm:flex-row sm:justify-end">
                         <EmployeeButton variant="quiet" onClick={onClose}>
                             Close
+                        </EmployeeButton>
+
+                        <EmployeeButton
+                            variant="secondary"
+                            onClick={exportPdf}
+                            disabled={exporting}
+                        >
+                            <Icon name="download" />
+                            {exporting ? "Preparing..." : "Export PDF"}
                         </EmployeeButton>
 
                         <EmployeeButton onClick={() => window.print()}>
@@ -152,6 +206,17 @@ export default function SectionSlipModal({ document, onClose }) {
                             Print slip
                         </EmployeeButton>
                     </div>
+                </div>
+            </div>
+
+            {/* Off-screen copy, used only to capture the PDF */}
+            <div
+                aria-hidden="true"
+                className="print:hidden"
+                style={{ position: "fixed", left: "-10000px", top: 0 }}
+            >
+                <div ref={exportRef}>
+                    <SectionSlip document={document} />
                 </div>
             </div>
 

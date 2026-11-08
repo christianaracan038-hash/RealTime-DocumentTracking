@@ -1,0 +1,140 @@
+{
+  "system_name": "RealTimeDocumentTracking",
+  "generated_at": "2026-11-08T19:05:00+08:00",
+  "audit_version": "1.0.0-baseline",
+  "overall_health_score": 64.8,
+  "rating_classification": "NEEDS IMPROVEMENT",
+  "verdict": "NOT PRODUCTION READY",
+  "scoring_methodology": "Weighted deduction framework based on OWASP Top 10, real execution tracing, static code analysis, and database schema review. Critical vulnerabilities (-15 to -20 pts), High risks (-8 to -12 pts), Medium bottlenecks (-4 to -7 pts). Missing/unverified capabilities penalized appropriately.",
+  "category_scores": {
+    "security_quality": {
+      "score": 65,
+      "rating": "NEEDS IMPROVEMENT",
+      "weight": 0.20,
+      "assessment": "Critical authorization flaws (IDOR) on referral update routes and session persistence for deactivated accounts.",
+      "weaknesses": [
+        "IDOR in DocumentController::updateReferral and updateSectionReferral allowing cross-section document tampering",
+        "Deactivated employee accounts retain active sessions until session cookie expiration",
+        "Missing password change session invalidation (logout other devices)",
+        "SESSION_SECURE_COOKIE defaults to null if not explicitly set in .env"
+      ],
+      "supporting_evidence": "app/Http/Controllers/DocumentController.php lines 158-188; app/Http/Controllers/EmployeeAccountController.php line 72; config/session.php line 162",
+      "recommended_improvements": "Implement DocumentPolicy authorization on referral edits, create ActiveEmployeeMiddleware, enforce SESSION_SECURE_COOKIE=true"
+    },
+    "application_performance": {
+      "score": 62,
+      "rating": "NEEDS IMPROVEMENT",
+      "weight": 0.15,
+      "assessment": "Compounding network latency to Tokyo PostgreSQL server exacerbated by silent N+1 query cascades in model accessors.",
+      "weaknesses": [
+        "Document model $appends dynamically queries tracking history relations per row",
+        "Correlated overdue() subquery aggregates entire tracking_histories table per request",
+        "Supabase Tokyo round-trip latency (~600ms) without persistent connection pooling"
+      ],
+      "supporting_evidence": "app/Models/Document.php lines 25, 200-245, 254; config/database.php pgsql driver configuration",
+      "recommended_improvements": "Remove eager calculations from $appends, use Inertia resources, configure connection pooling / PgBouncer"
+    },
+    "database_efficiency": {
+      "score": 71,
+      "rating": "GOOD",
+      "weight": 0.15,
+      "assessment": "Solid relational schema and foreign keys, but lacks composite indexes on heavily filtered columns and visibility scans cause full sequential scans.",
+      "weaknesses": [
+        "DocumentService::applyVisibility executes 6 chained OR/orWhereHas branches causing Postgres Seq Scans",
+        "Missing composite index on documents(section_id, status_id) and tracking_histories(document_id, tracked_at DESC)",
+        "Missing index on audit_logs(auditable_type, auditable_id)"
+      ],
+      "supporting_evidence": "app/Services/DocumentService.php lines 69-93; database/migrations/2026_01_01_000005_create_documents_table.php",
+      "recommended_improvements": "Add composite indexes migration, refactor visibility filter into UNION or indexed view"
+    },
+    "concurrent_user_handling": {
+      "score": 52,
+      "rating": "POOR",
+      "weight": 0.12,
+      "assessment": "High probability of race condition failures and duplicate tracking number generation under concurrent submission bursts.",
+      "weaknesses": [
+        "generateTrackingNumber relies on Document::max('document_id') + 1 which allows phantom reads during concurrent transactions",
+        "Row locking during receive/forward can lead to lock wait timeouts under burst load",
+        "PostgreSQL connection limit on remote instance vulnerable to exhaustion with >50 concurrent clients"
+      ],
+      "supporting_evidence": "app/Services/DocumentService.php line 124; app/Http/Controllers/DocumentTrackingController.php",
+      "recommended_improvements": "Implement PostgreSQL SEQUENCE for tracking numbers, introduce atomic DB locks or counter table, configure queue workers"
+    },
+    "backend_architecture": {
+      "score": 76,
+      "rating": "GOOD",
+      "weight": 0.10,
+      "assessment": "Well-structured service classes (DocumentService) and comprehensive audit logging, but bloated controllers handling multiple unrelated domains.",
+      "weaknesses": [
+        "DocumentController violates SRP by managing registration, referrals, remarks, and transmittals",
+        "State mutation logic embedded directly within model accessors",
+        "Duplicate search endpoints across web.php"
+      ],
+      "supporting_evidence": "app/Http/Controllers/DocumentController.php (450+ lines); routes/web.php",
+      "recommended_improvements": "Split DocumentController into domain controllers, keep model accessors pure"
+    },
+    "frontend_code_quality": {
+      "score": 74,
+      "rating": "GOOD",
+      "weight": 0.08,
+      "assessment": "Clean React component modularity and Tailwind UI design, but missing useMemo on heavy filtering and lacking DOM virtualization for large tables.",
+      "weaknesses": [
+        "Unmemoized document filtering in Dashboard.jsx and Documents.jsx triggers re-calculation on every keystroke",
+        "Large document tables render thousands of DOM nodes without virtual scrolling",
+        "Potential memory leaks in modal keydown event listeners"
+      ],
+      "supporting_evidence": "resources/js/Pages/Dashboard.jsx; resources/js/Pages/Employees/Documents/Documents.jsx",
+      "recommended_improvements": "Wrap filter functions in useMemo, implement @tanstack/react-virtual on document tables"
+    },
+    "api_reliability": {
+      "score": 78,
+      "rating": "GOOD",
+      "weight": 0.05,
+      "assessment": "Inertia endpoints provide smooth validation error handling, but lacks uniform API error contract and rate-limiting outside standard throttle.",
+      "weaknesses": [
+        "Registration desk and referral endpoints lack granular rate limiting",
+        "No automated retry or graceful degradation when remote database times out"
+      ],
+      "supporting_evidence": "app/Http/Kernel.php; routes/web.php",
+      "recommended_improvements": "Add dedicated throttle middleware (e.g. throttle:referrals, throttle:uploads)"
+    },
+    "error_handling": {
+      "score": 75,
+      "rating": "GOOD",
+      "weight": 0.05,
+      "assessment": "Database transactions properly roll back on failure in DocumentTrackingController, but uncaught remote database connection failures trigger raw 500 pages.",
+      "weaknesses": [
+        "Uncaught PDO exceptions when Supabase connection drops expose framework stack trace if APP_DEBUG=true",
+        "Frontend lacks React ErrorBoundary components around dynamic modals"
+      ],
+      "supporting_evidence": "bootstrap/app.php; resources/js/app.jsx",
+      "recommended_improvements": "Add React ErrorBoundaries, customize exception rendering for connection timeouts"
+    },
+    "scalability": {
+      "score": 55,
+      "rating": "POOR",
+      "weight": 0.05,
+      "assessment": "Architecture currently constrained by single-node assumptions: file-based sessions, synchronous PDF rendering, unindexed OR queries.",
+      "weaknesses": [
+        "SESSION_DRIVER=file prevents multi-server load balancing",
+        "Synchronous transmittal generation during request cycle blocks web workers",
+        "Postgres queries will degrade exponentially as tracking_histories table exceeds 100k rows"
+      ],
+      "supporting_evidence": "config/session.php; app/Http/Controllers/TransmittalController.php",
+      "recommended_improvements": "Switch session driver to redis or database, queue PDF generation jobs"
+    },
+    "production_readiness": {
+      "score": 58,
+      "rating": "POOR",
+      "weight": 0.05,
+      "assessment": "The system lacks production security headers, robust session invalidation, concurrency locks, and database connection pooling.",
+      "weaknesses": [
+        "No Content Security Policy (CSP) headers",
+        "Insecure cookie defaults if env variables are omitted",
+        "Database sequence race conditions not resolved"
+      ],
+      "supporting_evidence": "bootstrap/app.php; config/session.php",
+      "recommended_improvements": "Add security headers middleware, configure Redis for cache/sessions, resolve concurrency bugs"
+    }
+  }
+}

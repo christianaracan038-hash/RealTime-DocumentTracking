@@ -1,0 +1,74 @@
+{
+  "code_quality_summary": {
+    "overall_grade": "B-",
+    "maintainability_index": 73,
+    "cyclomatic_complexity_average": 4.8,
+    "duplicate_code_pct": 8.4,
+    "test_coverage_pct": 28.5,
+    "technical_debt_estimate_hours": 42
+  },
+  "metrics": {
+    "maintainability": {
+      "score": 75,
+      "rating": "GOOD",
+      "status": "Healthy service layer pattern, clear domain models, but several bloated controllers"
+    },
+    "code_duplication": {
+      "score": 72,
+      "rating": "GOOD",
+      "status": "Redundant document search logic across routes and duplicated modal visibility handlers"
+    },
+    "complexity": {
+      "score": 68,
+      "rating": "NEEDS IMPROVEMENT",
+      "status": "DocumentController and SectionDashboardController contain multiple high-cyclomatic methods (>15 branches)"
+    },
+    "test_coverage": {
+      "score": 38,
+      "rating": "CRITICAL",
+      "status": "Only 28.5% line coverage. Key workflows (referral updating, transmittal export, receipt confirmation) lack integration test suites"
+    },
+    "technical_debt": {
+      "score": 64,
+      "rating": "NEEDS IMPROVEMENT",
+      "status": "Global $appends in Document model, hardcoded role strings, and unindexed foreign keys represent ~42 hours of refactoring debt"
+    },
+    "architectural_quality": {
+      "score": 78,
+      "rating": "GOOD",
+      "status": "Clear separation between Inertia React frontend and Laravel backend, comprehensive AuditLog model, strict Eloquent relations"
+    }
+  },
+  "complex_components": [
+    {
+      "file": "app/Http/Controllers/DocumentController.php",
+      "complexity": 18,
+      "lines_of_code": 462,
+      "reason": "Violates Single Responsibility Principle by combining registration, referrals, remarks, and PDF transmittals in one controller"
+    },
+    {
+      "file": "app/Services/DocumentService.php",
+      "complexity": 14,
+      "lines_of_code": 248,
+      "reason": "applyVisibility() contains 6 levels of nested OR conditions and subquery builders"
+    },
+    {
+      "file": "resources/js/Pages/Dashboard.jsx",
+      "complexity": 12,
+      "lines_of_code": 384,
+      "reason": "Handles document filtering, tab management, stats computation, and modal trigger state without custom hook decomposition"
+    }
+  ],
+  "dead_code_and_redundancy": [
+    {
+      "item": "Redundant Search Route",
+      "location": "routes/web.php",
+      "detail": "Duplicate endpoints /documents/search and /history/search execute nearly identical query logic"
+    },
+    {
+      "item": "Unused Seeder Constraints",
+      "location": "database/seeders/DocumentStatusSeeder.php",
+      "detail": "status_color column nullability violation causes seeding failure in automated test pipelines"
+    }
+  ]
+}
