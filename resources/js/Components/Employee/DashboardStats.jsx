@@ -83,7 +83,7 @@ export default function DashboardStats({ stats = {} }) {
     return (
         <div className="grid gap-4 sm:grid-cols-3">
             <Stat
-                label="Waiting to be received"
+                label="Pending Acceptance"
                 value={waiting}
                 hint={
                     waiting === 0
