@@ -17,6 +17,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Employee\Documents\DocumentRemarkController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -204,6 +205,9 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
     Route::put('/referrals/section/{document}', [DocumentController::class, 'updateSectionReferral'])
     ->name('referrals.section.update');
 
+    Route::put('/referrals/{document}', [DocumentController::class, 'updateReferral'])
+    ->name('referrals.update');
+
     Route::post('/referrals/section/{document}/request-deletion', [DocumentController::class, 'requestSectionDeletion'])
     ->name('referrals.section.request-deletion');
 
@@ -262,6 +266,9 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
     */
     Route::get('/documents/{document}/detail', [DocumentController::class, 'detail'])
         ->name('documents.detail');
+
+    Route::post('/documents/{document}/remarks', [DocumentRemarkController::class, 'store'])
+    ->name('documents.remarks.store');
 
 });
 

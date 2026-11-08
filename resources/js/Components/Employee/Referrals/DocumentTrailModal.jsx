@@ -12,6 +12,7 @@ const ACTION_TONE = {
     RECEIVED: "bg-ok-100",
     FORWARDED: "bg-brand-100",
     COMPLETED: "bg-navy-200",
+    REMARKS: "bg-accent-100",
 };
 
 const buildTimeline = (document) => {
@@ -47,6 +48,10 @@ const buildTimeline = (document) => {
         } else if (action === "RECEIVED") {
             section = toSection ?? fromSection ?? section;
             holder = actor;
+        } else if (action === "REMARKS") {
+            // The document stays in the same section, but whoever wrote
+            // the remarks is now the one handling it.
+            holder = actor ?? holder;
         } else {
             section = toSection ?? fromSection ?? section;
             holder = actor ?? holder;
@@ -149,7 +154,7 @@ export default function DocumentTrailModal({
         return () => {
             cancelled = true;
         };
-    }, [documentId]);
+    }, [documentId, openSlip]);
 
     const timeline = document ? buildTimeline(document) : [];
     const creatorName = document?.creator?.username;

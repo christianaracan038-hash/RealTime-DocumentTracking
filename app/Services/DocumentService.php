@@ -523,6 +523,29 @@ class DocumentService
         });
     }
 
+
+    public function updateReferral(Document $document, array $data, $employee): Document
+    {
+        abort_unless(
+            $document->creator?->section_id === $employee->section_id,
+            403
+        );
+
+        abort_if(
+            $document->completed_at || $document->deletion_requested_at,
+            422,
+            'This referral can no longer be edited.'
+        );
+
+        $document->update([
+            'taxpayer_name' => $data['taxpayer_name'],
+            'destination_section_id' => $data['destination_section_id'],
+            'concern' => $data['concern'] ?? null,
+        ]);
+
+        return $document->refresh();
+    }
+
     
 
         /**

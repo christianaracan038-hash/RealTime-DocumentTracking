@@ -15,6 +15,13 @@ export default function SearchInput({
     const [isSearching, setIsSearching] = useState(false);
 
     const isFirstRender = useRef(true);
+    const lastSearchedValue = useRef(initialValue ?? "");
+
+    // Sync input value if parent filters/initialValue changes externally
+    useEffect(() => {
+        setValue(initialValue ?? "");
+        lastSearchedValue.current = initialValue ?? "";
+    }, [initialValue]);
 
     useEffect(() => {
         if (isFirstRender.current) {
@@ -22,8 +29,14 @@ export default function SearchInput({
             return;
         }
 
+        // Avoid triggering a request if the value has not changed from the current search
+        if (value === lastSearchedValue.current) {
+            return;
+        }
+
         const timeout = setTimeout(() => {
             setIsSearching(true);
+            lastSearchedValue.current = value;
             router.get(
                 window.location.pathname,
                 value ? { search: value } : {},
@@ -38,7 +51,7 @@ export default function SearchInput({
             );
         }, 500); // Increased from 300ms to 500ms
         return () => clearTimeout(timeout);
-    }, [value]);
+    }, [value, only]);
 
     const large = size === "lg";
 

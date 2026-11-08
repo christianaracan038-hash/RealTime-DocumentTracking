@@ -4,15 +4,20 @@ import DocumentDetailsModal from "@/Pages/Employees/Documents/DocumentDetailsMod
 import AgeBadge from "@/Components/Employee/AgeBadge";
 import Icon from "@/Components/Employee/Icon";
 import DelayReasonModal from "@/Components/Employee/DelayReasonModal";
+import RemarksModal from "@/Components/Employee/RemarksModal";
 import { urgencyOf } from "@/Components/Employee/urgency";
 import { exactTime } from "@/Components/Employee/Referrals/referral";
 
 export default function Documents({ documents = [] }) {
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [noticeDocumentId, setNoticeDocumentId] = useState(null);
+    const [remarksDocumentId, setRemarksDocumentId] = useState(null);
 
     const noticeDocument =
         documents.find((d) => d.document_id === noticeDocumentId) ?? null;
+
+    const remarksDocument =
+        documents.find((d) => d.document_id === remarksDocumentId) ?? null;
 
     return (
         <EmployeeLayout title="Documents">
@@ -151,6 +156,23 @@ export default function Documents({ documents = [] }) {
                                                         type="button"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
+                                                            setRemarksDocumentId(
+                                                                document.document_id,
+                                                            );
+                                                        }}
+                                                        onKeyDown={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-brand-600 bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-brand-50"
+                                                    >
+                                                        <Icon name="comment" />
+                                                        Add remarks
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             setNoticeDocumentId(
                                                                 document.document_id,
                                                             );
@@ -204,6 +226,14 @@ export default function Documents({ documents = [] }) {
                     delayReason={noticeDocument.delay_reason ?? null}
                     open
                     onClose={() => setNoticeDocumentId(null)}
+                />
+            )}
+
+            {remarksDocument && (
+                <RemarksModal
+                    key={remarksDocument.document_id}
+                    document={remarksDocument}
+                    onClose={() => setRemarksDocumentId(null)}
                 />
             )}
         </EmployeeLayout>

@@ -153,7 +153,7 @@ export function ReferenceSlip({ document }) {
                 title="Subject"
                 className="min-h-[0.9in] shrink-0 border-b"
             >
-                <p className="font-bold">{document.taxpayer_name}</p>
+                {/* <p className="font-bold">{document.taxpayer_name}</p> */}
                 <p>{document.concern}</p>
             </Section>
 

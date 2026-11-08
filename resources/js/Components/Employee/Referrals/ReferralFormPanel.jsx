@@ -33,33 +33,41 @@ export default function ReferralFormPanel({
     sections = [],
     options = {},
     fromSection = null,
+    referral = null,
     onRegistered = () => {},
     onCancel = null,
 }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        taxpayer_name: "",
-        destination_section_id: "",
-        concern: "",
+    const isEditing = Boolean(referral);
+
+    const { data, setData, post, put, processing, errors, reset } = useForm({
+        taxpayer_name: referral?.taxpayer_name ?? "",
+        destination_section_id: referral?.destination_section_id ?? "",
+        concern: referral?.concern ?? "",
     });
 
     const submit = (event) => {
         event.preventDefault();
 
-        post(route("referrals.store"), {
+        const options = {
             preserveScroll: true,
             onSuccess: () => {
-                reset();
-
+                if (!isEditing) reset();
                 onRegistered();
             },
-        });
+        };
+
+        if (isEditing) {
+            put(route("referrals.update", referral.document_id), options);
+        } else {
+            post(route("referrals.store"), options);
+        }
     };
 
     return (
         <EmployeeCard>
             <div className="mx-auto max-w-2xl">
                 <h2 className="text-2xl font-bold text-navy-900">
-                    Register a Referral
+                    {isEditing ? "Edit Referral" : "Register a Referral"}
                 </h2>
 
                 <form onSubmit={submit} className="mt-6 space-y-6">
@@ -176,8 +184,12 @@ export default function ReferralFormPanel({
                         >
                             <Icon name="register" />
                             {processing
-                                ? "Registering..."
-                                : "Register referral"}
+                                ? isEditing
+                                    ? "Saving..."
+                                    : "Registering..."
+                                : isEditing
+                                  ? "Save changes"
+                                  : "Register referral"}
                         </EmployeeButton>
                     </div>
                 </form>

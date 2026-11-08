@@ -205,12 +205,6 @@ class Document extends Model
     }
 
     /**
-     * How the current wait compares to the office's two-day target.
-     *
-     * Returns the band name, the hours waited, and whether it has
-     * passed the overdue line, so the frontend only has to colour it.
-     */
-        /**
      * How the current wait compares to the office's overdue target.
      *
      * Returns the band name, the hours waited, and whether it has
@@ -282,25 +276,37 @@ class Document extends Model
     }
 
     /**
-     * Get the latest delay notice comment for this document.
-     *
-     * Returns null when there is no delay notice.
+     * Pinakabagong delay reason ng document, galing sa document_comments
+     * na may type = 'delay_notice'.
      */
-    /**
- * Pinakabagong delay reason ng document, galing sa document_comments
- * na may type = 'delay'.
- */
-    public function getDelayReasonAttribute(): ?string
+    public function getDelayReasonAttribute(): ?array
     {
         $comments = $this->relationLoaded('comments')
             ? $this->comments
             : $this->comments()->get();
 
-        return $comments
-            ->where('type', 'delay')
+        $comment = $comments
+            ->where('type', DocumentComment::TYPE_DELAY_NOTICE)
             ->sortByDesc('created_at')
-            ->first()
-            ?->body;
+            ->first();
+
+        if (! $comment) {
+            return null;
+        }
+
+        $now = now();
+        $days = $comment->created_at ? (int) $comment->created_at->diffInDays($now) : 0;
+
+        return [
+            'id' => $comment->comment_id,
+            'body' => $comment->body,
+            'author_id' => $comment->author_id,
+            'author' => $comment->author?->username,
+            'author_name' => $comment->author?->full_name ?? $comment->author?->username,
+            'created_at' => $comment->created_at?->toISOString() ?? (string) $comment->created_at,
+            'days' => $days,
+            'acknowledged' => $comment->acknowledged_at !== null,
+        ];
     }
 
     /**

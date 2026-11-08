@@ -313,7 +313,21 @@ class DocumentController extends Controller
         return back()->with('success', 'Referral updated.');
     }
 
-    public function requestSectionDeletion(
+    public function updateReferral(
+        StoreReferralRequest $request,
+        Document $document,
+        DocumentService $documentService
+    ): RedirectResponse {
+        $documentService->updateReferral(
+            $document,
+            $request->validated(),
+            Auth::guard('employee')->user()
+        );
+
+        return back()->with('success', 'Referral updated.');
+    }
+
+       public function requestSectionDeletion(
         Request $request,
         Document $document,
         DocumentService $documentService
