@@ -29,6 +29,7 @@
         "html-to-image": "^1.11.13",
         "html5-qrcode": "^2.3.8",
         "jspdf": "^4.2.1",
-        "jspdf-autotable": "^5.0.9"
+        "jspdf-autotable": "^5.0.9",
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
     }
 }

@@ -8,19 +8,17 @@ import { exactTime, sectionLabel } from "./referral";
 const SLIP_WIDTH_IN = 8.5;
 const SLIP_HEIGHT_IN = 5.5;
 
-/*
- * The accountability slip - every section except the RDO.
- * (ibalik mo dito ang buong orihinal na komento mo)
- */
-
-function SignatureCell({ direction }) {
+function HeaderCell({ label, section, direction }) {
     return (
         <div className="flex flex-col border-l-2 border-navy-900 px-4 py-3">
-            <p className="text-center text-[15px] font-bold">Signature</p>
+            <p className="text-[14px] font-bold">{label}</p>
+
+            <p className="text-[13px]">{sectionLabel(section) || "—"}</p>
+
+            <p className="mt-3 text-center text-[15px] font-bold">Signature</p>
 
             <p className="text-center text-[12px]">({direction})</p>
 
-            {/* Left empty on purpose - somebody signs here */}
             <div className="flex-1" />
         </div>
     );
@@ -28,24 +26,9 @@ function SignatureCell({ direction }) {
 
 export function SectionSlip({ document }) {
     return (
-        <div className="section-slip flex h-[5.5in] w-[8.5in] flex-col border-2 border-navy-900 bg-white text-navy-900">
-            {/* Row 1 */}
-            <div className="grid flex-1 grid-cols-[1.25fr_1fr_1fr]">
-                <div className="flex flex-col px-4 py-3">
-                    <p className="text-[15px] font-bold">Details</p>
-
-                    <p className="mt-2 flex-1 text-[13px] leading-relaxed whitespace-pre-wrap">
-                        {document.concern || " "}
-                    </p>
-                </div>
-
-                <SignatureCell direction="Incoming" />
-                <SignatureCell direction="Outgoing" />
-            </div>
-
-            {/* Row 2 */}
-            <div className="grid h-[2.1in] shrink-0 grid-cols-[1.25fr_1fr_1fr] border-t-2 border-navy-900">
-                <div className="flex items-center gap-3 px-4 py-3">
+        <div className="section-slip grid h-[5.5in] w-[8.5in] grid-cols-[1.25fr_1fr_1fr] grid-rows-[1.7fr_1fr_1fr_1fr_1fr] border-2 border-navy-900 bg-white text-navy-900">
+            <div className="row-span-5 flex flex-col px-4 py-3">
+                <div className="flex shrink-0 items-center gap-3">
                     <img
                         src={route("documents.qr", document.document_id)}
                         alt={`QR code for ${document.tracking_number}`}
@@ -63,22 +46,31 @@ export function SectionSlip({ document }) {
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-center border-l-2 border-navy-900 px-4 py-3">
-                    <p className="text-[14px] font-bold">Prepared:</p>
+                <p className="mt-4 text-[15px] font-bold">Details</p>
 
-                    <p className="text-[13px]">
-                        {sectionLabel(document.creator?.section) || "—"}
-                    </p>
-                </div>
-
-                <div className="flex flex-col justify-center border-l-2 border-navy-900 px-4 py-3">
-                    <p className="text-[14px] font-bold">Received:</p>
-
-                    <p className="text-[13px]">
-                        {sectionLabel(document.destination_section) || "—"}
-                    </p>
-                </div>
+                <p className="mt-2 flex-1 text-[13px] leading-relaxed whitespace-pre-wrap">
+                    {document.concern || " "}
+                </p>
             </div>
+
+            <HeaderCell
+                label="Prepared:"
+                section={document.creator?.section}
+                direction="Outgoing"
+            />
+
+            <HeaderCell
+                label="Received:"
+                section={document.destination_section}
+                direction="Incoming"
+            />
+
+            {Array.from({ length: 8 }).map((_, index) => (
+                <div
+                    key={index}
+                    className="border-l-2 border-t-2 border-navy-900"
+                />
+            ))}
         </div>
     );
 }
@@ -209,7 +201,6 @@ export default function SectionSlipModal({ document, onClose }) {
                 </div>
             </div>
 
-            {/* Off-screen copy, used only to capture the PDF */}
             <div
                 aria-hidden="true"
                 className="print:hidden"

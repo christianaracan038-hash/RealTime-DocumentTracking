@@ -268,6 +268,17 @@ export default function Index({
         );
     };
 
+    const exportExcel = () => {
+        if (!canPrint) return;
+
+        window.location.assign(
+            route("referrals.export", {
+                from: range.from,
+                until: range.until,
+            }),
+        );
+    };
+
     const confirmDelete = () => {
         const text = reason.trim();
 
@@ -354,6 +365,17 @@ export default function Index({
                             {loadingReport || printing
                                 ? "Preparing..."
                                 : "Print report"}
+                        </EmployeeButton>
+
+                        <EmployeeButton
+                            size="lg"
+                            variant="secondary"
+                            onClick={exportExcel}
+                            disabled={!canPrint}
+                            className="w-full sm:w-auto"
+                        >
+                            <Icon name="download" />
+                            Export to Excel
                         </EmployeeButton>
                     </div>
 

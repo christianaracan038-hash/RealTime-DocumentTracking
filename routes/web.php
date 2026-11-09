@@ -18,6 +18,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Employee\Documents\DocumentRemarkController;
+use App\Http\Controllers\Employee\Documents\ReferralReportController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -244,6 +245,9 @@ Route::middleware(['auth:employee', 'desk'])->group(function () {
         ->name('transmittal.index');
 
     Route::get('/transmittal/export', [TransmittalController::class, 'export'])->name('transmittal.export');
+
+    Route::get('/referrals/export', [ReferralReportController::class, 'export'])
+    ->name('referrals.export');
 
     Route::get('/documents/history', [DocumentController::class, 'history'])
         ->name('documents.history');

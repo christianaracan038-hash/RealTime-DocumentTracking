@@ -87,7 +87,9 @@ export default function Documents({ documents = [] }) {
                                             <div className="flex items-start justify-between gap-4">
                                                 <div>
                                                     <p className="font-semibold text-black">
-                                                        {document.taxpayer_name ??
+                                                        {document.taxpayer_name?.trim() ||
+                                                            document.concern ||
+                                                            document.transaction_type ||
                                                             "No taxpayer on record"}
                                                     </p>
 
