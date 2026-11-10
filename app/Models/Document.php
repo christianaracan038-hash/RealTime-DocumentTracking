@@ -341,4 +341,16 @@ class Document extends Model
                     ->orWhere('latest_th.tracked_at', '<', $cutoff);
             });
     }
+
+    public function scopeVisibleTo(Builder $query, EmployeeAcc $employee): Builder
+    {
+        if ($employee->isChief()) {
+            return $query->whereHas(
+                'creator',
+                fn ($creator) => $creator->whereIn('section_id', $employee->visibleSectionIds())
+            );
+        }
+
+        return $query->where('documents.created_by', $employee->getKey());
+    }
 }

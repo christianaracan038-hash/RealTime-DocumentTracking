@@ -1,27 +1,5 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Sections
-|--------------------------------------------------------------------------
-|
-| Every section of the office that has its own dashboard, keyed by the
-| section_name stored in the sections table (uppercase).
-|
-| This drives three things at once:
-|
-|   1. routes/web.php registers one guarded dashboard route per entry.
-|   2. DashboardResolver sends an employee here after login. A section
-|      with no entry cannot log in at all.
-|   3. The sidebar in resources/js/config/navigation.js links to the
-|      route named below.
-|
-| Adding a section means adding an entry here, a page component at the
-| named path, a navigation.js entry, and a row in the sections table
-| (see database/seeders/SectionSeeder.php).
-|
-*/
-
 return [
 
     'RDO' => [
@@ -36,9 +14,6 @@ return [
         'page' => 'Assessment/Dashboard',
     ],
 
-    /*
-    * Client Support Section.
-    */
     'CSS' => [
         'path' => '/css/dashboard',
         'route' => 'css.dashboard',
@@ -57,16 +32,47 @@ return [
         'page' => 'Compliance/Dashboard',
     ],
 
-    /*
-    * The Admin Section is an office section that sends and receives
-    * referrals like any other. It is unrelated to the admin *panel*
-    * at /admin, which is where accounts are managed - hence the
-    * distinct path and page folder.
-    */
     'ADMIN' => [
         'path' => '/admin-section/dashboard',
         'route' => 'admin-section.dashboard',
         'page' => 'AdminSection/Dashboard',
+    ],
+
+
+    'ASSESSMENT-GS-DORION' => [
+        'path' => '/gs-dorion-assessment/dashboard',
+        'route' => 'gs-dorion-assessment.dashboard',
+        'page' => 'GROUPSUPERVISORPAGE/GS-DORION/Dashboard',
+    ],
+
+    'ASSESSMENT-GS-INSOY' => [
+        'path' => '/gs-insoy/dashboard',
+        'route' => 'gs-insoy.dashboard',
+        'page' => 'GROUPSUPERVISORPAGE/GS-INSOY/Dashboard',
+    ],
+
+    'ASSESSMENT-GS-NGO' => [
+        'path' => '/gs-ngo/dashboard',
+        'route' => 'gs-ngo.dashboard',
+        'page' => 'GROUPSUPERVISORPAGE/GS-NGO/Dashboard',
+    ],
+
+    'ASSESSMENT-GS-GAWAEN' => [
+        'path' => '/gs-gawaen/dashboard',
+        'route' => 'gs-gawaen.dashboard',
+        'page' => 'GROUPSUPERVISORPAGE/GS-GAWAEN/Dashboard',
+    ],
+
+    'ASSESSMENT-GS-ORFIANO' => [
+        'path' => '/gs-orfiano/dashboard',
+        'route' => 'gs-orfiano.dashboard',
+        'page' => 'GROUPSUPERVISORPAGE/GS-ORFIANO/Dashboard',
+    ],
+
+    'ASSESSMENT-GS-DAVID' => [
+        'path' => '/gs-david/dashboard',
+        'route' => 'gs-david.dashboard',
+        'page' => 'GROUPSUPERVISORPAGE/GS-DAVID/Dashboard',
     ],
 
 ];

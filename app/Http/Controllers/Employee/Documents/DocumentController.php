@@ -9,6 +9,7 @@ use App\Http\Requests\Employee\Documents\StoreReferralRequest;
 use App\Http\Requests\Employee\Documents\StoreSectionReferralRequest;
 use App\Models\Document;
 use App\Models\Section;
+use App\Models\EmployeeAcc;
 use App\Services\DocumentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+
 
 class DocumentController extends Controller
 {
@@ -30,15 +32,12 @@ class DocumentController extends Controller
         Request $request,
         DocumentService $documentService
     ): Response {
+        /** @var \App\Models\EmployeeAcc $employee */
         $employee = Auth::guard('employee')->user();
 
         $search = $request->string('search')->toString();
 
-        $register = fn () => Document::query()
-            ->whereHas(
-                'creator',
-                fn ($query) => $query->where('section_id', $employee->section_id)
-            );
+        $register = fn () => Document::query()->visibleTo($employee);
 
         $filter = $request->string('status')->toString();
 
@@ -120,7 +119,7 @@ class DocumentController extends Controller
             : null;
     }
 
-    protected function reportDocuments(Request $request, $employee): array
+    protected function reportDocuments(Request $request, EmployeeAcc $employee): array
     {
         if (! $request->boolean('report')) {
             return [];
@@ -137,7 +136,7 @@ class DocumentController extends Controller
             ->with('destinationSection:section_id,section_name')
             ->whereHas(
                 'creator',
-                fn ($query) => $query->where('section_id', $employee->section_id)
+                fn ($query) => $query->whereIn('section_id', $employee->visibleSectionIds())
             )
             ->whereNull('deletion_approved_at')
             ->whereDate('created_at', '>=', $from)

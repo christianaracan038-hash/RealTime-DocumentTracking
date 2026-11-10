@@ -185,4 +185,27 @@ class EmployeeAcc extends Authenticatable
             true
         );
     }
+
+    public function isChief(): bool
+    {
+        return strcasecmp(Role::cached($this->role_id)?->role_name ?? '', 'CHIEF') === 0;
+    }
+
+    public function visibleSectionIds(): array
+    {
+        $ids = [$this->section_id];
+
+        if ($this->isChief() && $this->section) {
+            $prefix = $this->section->section_name.'-';
+
+            $ids = array_merge(
+                $ids,
+                Section::where('section_name', 'like', $prefix.'%')
+                    ->pluck('section_id')
+                    ->all()
+            );
+        }
+
+        return array_values(array_unique($ids));
+    }
 }

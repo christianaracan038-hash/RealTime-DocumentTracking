@@ -2,14 +2,21 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, usePage, router } from "@inertiajs/react";
 import { useState } from "react";
 
+const emptyForm = {
+    section_code: "",
+    section_name: "",
+    description: "",
+    is_active: true,
+};
+
 export default function Sections() {
-    const { sections, flash } = usePage().props;
-    const [form, setForm] = useState({
-        section_code: "",
-        section_name: "",
-        description: "",
-        is_active: true,
-    });
+    const { sections, flash, errors } = usePage().props;
+    const [form, setForm] = useState(emptyForm);
+    const [editing, setEditing] = useState(null);
+    const [deleting, setDeleting] = useState(null);
+    const [processing, setProcessing] = useState(false);
+
+    const keyOf = (section) => section.section_code;
 
     const handleChange = (event) => {
         const { name, value, type, checked } = event.target;
@@ -19,18 +26,43 @@ export default function Sections() {
         }));
     };
 
+    const startEdit = (section) => {
+        setEditing(keyOf(section));
+        setForm({
+            section_code: section.section_code,
+            section_name: section.section_name,
+            description: section.description || "",
+            is_active: !!section.is_active,
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const cancelEdit = () => {
+        setEditing(null);
+        setForm(emptyForm);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        setProcessing(true);
 
-        router.post(route("super.sections.store"), form, {
-            onSuccess: () => {
-                setForm({
-                    section_code: "",
-                    section_name: "",
-                    description: "",
-                    is_active: true,
-                });
-            },
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => cancelEdit(),
+            onFinish: () => setProcessing(false),
+        };
+
+        if (editing) {
+            router.put(route("super.sections.update", editing), form, options);
+        } else {
+            router.post(route("super.sections.store"), form, options);
+        }
+    };
+
+    const confirmDelete = () => {
+        router.delete(route("super.sections.destroy", keyOf(deleting)), {
+            preserveScroll: true,
+            onFinish: () => setDeleting(null),
         });
     };
 
@@ -63,15 +95,24 @@ export default function Sections() {
                         </div>
                     )}
 
+                    {errors?.delete && (
+                        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {errors.delete}
+                        </div>
+                    )}
+
                     <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                             <div className="mb-5">
                                 <h3 className="text-lg font-semibold text-slate-900">
-                                    Create Section
+                                    {editing
+                                        ? "Edit Section"
+                                        : "Create Section"}
                                 </h3>
                                 <p className="text-sm text-slate-500">
-                                    Add a new section to keep your teams and
-                                    documents organized.
+                                    {editing
+                                        ? "Update the details of this section."
+                                        : "Add a new section to keep your teams and documents organized."}
                                 </p>
                             </div>
 
@@ -88,6 +129,11 @@ export default function Sections() {
                                         className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         required
                                     />
+                                    {errors?.section_code && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.section_code}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -102,6 +148,11 @@ export default function Sections() {
                                         className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         required
                                     />
+                                    {errors?.section_name && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.section_name}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -128,12 +179,26 @@ export default function Sections() {
                                     Active section
                                 </label>
 
-                                <button
-                                    type="submit"
-                                    className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
-                                >
-                                    Create Section
-                                </button>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+                                    >
+                                        {editing
+                                            ? "Save Changes"
+                                            : "Create Section"}
+                                    </button>
+                                    {editing && (
+                                        <button
+                                            type="button"
+                                            onClick={cancelEdit}
+                                            className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
                             </form>
                         </div>
 
@@ -152,7 +217,7 @@ export default function Sections() {
                                 </div>
                             </div>
 
-                            <div className="overflow-hidden rounded-xl border border-slate-200">
+                            <div className="overflow-x-auto rounded-xl border border-slate-200">
                                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                                     <thead className="bg-slate-50">
                                         <tr>
@@ -168,11 +233,21 @@ export default function Sections() {
                                             <th className="px-4 py-3 text-left font-semibold text-slate-700">
                                                 Status
                                             </th>
+                                            <th className="px-4 py-3 text-right font-semibold text-slate-700">
+                                                Actions
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 bg-white">
                                         {sections.map((section) => (
-                                            <tr key={section.section_id}>
+                                            <tr
+                                                key={keyOf(section)}
+                                                className={
+                                                    editing === keyOf(section)
+                                                        ? "bg-indigo-50/60"
+                                                        : ""
+                                                }
+                                            >
                                                 <td className="px-4 py-3 font-medium text-slate-800">
                                                     {section.section_code}
                                                 </td>
@@ -191,6 +266,26 @@ export default function Sections() {
                                                             : "Inactive"}
                                                     </span>
                                                 </td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            startEdit(section)
+                                                        }
+                                                        className="rounded-md px-2.5 py-1 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setDeleting(section)
+                                                        }
+                                                        className="rounded-md px-2.5 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -200,6 +295,39 @@ export default function Sections() {
                     </div>
                 </div>
             </div>
+
+            {deleting && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <h3 className="text-lg font-semibold text-slate-900">
+                            Delete section?
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-600">
+                            You are about to delete{" "}
+                            <span className="font-semibold">
+                                {deleting.section_name}
+                            </span>
+                            . This cannot be undone.
+                        </p>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setDeleting(null)}
+                                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthenticatedLayout>
     );
 }

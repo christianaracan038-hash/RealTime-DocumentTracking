@@ -40,7 +40,6 @@ function Field({ label, error, children }) {
     );
 }
 
-/** A value the system fills in, shown so nobody wonders what it will be. */
 function Stamped({ label, value }) {
     return (
         <div>

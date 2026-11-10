@@ -28,7 +28,7 @@ class ReferralReportController extends Controller
         $until = isset($validated['until']) ? Carbon::parse($validated['until'])->endOfDay() : null;
 
         $documents = Document::query()
-            ->whereHas('creator', fn (Builder $creator) => $creator->where('section_id', $employee->section_id))
+            ->visibleTo($employee)
             ->when($from, fn (Builder $query) => $query->where('created_at', '>=', $from))
             ->when($until, fn (Builder $query) => $query->where('created_at', '<=', $until))
             ->with(['destinationSection'])

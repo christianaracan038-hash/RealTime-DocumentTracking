@@ -5,17 +5,6 @@ namespace Database\Seeders;
 use App\Models\Section;
 use Illuminate\Database\Seeder;
 
-/**
- * The office sections that have a dashboard.
- *
- * Keep section_name in step with config/section.php — the section
- * middleware and the sidebar both match on it.
- *
- * A section is matched on its name. New ones are created in full;
- * existing ones keep their code but have their description refreshed,
- * because the description is what the referral form and the printed
- * slip show as the section's name and it must read the same everywhere.
- */
 class SectionSeeder extends Seeder
 {
     public function run(): void
@@ -58,16 +47,46 @@ class SectionSeeder extends Seeder
                 'description' => 'Administrative Section',
             ],
 
-            /*
-            * Everything outside the District. A referral addressed here
-            * is leaving the office, so this section has no entry in
-            * config/section.php and therefore no dashboard and no login -
-            * it is a destination, not a place anybody works.
-            */
             [
                 'section_code' => '1007',
                 'section_name' => 'OTHERS',
                 'description' => 'Others (outside the District)',
+            ],
+
+            [
+                'section_code' => '1008',
+                'section_name' => 'ASSESSMENT-GS-DORION',
+                'description' => 'ASSESSMENT-GS-DORION',
+            ],
+
+            [
+                'section_code' => '1009',
+                'section_name' => 'ASSESSMENT-GS-INSOY',
+                'description' => 'ASSESSMENT-GS-INSOY',
+            ],
+
+            [
+                'section_code' => '1012',
+                'section_name' => 'ASSESSMENT-GS-NGO',
+                'description' => 'ASSESSMENT-GS-NGO',
+            ],
+
+            [
+                'section_code' => '1013',
+                'section_name' => 'ASSESSMENT-GS-GAWAEN',
+                'description' => 'ASSESSMENT-GS-GAWAEN',
+            ],
+
+            [
+                'section_code' => '1014',
+                'section_name' => 'ASSESSMENT-GS-ORFIANO',
+                'description' => 'ASSESSMENT-GS-ORFIANO',
+            ],
+
+            [
+                'section_code' => '1015',
+                'section_name' => 'ASSESSMENT-GS-DAVID',
+                'description' => 'ASSESSMENT-GS-DAVID',
             ],
 
         ];
