@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import Icon from "@/Components/Employee/Icon";
@@ -97,9 +97,13 @@ function Section({ title, children, className = "" }) {
     );
 }
 
-export function ReferenceSlip({ document }) {
+export function ReferenceSlip({ document, landscape = false }) {
     return (
-        <div className="reference-slip flex h-[8in] w-[4.300in] flex-col border-2 border-navy-900 bg-white text-[9px] leading-snug text-navy-900">
+        <div
+            className={`reference-slip flex flex-col border-2 border-navy-900 bg-white text-[9px] leading-snug text-navy-900 ${
+                landscape ? "h-[7.1in] w-[4.300in]" : "h-[8in] w-[4.300in]"
+            }`}
+        >
             <div className="flex shrink-0 items-center gap-3 border-b border-navy-900 px-3 py-2">
                 <img
                     src="/images/bir_old_logo_for_header.png"
@@ -153,7 +157,6 @@ export function ReferenceSlip({ document }) {
                 title="Subject"
                 className="min-h-[0.9in] shrink-0 border-b"
             >
-                {/* <p className="font-bold">{document.taxpayer_name}</p> */}
                 <p>{document.concern}</p>
             </Section>
 
@@ -161,7 +164,11 @@ export function ReferenceSlip({ document }) {
                 <ForBoxes document={document} />
             </Section>
 
-            <div className="flex h-[2.2in] min-w-0 flex-col border-b border-navy-900 px-3 py-2">
+            <div
+                className={`flex min-w-0 flex-col border-b border-navy-900 px-3 py-2 ${
+                    landscape ? "min-h-0 flex-1" : "h-[2.2in]"
+                }`}
+            >
                 <p className="mb-1 text-[9px] font-bold tracking-wider text-navy-900 uppercase">
                     Remarks{" "}
                     <span className="font-normal normal-case">
@@ -194,6 +201,7 @@ export default function ReferenceSlipModal({ document, onClose }) {
     const exportRef = useRef(null);
     const [exporting, setExporting] = useState(false);
     const [exportError, setExportError] = useState("");
+    const [printMode, setPrintMode] = useState("sheet");
 
     useEffect(() => {
         const onKey = (e) => e.key === "Escape" && onClose();
@@ -203,6 +211,11 @@ export default function ReferenceSlipModal({ document, onClose }) {
     }, [onClose]);
 
     if (!document) return null;
+
+    const printSlip = (mode) => {
+        flushSync(() => setPrintMode(mode));
+        window.print();
+    };
 
     const exportPdf = async () => {
         const node = exportRef.current;
@@ -272,8 +285,9 @@ export default function ReferenceSlipModal({ document, onClose }) {
                             </h2>
 
                             <p className="mt-1 text-base text-muted">
-                                Print this and attach it to the document. It
-                                prints portrait, full sheet.
+                                Print this and attach it to the document. Use
+                                full sheet for a new bond paper, or half sheet
+                                for a leftover half.
                             </p>
                         </div>
 
@@ -316,9 +330,17 @@ export default function ReferenceSlipModal({ document, onClose }) {
                             {exporting ? "Preparing..." : "Export PDF"}
                         </EmployeeButton>
 
-                        <EmployeeButton onClick={() => window.print()}>
+                        <EmployeeButton
+                            variant="secondary"
+                            onClick={() => printSlip("half")}
+                        >
                             <Icon name="print" />
-                            Print slip
+                            Print half sheet
+                        </EmployeeButton>
+
+                        <EmployeeButton onClick={() => printSlip("sheet")}>
+                            <Icon name="print" />
+                            Print full sheet
                         </EmployeeButton>
                     </div>
                 </div>
@@ -339,13 +361,24 @@ export default function ReferenceSlipModal({ document, onClose }) {
                     <style>{`
                         @media print {
                             @page {
-                                size: 4.375in 9in;
-                                margin: 0;
+                                ${
+                                    printMode === "half"
+                                        ? "size: 5.5in 8.5in; margin: 0.4in;"
+                                        : "size: landscape; margin: 0.5in;"
+                                }
                             }
                         }
                     `}</style>
                     <div id="print-root" className="hidden print:block">
-                        <ReferenceSlip document={document} />
+                        <div
+                            className={
+                                printMode === "half"
+                                    ? "flex justify-center"
+                                    : "flex"
+                            }
+                        >
+                            <ReferenceSlip document={document} landscape />
+                        </div>
                     </div>
                 </>,
                 window.document.body,
