@@ -516,6 +516,91 @@ class DocumentTrackingController extends Controller
         );
     }
 
+
+        public function restore(
+        Request $request,
+        Document $document
+    ): JsonResponse {
+        $employee = Auth::guard('employee')->user();
+
+        $result = DB::transaction(function () use (
+            $document,
+            $employee
+        ) {
+            $document = Document::query()
+                ->lockForUpdate()
+                ->with([
+                    'status',
+                    'currentSection',
+                    'destinationSection',
+                ])
+                ->find($document->document_id);
+
+            if (! $document) {
+                return [
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Document not found.',
+                ];
+            }
+
+            if ((int) $document->status_id !== self::COMPLETED) {
+                return [
+                    'success' => false,
+                    'status' => 409,
+                    'message' => 'Only a completed document can be restored.',
+                ];
+            }
+
+            if (
+                (int) $document->current_employee_id !==
+                (int) $employee->employee_id
+            ) {
+                return [
+                    'success' => false,
+                    'status' => 403,
+                    'message' => 'Only the employee holding this document can restore it.',
+                ];
+            }
+
+            $now = now();
+
+            $document->update([
+                'status_id' => self::RECEIVED,
+                'completed_at' => null,
+                'received_at' => $now,
+            ]);
+
+            TrackingHistory::create([
+                'document_id' => $document->document_id,
+                'from_section_id' => $document->current_section_id,
+                'to_section_id' => $document->current_section_id,
+                'employee_id' => $employee->employee_id,
+                'status_id' => self::RECEIVED,
+                'action' => 'RESTORED',
+                'remarks' => 'Document restored. Completion was undone.',
+                'tracked_at' => $now,
+            ]);
+
+            return [
+                'success' => true,
+                'status' => 200,
+                'message' => 'Document restored.',
+                'document' => $document->fresh([
+                    'status',
+                    'currentSection',
+                    'destinationSection',
+                    'currentEmployee',
+                ]),
+            ];
+        });
+
+        return response()->json(
+            $result,
+            $result['status']
+        );
+    }
+
     public function forwardSections(): JsonResponse
     {
         $employee = Auth::guard('employee')->user();

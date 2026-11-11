@@ -130,6 +130,7 @@ export default function History({ documents, filters = {} }) {
                 <DocumentTrailModal
                     documentId={openId}
                     onClose={() => setOpenId(null)}
+                    canRestore
                 />
             )}
         </EmployeeLayout>

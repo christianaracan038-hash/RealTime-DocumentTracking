@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { router } from "@inertiajs/react";
 
 import EmployeeButton from "@/Components/Employee/EmployeeButton";
 import EmployeeBadge from "@/Components/Employee/EmployeeBadge";
 import Icon from "@/Components/Employee/Icon";
+import { useNotice } from "@/Components/Employee/Notice";
 import ReferenceSlipModal from "./ReferenceSlipModal";
 import SectionSlipModal from "./SectionSlipModal";
 import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
@@ -12,6 +14,7 @@ const ACTION_TONE = {
     RECEIVED: "bg-ok-100",
     FORWARDED: "bg-brand-100",
     COMPLETED: "bg-navy-200",
+    RESTORED: "bg-ok-100",
     REMARKS: "bg-accent-100",
 };
 
@@ -49,8 +52,6 @@ const buildTimeline = (document) => {
             section = toSection ?? fromSection ?? section;
             holder = actor;
         } else if (action === "REMARKS") {
-            // The document stays in the same section, but whoever wrote
-            // the remarks is now the one handling it.
             holder = actor ?? holder;
         } else {
             section = toSection ?? fromSection ?? section;
@@ -109,10 +110,16 @@ export default function DocumentTrailModal({
     onClose,
     openSlip = false,
     slipVariant = "2309",
+    canRestore = false,
 }) {
     const [document, setDocument] = useState(null);
     const [error, setError] = useState(null);
     const [slipOpen, setSlipOpen] = useState(false);
+    const [confirmingRestore, setConfirmingRestore] = useState(false);
+    const [restoring, setRestoring] = useState(false);
+    const [restoreError, setRestoreError] = useState(null);
+
+    const { notify } = useNotice();
 
     useEffect(() => {
         const onKey = (e) => e.key === "Escape" && onClose();
@@ -126,6 +133,8 @@ export default function DocumentTrailModal({
 
         setDocument(null);
         setError(null);
+        setConfirmingRestore(false);
+        setRestoreError(null);
 
         fetch(route("documents.detail", documentId), {
             credentials: "same-origin",
@@ -159,14 +168,8 @@ export default function DocumentTrailModal({
     const timeline = document ? buildTimeline(document) : [];
     const creatorName = document?.creator?.username;
     const creatorSection = document?.creator?.section?.section_name;
+    const isCompleted = document?.status?.status_name === "Completed";
 
-    /*
-     * Opened straight from "Reference slip": while the document loads
-     * the normal dialog shows its "Loading..." state, then it gives way
-     * to the slip alone. The history never appears, and closing the
-     * slip closes everything. If loading fails, the dialog stays so
-     * the error can be read.
-     */
     const slipOnly = openSlip && !error && Boolean(document);
 
     const closeSlip = () => {
@@ -176,6 +179,51 @@ export default function DocumentTrailModal({
         }
 
         setSlipOpen(false);
+    };
+
+    const restore = async () => {
+        setRestoring(true);
+        setRestoreError(null);
+
+        try {
+            const csrfToken = window.document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+
+            const response = await fetch(
+                `/api/documents/${document.document_id}/restore`,
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {}),
+                    },
+                },
+            );
+
+            const body = await response.json();
+
+            if (!response.ok) {
+                throw new Error(body.message ?? "Could not restore.");
+            }
+
+            notify({
+                title: "Document restored",
+                message: "It is back on your desk. You can forward it again.",
+                details: [
+                    ["Taxpayer", document.taxpayer_name],
+                    ["Reference no.", document.tracking_number],
+                ],
+            });
+
+            onClose();
+            router.visit(route("documents.index"));
+        } catch (err) {
+            setRestoreError(err.message);
+            setRestoring(false);
+        }
     };
 
     return (
@@ -385,23 +433,74 @@ export default function DocumentTrailModal({
                                     </ol>
                                 </div>
 
-                                <div className="flex flex-col-reverse gap-3 border-t border-line px-7 py-5 sm:flex-row sm:justify-end">
-                                    <EmployeeButton
-                                        variant="quiet"
-                                        onClick={onClose}
-                                    >
-                                        Close
-                                    </EmployeeButton>
+                                {confirmingRestore ? (
+                                    <div className="border-t border-line bg-brand-50 px-7 py-5">
+                                        <p className="text-base font-semibold text-black">
+                                            Restore this document? It will go
+                                            back to your Documents so you can
+                                            continue its transaction.
+                                        </p>
 
-                                    {!document.awaiting_details && (
+                                        {restoreError && (
+                                            <p className="mt-3 text-sm font-medium text-stop-600">
+                                                {restoreError}
+                                            </p>
+                                        )}
+
+                                        <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                            <EmployeeButton
+                                                variant="quiet"
+                                                disabled={restoring}
+                                                onClick={() =>
+                                                    setConfirmingRestore(false)
+                                                }
+                                            >
+                                                Go back
+                                            </EmployeeButton>
+
+                                            <EmployeeButton
+                                                disabled={restoring}
+                                                onClick={restore}
+                                            >
+                                                {restoring
+                                                    ? "Restoring..."
+                                                    : "Yes, restore"}
+                                            </EmployeeButton>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col-reverse gap-3 border-t border-line px-7 py-5 sm:flex-row sm:justify-end">
                                         <EmployeeButton
-                                            onClick={() => setSlipOpen(true)}
+                                            variant="quiet"
+                                            onClick={onClose}
                                         >
-                                            <Icon name="print" />
-                                            View slip
+                                            Close
                                         </EmployeeButton>
-                                    )}
-                                </div>
+
+                                        {canRestore && isCompleted && (
+                                            <EmployeeButton
+                                                variant="secondary"
+                                                onClick={() =>
+                                                    setConfirmingRestore(true)
+                                                }
+                                            >
+                                                <Icon name="complete" />
+                                                Restore
+                                            </EmployeeButton>
+                                        )}
+
+                                        {!document.awaiting_details && (
+                                            <EmployeeButton
+                                                onClick={() =>
+                                                    setSlipOpen(true)
+                                                }
+                                            >
+                                                <Icon name="print" />
+                                                View slip
+                                            </EmployeeButton>
+                                        )}
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>

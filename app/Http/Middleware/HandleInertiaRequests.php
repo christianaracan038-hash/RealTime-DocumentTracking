@@ -87,7 +87,7 @@ class HandleInertiaRequests extends Middleware
             * requests each one and logs a 404 until they are uploaded.
             */
             'logos' => fn () => collect([
-                'bir' => 'images/bir-logo.png',
+                'bir' => 'images/2nd-logo-bir.png',
                 'office' => 'images/office-logo.png',
             ])
                 ->filter(fn ($path) => file_exists(public_path($path)))

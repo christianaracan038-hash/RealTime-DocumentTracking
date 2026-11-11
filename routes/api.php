@@ -28,16 +28,16 @@ Route::middleware(['web'])->group(function () {
             [DocumentTrackingController::class, 'complete']
         )->name('api.documents.complete');
 
+        Route::post(
+            '/documents/{document}/restore',
+            [DocumentTrackingController::class, 'restore']
+        )->name('api.documents.restore');
 
         Route::get('/documents/forward-sections', [DocumentTrackingController::class, 'forwardSections']);
 
-        /*
-         * Delay reason management
-         */
         Route::post('/documents/{document}/delay-reason', [DocumentDelayReasonController::class, 'store'])->name('api.documents.delay-reason.store');
         Route::get('/documents/{document}/delay-reason', [DocumentDelayReasonController::class, 'show'])->name('api.documents.delay-reason.show');
         Route::delete('/documents/{document}/delay-reason', [DocumentDelayReasonController::class, 'destroy'])->name('api.documents.delay-reason.destroy');
     });
 
 });
-

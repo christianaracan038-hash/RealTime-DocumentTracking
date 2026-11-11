@@ -711,7 +711,11 @@ class DocumentService
                 },
             ])
             ->where('document_id', $documentId)
-            ->where(fn ($query) => $this->applyVisibility($query, $employee))
+            ->where(function ($query) use ($employee) {
+                $query
+                    ->where(fn ($q) => $this->applyVisibility($q, $employee))
+                    ->orWhere(fn ($q) => $q->visibleTo($employee));
+            })
             ->first();
     }
 }
