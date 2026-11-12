@@ -48,14 +48,6 @@ class SectionController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        $renamed = $validated['section_name'] !== $section->section_name;
-
-        if ($renamed && EmployeeAcc::where('section_id', $section->getKey())->exists()) {
-            return back()->withErrors([
-                'section_name' => 'This section has employee accounts, so its name cannot be changed.',
-            ]);
-        }
-
         $section->update($validated);
 
         return back()->with('success', 'Section updated.');

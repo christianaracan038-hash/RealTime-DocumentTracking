@@ -17,6 +17,16 @@ export default function EmployeeForm({
             badge="Employee"
         >
             <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="border-t border-slate-200 pt-4">
+                    <h4 className="text-sm font-semibold text-slate-800">
+                        Sign-in credentials
+                    </h4>
+                    <p className="mt-1 text-xs text-slate-500">
+                        The employee will use this username and first password
+                        to access the system.
+                    </p>
+                </div>
+
                 <Field
                     label="Username"
                     required
@@ -67,6 +77,12 @@ export default function EmployeeForm({
                             }
                         />
                     </Field>
+                </div>
+
+                <div className="border-t border-slate-200 pt-4">
+                    <h4 className="text-sm font-semibold text-slate-800">
+                        Office assignment and access
+                    </h4>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">

@@ -24,26 +24,21 @@ class UpdateEmployeeAccountRequest extends FormRequest
         $employee = $this->route('employee');
 
         return [
+            'full_name' => ['required', 'string', 'max:255'],
+
+            'position' => ['nullable', 'string', 'max:100'],
+
+            'email' => [
+                'nullable', 'email', 'max:255',
+                Rule::unique('employees_acc', 'email')
+                    ->ignore($employee->employee_id, 'employee_id'),
+            ],
+
             'username' => [
                 'required', 'string', 'max:50',
                 Rule::unique('employees_acc', 'username')
                     ->ignore($employee->employee_id, 'employee_id'),
             ],
-
-            /*
-            * Required here as well as on create, so an account that
-            * predates the name columns gets one the first time anybody
-            * edits it.
-            */
-            // 'full_name' => ['required', 'string', 'max:255'],
-
-            // 'position' => ['nullable', 'string', 'max:100'],
-
-            // 'email' => [
-            //     'nullable', 'email', 'max:255',
-            //     Rule::unique('employees_acc', 'email')
-            //         ->ignore($employee->employee_id, 'employee_id'),
-            // ],
 
             'section_id' => ['required', Rule::exists('sections', 'section_id')],
 
@@ -54,9 +49,9 @@ class UpdateEmployeeAccountRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'username.unique' => 'That username is already taken.',
             'full_name.required' => 'Please enter the employee\'s full name.',
             'email.unique' => 'Another account already uses that email address.',
+            'username.unique' => 'That username is already taken.',
             'section_id.required' => 'Please choose the section this person works in.',
             'role_id.required' => 'Please choose a role.',
         ];

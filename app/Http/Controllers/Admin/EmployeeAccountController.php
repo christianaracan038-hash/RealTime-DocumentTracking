@@ -12,6 +12,7 @@ use App\Models\Section;
 use App\Services\AvatarStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,12 +28,19 @@ class EmployeeAccountController extends Controller
 {
     public function index(Request $request): Response
     {
-        $search = $request->string('search')->toString();
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'role_id' => ['nullable', 'integer', Rule::exists('roles', 'role_id')],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+        ]);
 
-        $employees = EmployeeAcc::query()
-            ->with(['section', 'role'])
+        $search = trim($validated['search'] ?? '');
+        $roleId = $validated['role_id'] ?? null;
+        $status = $validated['status'] ?? null;
+
+        $filteredEmployees = fn () => EmployeeAcc::query()
             ->when(filled($search), function ($query) use ($search) {
-                $keyword = '%'.strtolower($search).'%';
+                $keyword = '%'.mb_strtolower($search).'%';
 
                 $query->where(function ($query) use ($keyword) {
                     $query->whereRaw('lower(username) like ?', [$keyword])
@@ -41,17 +49,30 @@ class EmployeeAccountController extends Controller
                         ->orWhereRaw('lower(email) like ?', [$keyword]);
                 });
             })
+            ->when($roleId !== null, fn ($query) => $query->where('role_id', $roleId))
+            ->when($status !== null, fn ($query) => $query->where('is_active', $status === 'active'));
+
+        $employees = $filteredEmployees()
+            ->select([
+                'employee_id',
+                'username',
+                'full_name',
+                'position',
+                'email',
+                'avatar_path',
+                'section_id',
+                'role_id',
+                'is_active',
+            ])
+            ->with([
+                'section:section_id,section_name',
+                'role:role_id,role_name',
+            ])
             ->orderBy('is_active', 'desc')
             ->orderBy('username')
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
-        /*
-        * The administrator is entitled to every name, so they are asked
-        * for here. On the model itself they are hidden and unappended,
-        * because an employee is also serialised as the creator of a
-        * document or the author of a comment - payloads that go to other
-        * sections, which are not entitled to a person's name.
-        */
         /*
         * The administrator is entitled to all of it. On the model these
         * are hidden and unappended, because an employee is also
@@ -59,21 +80,33 @@ class EmployeeAccountController extends Controller
         * payloads that go to other sections, which are entitled to
         * neither a name nor a face.
         */
-        $employees->each->append(['display_name', 'avatar_url']);
-        $employees->each->makeVisible(['full_name', 'position', 'email']);
+        $employees->getCollection()->each(function (EmployeeAcc $employee) {
+            $employee
+                ->append(['display_name', 'avatar_url'])
+                ->makeVisible(['full_name', 'position', 'email']);
+        });
+
+        $activeCount = $filteredEmployees()->where('is_active', true)->count();
 
         return Inertia::render('SuperAdmin/Employees/Index', [
             'employees' => $employees,
+            'counts' => [
+                'active' => $activeCount,
+            ],
 
             /*
-            * Every section and role, not just the active ones: an
-            * account may already sit on one that was later switched off,
-            * and the form has to be able to show what it currently is.
+            * Include inactive options too: an account may already belong
+            * to one that was later switched off, and the edit form must
+            * still be able to show its current assignment.
             */
-            'sections' => Section::orderBy('section_name')->get(),
-            'roles' => Role::orderBy('role_name')->get(),
+            'sections' => Section::lookup()->sortBy('section_name')->values(),
+            'roles' => Role::lookup()->sortBy('role_name')->values(),
 
-            'filters' => ['search' => $search],
+            'filters' => [
+                'search' => $search,
+                'role_id' => $roleId,
+                'status' => $status,
+            ],
         ]);
     }
 

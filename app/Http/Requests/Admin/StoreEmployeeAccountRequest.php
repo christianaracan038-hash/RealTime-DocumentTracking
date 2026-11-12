@@ -23,19 +23,19 @@ class StoreEmployeeAccountRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'full_name' => ['nullable', 'string', 'max:255'],
+
+            'position' => ['nullable', 'string', 'max:100'],
+
+            'email' => [
+                'nullable', 'email', 'max:255',
+                Rule::unique('employees_acc', 'email'),
+            ],
+
             'username' => [
                 'required', 'string', 'max:50',
                 Rule::unique('employees_acc', 'username'),
             ],
-
-            // 'full_name' => ['required', 'string', 'max:255'],
-
-            // 'position' => ['nullable', 'string', 'max:100'],
-
-            // 'email' => [
-            //     'nullable', 'email', 'max:255',
-            //     Rule::unique('employees_acc', 'email'),
-            // ],
 
             'password' => ['required', 'string', 'min:8', 'confirmed'],
 
@@ -50,12 +50,9 @@ class StoreEmployeeAccountRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'email.unique' => 'Another account already uses that email address.',
             'username.required' => 'Please enter a username for signing in.',
             'username.unique' => 'That username is already taken.',
-
-            'full_name.required' => 'Please enter the employee\'s full name.',
-
-            'email.unique' => 'Another account already uses that email address.',
 
             'password.required' => 'Please set a first password.',
             'password.min' => 'The password must be at least 8 characters.',

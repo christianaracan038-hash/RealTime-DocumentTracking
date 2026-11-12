@@ -63,9 +63,6 @@ class EmployeeAccountManagementTest extends TestCase
     {
         return array_merge([
             'username' => 'compliance.staff',
-            'full_name' => 'Maria Santos',
-            'position' => 'Chief',
-            'email' => 'maria@rdo111.test',
             'password' => 'a-good-password',
             'password_confirmation' => 'a-good-password',
             'section_id' => $this->compliance->section_id,
@@ -102,7 +99,7 @@ class EmployeeAccountManagementTest extends TestCase
         $this->get(route('super.employees.index'))->assertRedirect(route('login'));
     }
 
-    public function test_an_account_is_created_with_its_identity(): void
+    public function test_an_account_is_created_without_identity_fields(): void
     {
         $this->actingAs($this->administrator)
             ->post(route('super.employees.store'), $this->creationPayload())
@@ -110,20 +107,11 @@ class EmployeeAccountManagementTest extends TestCase
 
         $employee = EmployeeAcc::where('username', 'compliance.staff')->first();
 
-        $this->assertSame('Maria Santos', $employee->full_name);
-        $this->assertSame('Chief', $employee->position);
-        $this->assertSame('maria@rdo111.test', $employee->email);
-        $this->assertSame('Chief Maria Santos', $employee->display_name);
+        $this->assertNull($employee->full_name);
+        $this->assertNull($employee->position);
+        $this->assertNull($employee->email);
+        $this->assertSame('compliance.staff', $employee->display_name);
         $this->assertTrue(Hash::check('a-good-password', $employee->password));
-    }
-
-    public function test_a_new_account_must_be_named(): void
-    {
-        $this->actingAs($this->administrator)
-            ->post(route('super.employees.store'), $this->creationPayload(['full_name' => '']))
-            ->assertSessionHasErrors('full_name');
-
-        $this->assertSame(0, EmployeeAcc::count());
     }
 
     public function test_a_username_and_email_cannot_be_reused(): void
@@ -261,7 +249,7 @@ class EmployeeAccountManagementTest extends TestCase
             ->assertOk()
             ->viewData('page');
 
-        $names = collect($page['props']['employees'])->pluck('display_name');
+        $names = collect($page['props']['employees']['data'])->pluck('display_name');
 
         $this->assertTrue($names->contains('Atty. John Dela Cruz'));
         $this->assertTrue($names->contains('Maria Santos'));
@@ -272,7 +260,70 @@ class EmployeeAccountManagementTest extends TestCase
             ->assertOk()
             ->viewData('page');
 
-        $this->assertCount(1, $page['props']['employees']);
-        $this->assertSame('Maria Santos', $page['props']['employees'][0]['display_name']);
+        $this->assertCount(1, $page['props']['employees']['data']);
+        $this->assertSame('Maria Santos', $page['props']['employees']['data'][0]['display_name']);
+    }
+
+    public function test_the_employee_list_is_paginated_and_keeps_search_in_page_links(): void
+    {
+        foreach (range(1, 16) as $number) {
+            $this->employee([
+                'username' => 'page-user-'.$number,
+                'full_name' => 'Page Search '.$number,
+            ]);
+        }
+
+        $page = $this->actingAs($this->administrator)
+            ->get(route('super.employees.index', ['search' => 'page search']))
+            ->assertOk()
+            ->viewData('page')['props']['employees'];
+
+        $this->assertCount(15, $page['data']);
+        $this->assertSame(16, $page['total']);
+        $this->assertSame(15, $page['per_page']);
+
+        $secondPageUrl = collect($page['links'])
+            ->pluck('url')
+            ->filter(fn ($url) => str_contains($url, 'page=2'))
+            ->first();
+
+        $this->assertNotNull($secondPageUrl);
+        $this->assertStringContainsString('search=page', $secondPageUrl);
+    }
+
+    public function test_the_employee_list_filters_by_role_and_status_together(): void
+    {
+        $otherRole = Role::create(['role_name' => 'Registration', 'is_active' => true]);
+
+        $this->employee([
+            'username' => 'matching.inactive',
+            'role_id' => $otherRole->role_id,
+            'is_active' => false,
+        ]);
+        $this->employee([
+            'username' => 'matching.active',
+            'role_id' => $otherRole->role_id,
+            'is_active' => true,
+        ]);
+        $this->employee([
+            'username' => 'other-role.inactive',
+            'is_active' => false,
+        ]);
+
+        $page = $this->actingAs($this->administrator)
+            ->get(route('super.employees.index', [
+                'role_id' => $otherRole->role_id,
+                'status' => 'inactive',
+            ]))
+            ->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertSame(
+            ['matching.inactive'],
+            collect($page['employees']['data'])->pluck('username')->all()
+        );
+        $this->assertSame($otherRole->role_id, (int) $page['filters']['role_id']);
+        $this->assertSame('inactive', $page['filters']['status']);
+        $this->assertSame(0, $page['counts']['active']);
     }
 }

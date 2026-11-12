@@ -17,18 +17,26 @@ import PhotoModal from "./Components/PhotoModal";
  * their access.
  */
 export default function Index() {
-    const { employees, sections, roles, filters, flash } = usePage().props;
+    const {
+        employees,
+        counts = {},
+        sections,
+        roles,
+        filters,
+        flash,
+    } = usePage().props;
 
     const [editing, setEditing] = useState(null);
     const [changingPassword, setChangingPassword] = useState(null);
     const [changingPhoto, setChangingPhoto] = useState(null);
     const [search, setSearch] = useState(filters?.search ?? "");
+    const [roleId, setRoleId] = useState(
+        filters?.role_id ? String(filters.role_id) : "",
+    );
+    const [status, setStatus] = useState(filters?.status ?? "");
 
     const createForm = useForm({
         username: "",
-        full_name: "",
-        position: "",
-        email: "",
         password: "",
         password_confirmation: "",
         section_id: "",
@@ -49,13 +57,17 @@ export default function Index() {
         const timer = setTimeout(() => {
             router.get(
                 route("super.employees.index"),
-                { search: search || undefined },
+                {
+                    search: search || undefined,
+                    role_id: roleId || undefined,
+                    status: status || undefined,
+                },
                 { preserveState: true, preserveScroll: true, replace: true },
             );
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [search]);
+    }, [search, roleId, status]);
 
     const handleFieldChange = (event) => {
         const { name, value, type, checked } = event.target;
@@ -86,8 +98,6 @@ export default function Index() {
         );
     };
 
-    const withoutName = employees.filter((e) => !e.full_name).length;
-
     return (
         <AuthenticatedLayout
             header={
@@ -104,7 +114,7 @@ export default function Index() {
                     </div>
 
                     <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
-                        {employees.filter((e) => e.is_active).length} active
+                        {counts.active ?? 0} active
                     </div>
                 </div>
             }
@@ -116,20 +126,6 @@ export default function Index() {
                     {flash?.success && (
                         <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                             {flash.success}
-                        </div>
-                    )}
-
-                    {/*
-                     * The accounts that predate the name columns. Every
-                     * screen naming a person falls back to their username
-                     * until somebody fills these in.
-                     */}
-                    {withoutName > 0 && (
-                        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                            <strong>{withoutName}</strong> account
-                            {withoutName === 1 ? " has" : "s have"} no name on
-                            file, so the system still shows a username where it
-                            should show a person. Edit each one to add it.
                         </div>
                     )}
 
@@ -146,8 +142,12 @@ export default function Index() {
 
                         <EmployeeTable
                             employees={employees}
+                            roles={roles}
+                            filters={{ roleId, status }}
                             search={search}
                             onSearch={setSearch}
+                            onRoleChange={setRoleId}
+                            onStatusChange={setStatus}
                             onEdit={setEditing}
                             onResetPassword={setChangingPassword}
                             onPhoto={setChangingPhoto}

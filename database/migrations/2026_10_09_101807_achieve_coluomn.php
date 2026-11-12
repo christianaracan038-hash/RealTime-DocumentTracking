@@ -31,7 +31,7 @@ return new class extends Migration
             ['status_id' => 5],
             [
                 'status_name' => 'For Archiving',
-                'status_color' => $archived->status_color ?? null,
+                'status_color' => $archived->status_color ?? '#6366f1',
                 'description' => 'Forwarded to Admin for archiving. Becomes Archived once Admin receives it.',
                 'is_active' => true,
                 'sort_order' => (int) DB::table('document_statuses')->max('sort_order') + 1,

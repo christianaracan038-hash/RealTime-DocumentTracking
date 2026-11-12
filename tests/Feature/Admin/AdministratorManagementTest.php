@@ -167,7 +167,50 @@ class AdministratorManagementTest extends TestCase
             ->viewData('page');
 
         $this->assertSame($this->me->id, $page['props']['currentId']);
-        $this->assertCount(2, $page['props']['administrators']);
+        $this->assertCount(2, $page['props']['administrators']['data']);
+    }
+
+    public function test_the_administrator_list_is_paginated_and_searchable(): void
+    {
+        foreach (range(1, 16) as $number) {
+            $this->administrator(
+                'Office Search '.$number,
+                'office-search-'.$number.'@rdo111.test'
+            );
+        }
+
+        $page = $this->actingAs($this->me)
+            ->get(route('super.administrators.index', ['search' => 'office search']))
+            ->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertCount(15, $page['administrators']['data']);
+        $this->assertSame(16, $page['administrators']['total']);
+
+        $secondPageUrl = collect($page['administrators']['links'])
+            ->pluck('url')
+            ->filter(fn ($url) => str_contains($url, 'page=2'))
+            ->first();
+
+        $this->assertNotNull($secondPageUrl);
+        $this->assertStringContainsString('search=office', $secondPageUrl);
+    }
+
+    public function test_the_administrator_list_can_filter_account_status(): void
+    {
+        $inactive = $this->administrator('Inactive Administrator', 'inactive@rdo111.test', active: false);
+
+        $page = $this->actingAs($this->me)
+            ->get(route('super.administrators.index', ['status' => 'inactive']))
+            ->assertOk()
+            ->viewData('page')['props'];
+
+        $this->assertSame(
+            [$inactive->id],
+            collect($page['administrators']['data'])->pluck('id')->all()
+        );
+        $this->assertSame('inactive', $page['filters']['status']);
+        $this->assertSame(1, $page['activeCount']);
     }
 
     public function test_a_guest_cannot_manage_administrators(): void

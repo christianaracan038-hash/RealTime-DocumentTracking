@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Head, router, useForm, usePage } from "@inertiajs/react";
 
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -105,10 +105,20 @@ function EditModal({ open, onClose, administrator }) {
 }
 
 export default function Index() {
-    const { administrators, currentId, flash, errors } = usePage().props;
+    const {
+        administrators,
+        activeCount = 0,
+        filters = {},
+        currentId,
+        flash,
+        errors,
+    } = usePage().props;
 
     const [editing, setEditing] = useState(null);
     const [changingPassword, setChangingPassword] = useState(null);
+    const [search, setSearch] = useState(filters.search ?? "");
+    const [status, setStatus] = useState(filters.status ?? "");
+    const firstRender = useRef(true);
 
     const createForm = useForm({
         name: "",
@@ -140,7 +150,28 @@ export default function Index() {
         );
     };
 
-    const activeCount = administrators.filter((a) => a.is_active).length;
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            router.get(
+                route("super.administrators.index"),
+                {
+                    search: search || undefined,
+                    status: status || undefined,
+                },
+                { preserveState: true, preserveScroll: true, replace: true },
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search, status]);
+
+    const administratorRows = administrators?.data ?? [];
 
     return (
         <AuthenticatedLayout
@@ -308,8 +339,30 @@ export default function Index() {
                         <FormCard
                             title="Administrator accounts"
                             description="Switching one off is also how a developer's access ends at handover."
-                            badge={`${administrators.length} total`}
+                            badge={`${administrators?.total ?? 0} total`}
                         >
+                            <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                                <input
+                                    type="search"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search name or email..."
+                                    aria-label="Search administrator accounts"
+                                    className="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                />
+
+                                <select
+                                    value={status}
+                                    onChange={(e) => setStatus(e.target.value)}
+                                    aria-label="Filter by administrator status"
+                                    className="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="">All statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+
                             <div className="overflow-x-auto rounded-xl border border-slate-200">
                                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                                     <thead className="bg-slate-50">
@@ -329,7 +382,20 @@ export default function Index() {
                                     </thead>
 
                                     <tbody className="divide-y divide-slate-200 bg-white">
-                                        {administrators.map((administrator) => {
+                                        {administratorRows.length === 0 && (
+                                            <tr>
+                                                <td
+                                                    colSpan="3"
+                                                    className="px-4 py-10 text-center text-slate-500"
+                                                >
+                                                    {search || status
+                                                        ? "No administrator accounts match these filters."
+                                                        : "No administrator accounts yet."}
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {administratorRows.map((administrator) => {
                                             const isMe =
                                                 administrator.id === currentId;
 
@@ -439,6 +505,51 @@ export default function Index() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {administrators?.total > 0 && (
+                                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-sm text-slate-600">
+                                        Showing {administrators.from}–
+                                        {administrators.to} of{" "}
+                                        {administrators.total} accounts
+                                    </p>
+
+                                    {administrators.links?.length > 3 && (
+                                        <nav
+                                            aria-label="Administrator account pages"
+                                            className="flex flex-wrap justify-center gap-2"
+                                        >
+                                            {administrators.links.map(
+                                                (link, index) => (
+                                                    <button
+                                                        key={index}
+                                                        type="button"
+                                                        disabled={!link.url}
+                                                        onClick={() =>
+                                                            link.url &&
+                                                            router.visit(
+                                                                link.url,
+                                                                {
+                                                                    preserveState: true,
+                                                                    preserveScroll: true,
+                                                                },
+                                                            )
+                                                        }
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: link.label,
+                                                        }}
+                                                        className={`rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                                            link.active
+                                                                ? "bg-indigo-600 text-white"
+                                                                : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                                                        }`}
+                                                    />
+                                                ),
+                                            )}
+                                        </nav>
+                                    )}
+                                </div>
+                            )}
                         </FormCard>
                     </div>
                 </div>

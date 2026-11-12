@@ -1,3 +1,4 @@
+import { router } from "@inertiajs/react";
 import FormCard from "./FormCard";
 import Avatar from "@/Components/Employee/Avatar";
 
@@ -11,27 +12,60 @@ import Avatar from "@/Components/Employee/Avatar";
  */
 export default function EmployeeTable({
     employees,
+    roles,
+    filters,
     onEdit,
     onResetPassword,
     onSetActive,
     onPhoto,
     search,
     onSearch,
+    onRoleChange,
+    onStatusChange,
 }) {
+    const rows = employees?.data ?? [];
+    const hasFilters = Boolean(search || filters.roleId || filters.status);
+
     return (
         <FormCard
             title="Employee Accounts"
             description="Correct a name, set a new password, or stop someone signing in."
-            badge={`${employees.length} account${employees.length === 1 ? "" : "s"}`}
+            badge={`${employees?.total ?? 0} account${employees?.total === 1 ? "" : "s"}`}
         >
-            <div className="mb-4">
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
                 <input
                     type="search"
                     value={search}
                     onChange={(e) => onSearch(e.target.value)}
                     placeholder="Search by name, username, position or email..."
+                    aria-label="Search employee accounts"
                     className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
+
+                <select
+                    value={filters.roleId}
+                    onChange={(e) => onRoleChange(e.target.value)}
+                    aria-label="Filter by role"
+                    className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                >
+                    <option value="">All roles</option>
+                    {roles.map((role) => (
+                        <option key={role.role_id} value={role.role_id}>
+                            {role.role_name}
+                        </option>
+                    ))}
+                </select>
+
+                <select
+                    value={filters.status}
+                    onChange={(e) => onStatusChange(e.target.value)}
+                    aria-label="Filter by account status"
+                    className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                >
+                    <option value="">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -57,20 +91,20 @@ export default function EmployeeTable({
                     </thead>
 
                     <tbody className="divide-y divide-slate-200 bg-white">
-                        {employees.length === 0 && (
+                        {rows.length === 0 && (
                             <tr>
                                 <td
                                     colSpan="4"
                                     className="px-4 py-10 text-center text-slate-500"
                                 >
-                                    {search
-                                        ? "No account matches that search."
+                                    {hasFilters
+                                        ? "No employee accounts match these filters."
                                         : "No employee accounts yet."}
                                 </td>
                             </tr>
                         )}
 
-                        {employees.map((employee) => (
+                        {rows.map((employee) => (
                             <tr
                                 key={employee.employee_id}
                                 className={
@@ -195,6 +229,45 @@ export default function EmployeeTable({
                     </tbody>
                 </table>
             </div>
+
+            {employees?.total > 0 && (
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-slate-600">
+                        Showing {employees.from}–{employees.to} of{" "}
+                        {employees.total} accounts
+                    </p>
+
+                    {employees.links?.length > 3 && (
+                        <nav
+                            aria-label="Employee account pages"
+                            className="flex flex-wrap justify-center gap-2"
+                        >
+                            {employees.links.map((link, index) => (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    disabled={!link.url}
+                                    onClick={() =>
+                                        link.url &&
+                                        router.visit(link.url, {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                        })
+                                    }
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
+                                    className={`rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                        link.active
+                                            ? "bg-indigo-600 text-white"
+                                            : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                                    }`}
+                                />
+                            ))}
+                        </nav>
+                    )}
+                </div>
+            )}
         </FormCard>
     );
 }

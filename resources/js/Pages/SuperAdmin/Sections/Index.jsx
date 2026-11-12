@@ -16,7 +16,7 @@ export default function Sections() {
     const [deleting, setDeleting] = useState(null);
     const [processing, setProcessing] = useState(false);
 
-    const keyOf = (section) => section.section_code;
+    const keyOf = (section) => section.section_id;
 
     const handleChange = (event) => {
         const { name, value, type, checked } = event.target;

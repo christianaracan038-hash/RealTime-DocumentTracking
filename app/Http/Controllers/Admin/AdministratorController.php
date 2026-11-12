@@ -28,13 +28,41 @@ use Illuminate\Support\Facades\Auth;
  */
 class AdministratorController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+        $status = $validated['status'] ?? null;
+
+        $filteredAdministrators = fn () => User::query()
+            ->when(filled($search), function ($query) use ($search) {
+                $keyword = '%'.mb_strtolower($search).'%';
+
+                $query->where(function ($query) use ($keyword) {
+                    $query->whereRaw('lower(name) like ?', [$keyword])
+                        ->orWhereRaw('lower(email) like ?', [$keyword]);
+                });
+            })
+            ->when($status !== null, fn ($query) => $query->where('is_active', $status === 'active'));
+
+        $administrators = $filteredAdministrators()
+            ->select(['id', 'name', 'email', 'is_active', 'created_at'])
+            ->orderBy('is_active', 'desc')
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
+
         return Inertia::render('SuperAdmin/Administrators/Index', [
-            'administrators' => User::query()
-                ->orderBy('is_active', 'desc')
-                ->orderBy('name')
-                ->get(['id', 'name', 'email', 'is_active', 'created_at']),
+            'administrators' => $administrators,
+            'activeCount' => User::query()->where('is_active', true)->count(),
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+            ],
 
             'currentId' => Auth::id(),
         ]);

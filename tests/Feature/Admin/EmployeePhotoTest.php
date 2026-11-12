@@ -195,7 +195,7 @@ class EmployeePhotoTest extends TestCase
             ->assertOk()
             ->viewData('page');
 
-        $listed = collect($page['props']['employees'])->firstWhere('username', 'rdo.staff');
+        $listed = collect($page['props']['employees']['data'])->firstWhere('username', 'rdo.staff');
 
         $this->assertNotNull($listed['avatar_url']);
     }
