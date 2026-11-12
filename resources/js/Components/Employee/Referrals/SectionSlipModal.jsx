@@ -24,9 +24,13 @@ function HeaderCell({ label, section, direction }) {
     );
 }
 
-export function SectionSlip({ document }) {
+export function SectionSlip({ document, fluid = false }) {
     return (
-        <div className="section-slip grid h-[5.5in] w-[8.5in] grid-cols-[1.25fr_1fr_1fr] grid-rows-[1.7fr_1fr_1fr_1fr_1fr] border-2 border-navy-900 bg-white text-navy-900">
+        <div
+            className={`section-slip grid grid-cols-[1.25fr_1fr_1fr] grid-rows-[1.7fr_1fr_1fr_1fr_1fr] border-2 border-navy-900 bg-white text-navy-900 ${
+                fluid ? "h-full w-full" : "h-[5.5in] w-[8.5in]"
+            }`}
+        >
             <div className="row-span-5 flex flex-col px-4 py-3">
                 <div className="flex shrink-0 items-center gap-3">
                     <img
@@ -111,28 +115,66 @@ export default function SectionSlipModal({ document, onClose }) {
                 ),
             );
 
-            const [{ toPng }, { jsPDF }] = await Promise.all([
+            const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+            // Tried in order until the PDF fits under the limit.
+            const ATTEMPTS = [
+                { pixelRatio: 3, quality: 0.92 },
+                { pixelRatio: 2, quality: 0.85 },
+                { pixelRatio: 2, quality: 0.7 },
+                { pixelRatio: 1.5, quality: 0.6 },
+            ];
+
+            const [{ toJpeg }, { jsPDF }] = await Promise.all([
                 import("html-to-image"),
                 import("jspdf"),
             ]);
 
-            const png = await toPng(node, {
-                pixelRatio: 3,
-                backgroundColor: "#ffffff",
-                cacheBust: true,
-            });
+            let finalPdf = null;
 
-            const pdf = new jsPDF({
-                unit: "in",
-                format: [SLIP_WIDTH_IN, SLIP_HEIGHT_IN],
-                orientation: "landscape",
-            });
+            for (const { pixelRatio, quality } of ATTEMPTS) {
+                const jpeg = await toJpeg(node, {
+                    pixelRatio,
+                    quality,
+                    backgroundColor: "#ffffff",
+                    cacheBust: true,
+                });
 
-            pdf.addImage(png, "PNG", 0, 0, SLIP_WIDTH_IN, SLIP_HEIGHT_IN);
+                const pdf = new jsPDF({
+                    unit: "in",
+                    format: [SLIP_WIDTH_IN, SLIP_HEIGHT_IN],
+                    orientation: "landscape",
+                    compress: true,
+                });
 
-            pdf.save(`${document.tracking_number}.pdf`);
-        } catch {
-            setExportError("Could not create the PDF. Please try again.");
+                pdf.addImage(
+                    jpeg,
+                    "JPEG",
+                    0,
+                    0,
+                    SLIP_WIDTH_IN,
+                    SLIP_HEIGHT_IN,
+                    undefined,
+                    "FAST",
+                );
+
+                if (pdf.output("blob").size <= MAX_BYTES) {
+                    finalPdf = pdf;
+                    break;
+                }
+            }
+
+            if (!finalPdf) {
+                throw new Error("PDF is larger than 5 MB");
+            }
+
+            finalPdf.save(`${document.tracking_number}.pdf`);
+        } catch (error) {
+            setExportError(
+                error.message === "PDF is larger than 5 MB"
+                    ? "The PDF is larger than 5 MB and can't be attached in Outlook."
+                    : "Could not create the PDF. Please try again.",
+            );
         } finally {
             setExporting(false);
         }
@@ -212,9 +254,28 @@ export default function SectionSlipModal({ document, onClose }) {
             </div>
 
             {createPortal(
-                <div id="print-root" className="hidden print:block">
-                    <SectionSlip document={document} />
-                </div>,
+                <>
+                    <style>{`
+                        @media print {
+                            @page {
+                                size: portrait;
+                                margin: 0.25in;
+                            }
+
+                            #print-root .slip-half {
+                                width: 80%;
+                                height: 40vh;
+                                break-inside: avoid;
+                            }
+                        }
+                    `}</style>
+
+                    <div id="print-root" className="hidden print:block">
+                        <div className="slip-half">
+                            <SectionSlip document={document} fluid />
+                        </div>
+                    </div>
+                </>,
                 window.document.body,
             )}
         </>

@@ -238,26 +238,60 @@ export default function ReferenceSlipModal({ document, onClose }) {
                 ),
             );
 
-            const [{ toPng }, { jsPDF }] = await Promise.all([
+            const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+            // Tried in order until the PDF fits under the limit.
+            const ATTEMPTS = [
+                { pixelRatio: 3, quality: 0.92 },
+                { pixelRatio: 2, quality: 0.85 },
+                { pixelRatio: 2, quality: 0.7 },
+                { pixelRatio: 1.5, quality: 0.6 },
+            ];
+
+            const [{ toJpeg }, { jsPDF }] = await Promise.all([
                 import("html-to-image"),
                 import("jspdf"),
             ]);
 
-            const png = await toPng(node, {
-                pixelRatio: 3,
-                backgroundColor: "#ffffff",
-                cacheBust: true,
-            });
+            let finalPdf = null;
 
-            const pdf = new jsPDF({
-                unit: "in",
-                format: [SLIP_WIDTH_IN, SLIP_HEIGHT_IN],
-                orientation: "portrait",
-            });
+            for (const { pixelRatio, quality } of ATTEMPTS) {
+                const jpeg = await toJpeg(node, {
+                    pixelRatio,
+                    quality,
+                    backgroundColor: "#ffffff",
+                    cacheBust: true,
+                });
 
-            pdf.addImage(png, "PNG", 0, 0, SLIP_WIDTH_IN, SLIP_HEIGHT_IN);
+                const pdf = new jsPDF({
+                    unit: "in",
+                    format: [SLIP_WIDTH_IN, SLIP_HEIGHT_IN],
+                    orientation: "portrait",
+                    compress: true,
+                });
 
-            pdf.save(`${document.tracking_number}.pdf`);
+                pdf.addImage(
+                    jpeg,
+                    "JPEG",
+                    0,
+                    0,
+                    SLIP_WIDTH_IN,
+                    SLIP_HEIGHT_IN,
+                    undefined,
+                    "FAST",
+                );
+
+                if (pdf.output("blob").size <= MAX_BYTES) {
+                    finalPdf = pdf;
+                    break;
+                }
+            }
+
+            if (!finalPdf) {
+                throw new Error("PDF is larger than 5 MB");
+            }
+
+            finalPdf.save(`${document.tracking_number}.pdf`);
         } catch {
             setExportError("Could not create the PDF. Please try again.");
         } finally {
@@ -330,14 +364,6 @@ export default function ReferenceSlipModal({ document, onClose }) {
                             {exporting ? "Preparing..." : "Export PDF"}
                         </EmployeeButton>
 
-                        <EmployeeButton
-                            variant="secondary"
-                            onClick={() => printSlip("half")}
-                        >
-                            <Icon name="print" />
-                            Print half sheet
-                        </EmployeeButton>
-
                         <EmployeeButton onClick={() => printSlip("sheet")}>
                             <Icon name="print" />
                             Print full sheet
@@ -363,21 +389,35 @@ export default function ReferenceSlipModal({ document, onClose }) {
                             @page {
                                 ${
                                     printMode === "half"
-                                        ? "size: 5.5in 8.5in; margin: 0.4in;"
-                                        : "size: landscape; margin: 0.5in;"
+                                        ? "size: 2in 5in; margin: 0.5in;"
+                                        : "size: portrait; margin: 0.1in;"
                                 }
-                            }
+                            }   
+                                ${
+                                    printMode === "half"
+                                        ? `#print-root .print-slip .reference-slip {
+                width: 2.1in !important;
+                height: 4.2in !important;
+            }`
+                                        : ""
+                                }
+                    "
+                                }
                         }
+
                     `}</style>
                     <div id="print-root" className="hidden print:block">
                         <div
                             className={
                                 printMode === "half"
-                                    ? "flex justify-center"
+                                    ? "print-slip flex justify-center"
                                     : "flex"
                             }
                         >
-                            <ReferenceSlip document={document} landscape />
+                            <ReferenceSlip
+                                document={document}
+                                landscape={printMode === "half"}
+                            />
                         </div>
                     </div>
                 </>,

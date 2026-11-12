@@ -8,6 +8,7 @@ import { useNotice } from "@/Components/Employee/Notice";
 import ReferenceSlipModal from "./ReferenceSlipModal";
 import SectionSlipModal from "./SectionSlipModal";
 import { addressedTo, exactTime, longDate, sentFrom } from "./referral";
+import SlipPdfSize from "./SlipPdfSize";
 
 const ACTION_TONE = {
     REGISTERED: "bg-accent-400",
@@ -299,6 +300,14 @@ export default function DocumentTrailModal({
                                     <Row label="Registered">
                                         {exactTime(document.created_at)}
                                     </Row>
+
+                                    {!document.awaiting_details && (
+                                        <SlipPdfSize
+                                            document={document}
+                                            variant={slipVariant}
+                                        />
+                                    )}
+
                                     <Row label="Received">
                                         {document.received_at &&
                                             exactTime(document.received_at)}

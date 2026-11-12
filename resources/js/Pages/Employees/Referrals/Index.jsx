@@ -21,6 +21,8 @@ import {
     sectionLabel,
 } from "@/Components/Employee/Referrals/referral";
 
+import SlipPdfSize from "@/Components/Employee/Referrals/SlipPdfSize";
+
 const TABS = [
     {
         key: "",
@@ -514,6 +516,15 @@ export default function Index({
                                             Registered{" "}
                                             {exactTime(document.created_at)}
                                         </p>
+
+                                        <SlipPdfSize
+                                            document={document}
+                                            variant={
+                                                usesForm2309
+                                                    ? "2309"
+                                                    : "section"
+                                            }
+                                        />
                                     </button>
 
                                     <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-4 pr-4">
