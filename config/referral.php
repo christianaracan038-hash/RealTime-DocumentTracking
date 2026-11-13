@@ -115,11 +115,11 @@ return [
     * is the office that notices when something has stopped moving.
     */
     'oversight_sections' => [
-        'RDO',
+        'OFFICE OF THE RDO/ARDO',
     ],
 
     'details_completion_sections' => [
-        'RDO',
+        'OFFICE OF THE RDO/ARDO',
     ],
 
     /*
@@ -136,7 +136,7 @@ return [
     * have to be revisited together rather than one of them quietly.
     */
     'form_2309_sections' => [
-        'RDO',
+        'OFFICE OF THE RDO/ARDO',
     ],
 
     /*
@@ -157,7 +157,7 @@ return [
     ],
 
     'archive_sections' => [
-        'RDO',
+        'OFFICE OF THE RDO/ARDO',
         'ADMIN',
     ],
 

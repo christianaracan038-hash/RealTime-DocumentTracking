@@ -100,13 +100,13 @@ class DocumentController extends Controller
 
             'usesForm2309' => in_array(
                 $employee->section?->section_name,
-                config('referral.form_2309_sections', ['RDO']),
+                config('referral.form_2309_sections', ['OFFICE OF THE RDO/ARDO']),
                 true
             ),
 
             'canCompleteDetails' => in_array(
                 $employee->section?->section_name,
-                config('referral.details_completion_sections', ['RDO']),
+                config('referral.details_completion_sections', ['OFFICE OF THE RDO/ARDO']),
                 true
             ),
         ]);
