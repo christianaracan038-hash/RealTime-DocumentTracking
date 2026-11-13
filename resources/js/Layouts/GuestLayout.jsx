@@ -6,14 +6,18 @@ import FaqSection from "@/Components/Faq/FaqSection";
 import useInView from "@/Components/Faq/useInView";
 
 const HERO_OPTIONS = { threshold: 0.4 };
+const STEP_MS = 220;
+const CUE_DELAY_MS = 2200;
 
 export default function GuestLayout({ children }) {
     const { backgroundImage } = usePage().props;
     const [heroRef, heroInView] = useInView(HERO_OPTIONS);
+    const [mounted, setMounted] = useState(false);
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setLoaded(true), 600);
+        const cueTimer = setTimeout(() => setLoaded(true), CUE_DELAY_MS);
         return () => clearTimeout(timer);
     }, []);
 

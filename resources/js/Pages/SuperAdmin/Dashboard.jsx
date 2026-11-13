@@ -46,8 +46,7 @@ export default function Dashboard() {
                         </h2>
 
                         <p className="text-sm text-slate-500">
-                            Who can sign in to the system, and which sections
-                            they belong to.
+                            Authorized Users and Section Assignments.
                         </p>
                     </div>
 
@@ -102,8 +101,8 @@ export default function Dashboard() {
                             }
                             sub={
                                 totals.employees_unnamed > 0
-                                    ? "Showing usernames instead of people"
-                                    : "Every account is named"
+                                    ? "User Accounts"
+                                    : "Registered Accounts"
                             }
                         />
                     </div>
@@ -120,8 +119,8 @@ export default function Dashboard() {
                                 </h3>
 
                                 <p className="mt-1 text-sm text-red-800">
-                                    Sections cannot delete a referral on their
-                                    own. Each request comes with a reason.
+                                    Referral Deletion Requires Approval and
+                                    Justification.
                                 </p>
                             </div>
 

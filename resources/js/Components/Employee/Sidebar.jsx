@@ -73,7 +73,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                     {/* Which section you are working as */}
                     <div className="mt-5 rounded-xl bg-navy-800 px-4 py-3">
                         <p className="text-xs tracking-wide text-navy-400 uppercase">
-                            Your section
+                            Assigned Section
                         </p>
 
                         <p className="mt-0.5 text-lg font-bold text-white">

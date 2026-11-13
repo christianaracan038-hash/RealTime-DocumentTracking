@@ -384,7 +384,7 @@ export default function Index({
                     <EmployeeButton
                         size="lg"
                         onClick={() => setRegistering(true)}
-                        className="w-full shrink-0 !border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700 lg:w-auto"
+                        className="w-full !border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700 sm:w-auto"
                     >
                         <Icon name="add" />
                         New Referral

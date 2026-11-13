@@ -5,7 +5,7 @@ const sectionMenu = (dashboardRoute, extras = []) => [
         icon: "dashboard",
     },
     {
-        label: "Referrals",
+        label: "Referral",
         route: "referrals.index",
         icon: "referrals",
         badge: "awaitingDetailsCount",
@@ -50,7 +50,9 @@ export const registrationMenu = [
 ];
 
 const navigation = {
-    RDO: withoutInbox(sectionMenu("rdo.dashboard", oversight)),
+    "OFFICE OF THE RDO/ARDO": withoutInbox(
+        sectionMenu("rdo.dashboard", oversight),
+    ),
     ASSESSMENT: sectionMenu("assessment.dashboard"),
     CSS: sectionMenu("css.dashboard"),
     COLLECTION: sectionMenu("collection.dashboard"),

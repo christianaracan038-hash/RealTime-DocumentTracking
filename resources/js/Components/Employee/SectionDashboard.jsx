@@ -41,7 +41,7 @@ export default function SectionDashboard({
                             </p>
 
                             <h2 className="mt-2 text-2xl font-bold text-white">
-                                Documents on your Desk
+                                Assigned Documents
                             </h2>
 
                             <p className="mt-2 max-w-2xl text-base text-navy-200">
@@ -57,19 +57,6 @@ export default function SectionDashboard({
                             >
                                 <Icon name="scan" />
                                 Scan QR Code
-                            </EmployeeButton>
-
-                            <EmployeeButton
-                                size="lg"
-                                onClick={() =>
-                                    router.visit(
-                                        route("referrals.index", { new: 1 }),
-                                    )
-                                }
-                                className="w-full !border-red-600 !bg-red-600 !text-white hover:!border-red-700 hover:!bg-red-700 lg:w-auto"
-                            >
-                                <Icon name="add" />
-                                New Referral
                             </EmployeeButton>
                         </div>
                     </div>

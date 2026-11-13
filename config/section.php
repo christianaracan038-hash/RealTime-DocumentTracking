@@ -2,7 +2,7 @@
 
 return [
 
-    'RDO' => [
+    'OFFICE OF THE RDO/ARDO' => [
         'path' => '/rdo/dashboard',
         'route' => 'rdo.dashboard',
         'page' => 'RDO/Dashboard',

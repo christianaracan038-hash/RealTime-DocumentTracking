@@ -263,7 +263,7 @@ export default function ReceiveDocumentScanner({
     if (!documentRecord) return null;
 
     return (
-        <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-navy-950/80 p-4 sm:items-center">
+        <div className="fixed inset-0 z-[70] flex justify-center overflow-y-auto bg-navy-950/80 p-4">
             <style>{`
                 @keyframes scan-progress-bar {
                     0% { transform: translateX(-100%); }
@@ -271,7 +271,7 @@ export default function ReceiveDocumentScanner({
                     100% { transform: translateX(400%); }
                 }
             `}</style>
-            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-xl">
+            <div className="my-auto w-full max-w-md overflow-hidden rounded-2xl bg-surface shadow-xl">
                 <div className="flex items-center justify-between border-b px-5 py-4">
                     <div>
                         <h2 className="text-lg font-semibold text-slate-800">
@@ -356,8 +356,7 @@ export default function ReceiveDocumentScanner({
                                         {cameraError}
                                     </p>
                                     <p className="mt-2 text-xs text-slate-400">
-                                        You can still enter the tracking number
-                                        below.
+                                        Enter Existing Tracking Reference.
                                     </p>
                                 </div>
                             </div>
@@ -386,8 +385,8 @@ export default function ReceiveDocumentScanner({
                                 htmlFor="manual-tracking-number"
                                 className="mb-1.5 block text-xs font-medium text-slate-600"
                             >
-                                Can't scan the QR code? Enter the tracking
-                                number instead.
+                                Alternatively, enter the document tracking
+                                number to proceed.
                             </label>
 
                             <div className="flex gap-2">

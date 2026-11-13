@@ -13,7 +13,7 @@ class SectionSeeder extends Seeder
 
             [
                 'section_code' => '1002',
-                'section_name' => 'RDO',
+                'section_name' => 'OFFICE OF THE RDO/ARDO',
                 'description' => "RDO's/ARDO's Office",
             ],
 

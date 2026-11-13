@@ -6,7 +6,7 @@ export default function Dashboard(props) {
             {...props}
             title="Assessment Dashboard"
             eyebrow="Assessment Section"
-            blurb="Anything sent to Assessment waits here until someone scans it in."
+            blurb="Pending Receipt Verification – Assessment Department."
         />
     );
 }

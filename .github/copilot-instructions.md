@@ -754,3 +754,177 @@ RECOMMEND PROFESSIONALLY.
 WAIT FOR APPROVAL.
 IMPLEMENT ONLY WHAT IS APPROVED.
 VERIFY THE RESULTS.
+
+# DATABASE MIGRATION — STRICT PROJECT OWNER CONTROL
+
+**NON-NEGOTIABLE RULE: THE PROJECT OWNER HAS COMPLETE CONTROL OVER ALL DATABASE MIGRATION OPERATIONS.**
+
+The AI Agent is strictly prohibited from independently creating, modifying, deleting, or executing database migration files or commands.
+
+The Project Owner must explicitly authorize every migration-related modification or execution.
+
+## 1. PROHIBITED MIGRATION OPERATIONS
+
+Without explicit approval, NEVER:
+
+- Create a new migration file.
+- Modify an existing migration file.
+- Delete or rename any migration file.
+- Execute any migration command.
+- Automatically generate migrations using Artisan.
+- Modify database schemas through alternative methods.
+- Execute raw SQL statements that change database structures.
+- Automatically apply migrations during deployment.
+- Modify migration history or migration tracking records.
+- Execute database schema changes through scripts or automated processes.
+
+This restriction applies to all environments:
+
+- Local Development
+- Supabase
+- Staging
+- Production
+- Any connected database environment.
+
+## 2. STRICT APPROVAL BEFORE MODIFYING MIGRATIONS
+
+Whenever a feature, bug fix, or system improvement requires a database schema change:
+
+**STOP AND WAIT FOR THE PROJECT OWNER'S APPROVAL.**
+
+Before making any database-related modification, the AI Agent must:
+
+1. Investigate the existing database schema.
+2. Inspect existing migration files.
+3. Inspect related models, relationships, and database dependencies.
+4. Identify the exact reason a database change is necessary.
+5. Explain which tables, columns, indexes, or constraints are affected.
+6. Explain possible data loss, compatibility issues, and regression risks.
+7. Present the proposed migration changes.
+8. Provide the exact migration filename and proposed code when applicable.
+9. Wait for explicit approval.
+
+Do not create or modify any migration file while waiting for approval.
+
+## 3. MIGRATION EXECUTION IS A SEPARATE AUTHORIZATION
+
+Approval to modify application code DOES NOT authorize database modifications.
+
+Approval to create or modify a migration file DOES NOT authorize migration execution.
+
+Even after migration creation has been approved, NEVER execute the migration automatically.
+
+Migration execution requires a separate, explicit authorization from the Project Owner.
+
+## 4. PROJECT OWNER MAY EXECUTE MIGRATIONS MANUALLY
+
+The Project Owner may choose to execute migrations manually.
+
+When this happens:
+
+- Prepare the migration file only if explicitly approved.
+- Provide the exact Artisan command.
+- Identify the target database environment.
+- Explain the expected database changes.
+- Explain any backup or rollback considerations.
+- Wait for the Project Owner to execute the command manually.
+
+**If the Project Owner chooses manual execution, DO NOT attempt to execute the migration yourself.**
+
+After the Project Owner reports that the migration has been completed, you may perform read-only verification of the database schema.
+
+Do not execute another migration to resolve an unexpected result without separate approval.
+
+## 5. EXISTING MIGRATION FILES MUST BE PRESERVED
+
+Treat all existing migration files as protected project assets.
+
+NEVER modify historical migrations simply to accommodate a new feature or fix.
+
+Do not rewrite previous migrations to make the current database structure match the desired implementation.
+
+If a schema change is necessary, explain the appropriate approach and wait for the Project Owner's decision.
+
+Preserve migration history and database integrity.
+
+## 6. ALTERNATIVE DATABASE MODIFICATIONS ARE ALSO PROHIBITED
+
+Do not bypass migration restrictions by using:
+
+- Raw SQL ALTER TABLE statements.
+- DB::statement() for schema modifications.
+- Schema Builder operations that modify database structures.
+- Database administration scripts.
+- Custom Artisan commands.
+- Docker initialization scripts.
+- Composer or NPM scripts.
+- CI/CD deployment commands.
+- Automatic application startup routines.
+
+No alternative method may be used to bypass the Project Owner's approval.
+
+## 7. WHAT THE AI AGENT MAY DO WITHOUT APPROVAL
+
+The AI Agent may perform READ-ONLY database investigation:
+
+- Read existing migration files.
+- Inspect database schemas.
+- Inspect table structures.
+- Inspect columns and data types.
+- Inspect indexes and foreign keys.
+- Review model relationships.
+- Analyze existing database queries.
+- Identify missing schema requirements.
+- Prepare a database change proposal.
+- Explain the expected SQL operations.
+
+The AI Agent may also implement approved application-code changes that do not require unauthorized database modifications.
+
+If the implementation depends on an unapproved schema change, STOP before modifying the affected implementation.
+
+## 8. REQUIRED MIGRATION APPROVAL FORMAT
+
+Whenever a migration is necessary, present:
+
+**DATABASE MIGRATION PROPOSAL**
+
+1. Reason for the migration.
+2. Current database structure.
+3. Proposed database structure.
+4. Affected tables and columns.
+5. Proposed migration filename.
+6. Expected SQL changes.
+7. Data integrity considerations.
+8. Potential risks.
+9. Rollback considerations.
+10. Execution command for manual use.
+
+Then ask:
+
+"Do you approve creating or modifying the proposed migration file? I will not make any migration-related changes until you explicitly authorize me."
+
+After approval to create or modify the file, do not execute it.
+
+If execution is requested, ask for separate authorization. If manual execution is selected, provide the command and wait for the Project Owner to run it.
+
+## 9. ABSOLUTE RULE
+
+NO MIGRATION CREATION WITHOUT APPROVAL.
+
+NO MIGRATION MODIFICATION WITHOUT APPROVAL.
+
+NO MIGRATION DELETION WITHOUT APPROVAL.
+
+NO DATABASE SCHEMA MODIFICATION WITHOUT APPROVAL.
+
+NO MIGRATION EXECUTION WITHOUT SEPARATE APPROVAL.
+
+NO AUTOMATIC MIGRATIONS.
+
+NO INDIRECT MIGRATIONS.
+
+NO BYPASSING THESE RESTRICTIONS.
+
+**THE PROJECT OWNER HAS THE FINAL AND EXCLUSIVE AUTHORITY OVER DATABASE MIGRATION DECISIONS AND EXECUTION.**
+
+When in doubt, STOP, EXPLAIN, AND WAIT FOR APPROVAL.

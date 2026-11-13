@@ -6,7 +6,7 @@ export default function Dashboard(props) {
             {...props}
             title="CSS Dashboard"
             eyebrow="Client Support Section"
-            blurb="Anything sent to Client Support waits here until someone scans it in."
+            blurb="Pending Document Intake – Client Support"
         />
     );
 }
