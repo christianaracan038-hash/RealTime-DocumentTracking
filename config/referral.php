@@ -159,6 +159,14 @@ return [
     'archive_sections' => [
         'OFFICE OF THE RDO/ARDO',
         'ADMIN',
+        'ONETT'
+    ],
+
+    'direct_send_target' => 'ADMIN',
+
+    'direct_send_options' => [
+        'Chief',
+        'Archive',
     ],
 
 ];

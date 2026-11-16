@@ -422,13 +422,13 @@ export default function Index({
                     <SearchInput
                         size="lg"
                         label={
-                            usesForm2309 ? "Find a Taxpayer" : "Find a referral"
+                            usesForm2309 ? "Find  Taxpayers" : "Find  referrals"
                         }
                         initialValue={filters.search}
                         placeholder={
                             usesForm2309
-                                ? "Type a name or a reference number"
-                                : "Type part of the description or a reference number"
+                                ? "Input the taxpayer's name or a reference number"
+                                : "Input part of the description or a reference number"
                         }
                         only={["documents", "counts", "filters"]}
                     />
@@ -745,9 +745,9 @@ export default function Index({
 
                             <p className="mt-2 text-base text-black">
                                 {deleting.concern || "This referral"} (
-                                {deleting.tracking_number}) will be sent to the
-                                super admin for approval. It stays in the
-                                register until it is approved.
+                                {deleting.tracking_number}) Pending Super Admin
+                                Approval; Retained in the Register Until
+                                Approved.
                             </p>
 
                             <label

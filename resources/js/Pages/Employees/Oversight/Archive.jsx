@@ -40,7 +40,7 @@ export default function Archive({ documents, filters = {} }) {
                 <div className="mt-5">
                     <SearchInput
                         size="lg"
-                        label="Find a taxpayer"
+                        label="Search Taxpayer"
                         initialValue={filters.search}
                         placeholder="Type a name, a concern, or a reference number"
                     />

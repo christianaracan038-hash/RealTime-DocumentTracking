@@ -85,19 +85,15 @@ export default function DashboardStats({ stats = {} }) {
             <Stat
                 label="Pending Acceptance"
                 value={waiting}
-                hint={
-                    waiting === 0
-                        ? ""
-                        : "Sent to your section but not yet received"
-                }
+                hint={waiting === 0 ? "" : "Awaiting Section Receipt"}
                 icon="inbox"
                 tone="blue"
             />
 
             <Stat
-                label="On your desk"
+                label="On desk"
                 value={onDesk}
-                hint={onDesk === 0 ? "You have no documents on hand" : ""}
+                hint={onDesk === 0 ? "No documents on hand" : ""}
                 icon="documents"
                 href={route("documents.index")}
                 tone="blue"

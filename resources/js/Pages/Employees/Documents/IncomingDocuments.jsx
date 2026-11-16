@@ -26,7 +26,7 @@ export default function IncomingDocuments({ documents = [], filters = {} }) {
                 <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h2 className="text-xl font-bold text-black">
-                            Waiting for you to receive
+                            Awaiting Receipt
                         </h2>
                     </div>
 
@@ -51,7 +51,7 @@ export default function IncomingDocuments({ documents = [], filters = {} }) {
                         size="lg"
                         label="Find a document"
                         initialValue={filters.search}
-                        placeholder="Type a name, concern or reference number"
+                        placeholder="Enter Name, Concern, or Reference Number"
                         only={["documents", "filters"]}
                     />
                 </div>
@@ -193,13 +193,13 @@ export default function IncomingDocuments({ documents = [], filters = {} }) {
                         <p className="text-lg font-semibold text-black">
                             {filters.search
                                 ? "No documents match your search."
-                                : "Nothing is waiting right now"}
+                                : "No Pending Documents."}
                         </p>
 
                         <p className="mt-1 text-base text-black">
                             {filters.search
-                                ? "Try the taxpayer's name, the concern or the reference number."
-                                : "Referrals sent to your section will appear here."}
+                                ? "Search by Taxpayer Name, Concern, or Reference Number."
+                                : "Referrals Received by Your Section."}
                         </p>
                     </div>
                 )}

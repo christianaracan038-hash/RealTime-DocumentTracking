@@ -48,46 +48,52 @@ class SectionSeeder extends Seeder
             ],
 
             [
-                'section_code' => '1007',
+                'section_code' => '1014',
                 'section_name' => 'OTHERS',
                 'description' => 'Others (outside the District)',
             ],
 
             [
-                'section_code' => '1008',
+                'section_code' => '1007',
                 'section_name' => 'ASSESSMENT-GS-DORION',
                 'description' => 'ASSESSMENT-GS-DORION',
             ],
 
             [
-                'section_code' => '1009',
+                'section_code' => '1008',
                 'section_name' => 'ASSESSMENT-GS-INSOY',
                 'description' => 'ASSESSMENT-GS-INSOY',
             ],
 
             [
-                'section_code' => '1012',
+                'section_code' => '1010',
                 'section_name' => 'ASSESSMENT-GS-NGO',
                 'description' => 'ASSESSMENT-GS-NGO',
             ],
 
             [
-                'section_code' => '1013',
+                'section_code' => '1009',
                 'section_name' => 'ASSESSMENT-GS-GAWAEN',
                 'description' => 'ASSESSMENT-GS-GAWAEN',
             ],
 
             [
-                'section_code' => '1014',
+                'section_code' => '1012',
                 'section_name' => 'ASSESSMENT-GS-ORFIANO',
                 'description' => 'ASSESSMENT-GS-ORFIANO',
             ],
 
             [
-                'section_code' => '1015',
+                'section_code' => '1011',
                 'section_name' => 'ASSESSMENT-GS-DAVID',
                 'description' => 'ASSESSMENT-GS-DAVID',
             ],
+
+            [
+                'section_code' => '1013',
+                'section_name' => 'ONETT',
+                'description' => 'ONETT',
+            ]
 
         ];
 

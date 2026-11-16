@@ -65,6 +65,7 @@ const navigation = {
     "ASSESSMENT-GS-GAWAEN": sectionMenu("gs-gawaen.dashboard"),
     "ASSESSMENT-GS-ORFIANO": sectionMenu("gs-orfiano.dashboard"),
     "ASSESSMENT-GS-DAVID": sectionMenu("gs-david.dashboard"),
+    ONETT: sectionMenu("onett.dashboard"),
 };
 
 export default navigation;

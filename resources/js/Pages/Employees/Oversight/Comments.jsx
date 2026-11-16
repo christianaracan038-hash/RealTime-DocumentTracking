@@ -232,11 +232,11 @@ export default function Comments({ stuck = [] }) {
                             </span>
 
                             <p className="text-lg font-semibold text-black">
-                                Nothing is sitting elsewhere
+                                No Pending Documents Elsewhere
                             </p>
 
                             <p className="mt-1 text-base text-black">
-                                Every document is either here or finished.
+                                All Documents Are Accounted For.
                             </p>
                         </div>
                     )}

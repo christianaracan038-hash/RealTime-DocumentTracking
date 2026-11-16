@@ -78,4 +78,5 @@ class Section extends Model
         static::saved($forget);
         static::deleted($forget);
     }
+    
 }

@@ -58,7 +58,7 @@ export default function GuestLayout({ children }) {
                         Revenue District Office No. 111 South Cotabato
                     </p>
 
-                    <h1 className="mt-4 text-[4.5vw] leading-tight font-bold whitespace-nowrap text-white sm:text-3xl lg:text-[1.9vw] [text-shadow:0_2px_6px_rgba(5,10,36,0.7)]">
+                    <h1 className="mt-4 text-[4.5vw] leading-tight font-bold whitespace-nowrap uppercase text-white sm:text-3xl lg:text-[1.9vw] [text-shadow:0_2px_6px_rgba(5,10,36,0.7)]">
                         Referral-Based Document Tracking
                     </h1>
 

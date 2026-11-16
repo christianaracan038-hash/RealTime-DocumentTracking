@@ -75,4 +75,10 @@ return [
         'page' => 'GROUPSUPERVISORPAGE/GS-DAVID/Dashboard',
     ],
 
+    'ONETT' => [
+        'path' => '/onett',
+        'route' => 'onett.dashboard',
+        'page' => 'ONETT/Dashboard',
+    ],
+
 ];

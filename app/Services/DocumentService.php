@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Models\EmployeeAcc;
+use App\Models\Section;
 class DocumentService
 {
     /**
@@ -24,6 +25,12 @@ class DocumentService
         }
 
         return implode(', ', array_filter($choices, fn ($c) => $c !== ''));
+    }
+
+    private function isAdminSection(Section $section): bool
+    {
+        return strcasecmp((string) $section->section_code, 'ADMIN') === 0
+            || strcasecmp((string) $section->section_name, 'ADMIN') === 0;
     }
 
     /**
@@ -469,35 +476,57 @@ class DocumentService
      */
     public function registerSectionReferral(array $data, $employee): Document
     {
-        return DB::transaction(function () use ($data, $employee) {
-            /*
-            * Lock for tracking number generation.
-            */
+        $archiving = (bool) ($data['archive'] ?? false);
+        $addressee = $data['addressee'] ?? null;
+        $directSend = $archiving || filled($addressee);
+
+        if ($directSend) {
+            abort_unless(
+                in_array(
+                    $employee->section?->section_name,
+                    config('referral.direct_send_sections', []),
+                    true
+                ),
+                403,
+                'Your section cannot use direct send to Admin.'
+            );
+
+            $destination = Section::find($data['destination_section_id']);
+
+            abort_unless(
+                $destination && $this->isAdminSection($destination),
+                422,
+                'Direct send is only available to the Admin section.'
+            );
+
+            abort_unless(
+                in_array($addressee, config('referral.direct_send_options', []), true),
+                422,
+                'Please choose Chief or Archive.'
+            );
+
+            abort_if(
+                $archiving && $addressee !== 'Archive',
+                422,
+                'Invalid archive request.'
+            );
+        }
+
+        return DB::transaction(function () use ($data, $employee, $archiving, $addressee, $directSend) {
             Document::query()->lockForUpdate()->latest('document_id')->first();
 
             $document = Document::create([
                 'tracking_number' => $this->generateTrackingNumber(),
-
-                // Stamped, never accepted - as everywhere else.
                 'document_date' => now(),
-
                 'concern' => $data['concern'],
-
-                'status_id' => 1, // Pending - the clock is running
-
+                'status_id' => $archiving ? 5 : 1,
                 'current_section_id' => $employee->section_id,
                 'current_employee_id' => $employee->employee_id,
-
                 'destination_section_id' => $data['destination_section_id'],
-                'addressee' => 'Chief',
-
+                'addressee' => $directSend ? $addressee : 'Chief',
                 'created_by' => $employee->employee_id,
                 'office_code' => $employee->section?->section_code,
-
-                /*
-                * Nothing is outstanding on it. The whole referral is the
-                * one form, so it is finished the moment it is saved.
-                */
+                'archived_by' => $archiving ? $employee->employee_id : null,
                 'details_completed_at' => now(),
                 'details_completed_by' => $employee->employee_id,
             ]);

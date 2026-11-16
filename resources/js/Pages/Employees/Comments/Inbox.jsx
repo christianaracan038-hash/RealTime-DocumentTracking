@@ -49,9 +49,8 @@ export default function Inbox({ comments }) {
                         </h2>
 
                         <p className="mt-1 text-base text-muted">
-                            Sent to your section about documents you are
-                            holding. Tap the taxpayer's name to open the
-                            document.
+                            Documents Currently Held Respective Section. Select
+                            a Taxpayer's Name to View the Document.
                         </p>
                     </div>
 
@@ -143,12 +142,11 @@ export default function Inbox({ comments }) {
                         </span>
 
                         <p className="text-lg font-semibold text-navy-800">
-                            Nothing to read
+                            No Documents Available
                         </p>
 
                         <p className="mt-1 text-base text-muted">
-                            If the RDO asks about a document you are holding, it
-                            will appear here.
+                            Documents Awaiting RDO/ARDO Inquiry
                         </p>
                     </div>
                 )}

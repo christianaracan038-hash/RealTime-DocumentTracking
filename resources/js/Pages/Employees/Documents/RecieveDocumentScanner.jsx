@@ -368,8 +368,8 @@ export default function ReceiveDocumentScanner({
                             {isForward
                                 ? "Scan the QR code attached to the physical document to verify it before forwarding."
                                 : isForArchiving
-                                  ? "This document was forwarded for archiving. Scan its QR code to receive it; it will be archived right after."
-                                  : "Position the QR code attached to the physical document inside the scanner."}
+                                  ? "Scan the document QR code to confirm receipt and initiate archiving."
+                                  : "Position the document's QR code within the scanner."}
                         </p>
                     )}
 
