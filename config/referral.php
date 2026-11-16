@@ -156,6 +156,11 @@ return [
         'Registration',
     ],
 
+    'direct_send_sections' => [
+        'OFFICE OF THE RDO/ARDO',
+        'ONETT',
+    ],
+
     'archive_sections' => [
         'OFFICE OF THE RDO/ARDO',
         'ADMIN',

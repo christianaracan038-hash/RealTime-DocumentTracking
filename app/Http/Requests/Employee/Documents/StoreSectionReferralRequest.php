@@ -55,7 +55,9 @@ class StoreSectionReferralRequest extends FormRequest
                 Rule::notIn([$employee?->section_id]),
             ],
 
-            'concern' => ['required', 'string', 'max:1000'],
+            'concern' => ['required', 'string', 'max:1000000'],
+             'addressee' => ['nullable', 'string', 'max:100'],
+            'archive' => ['nullable', 'boolean'],
         ];
     }
 

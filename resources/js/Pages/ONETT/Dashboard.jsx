@@ -6,7 +6,7 @@ export default function Dashboard(props) {
             {...props}
             title="ONETT Dashboard"
             eyebrow="ONETT Section"
-            blurb="Anything sent to ONETT waits here until someone scans it in."
+            blurb="Pending Document Intake – ONETT"
         />
     );
 }

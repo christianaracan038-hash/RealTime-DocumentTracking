@@ -49,7 +49,7 @@ export default function GuestLayout({ children }) {
                     />
 
                     <img
-                        src="/images/rbdt-logo.png"
+                        src="/images/syslogo.png"
                         alt="RBDT - Referral-Based Document Tracking"
                         className="mt-3 h-5 w-full max-w-full object-contain object-left drop-shadow-[0_2px_6px_rgba(5,10,36,0.6)] sm:h-52 lg:h-72 xl:h-96"
                     />

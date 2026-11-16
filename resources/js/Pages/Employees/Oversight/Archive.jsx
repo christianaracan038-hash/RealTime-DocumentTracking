@@ -63,11 +63,13 @@ export default function Archive({ documents, filters = {} }) {
 
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-lg font-bold text-navy-900">
-                                            {document.taxpayer_name ??
-                                                "No taxpayer on record"}
+                                            {document.taxpayer_name ||
+                                                document.concern ||
+                                                document.tracking_number}
                                         </p>
 
                                         <p className="mt-0.5 text-base text-muted">
+                                            {document.tracking_number} •{" "}
                                             {longDate(document.document_date) ||
                                                 "No date"}
                                         </p>

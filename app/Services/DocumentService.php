@@ -533,6 +533,23 @@ class DocumentService
 
             $this->generateQrCode($document);
 
+            // Gumawa ng TrackingHistory entry para sa history trail at tracking
+            $destination = Section::find($data['destination_section_id']);
+            $destName = $destination?->section_name ?? 'Admin';
+
+            \App\Models\TrackingHistory::create([
+                'document_id' => $document->document_id,
+                'from_section_id' => $employee->section_id,
+                'to_section_id' => $data['destination_section_id'],
+                'employee_id' => $employee->employee_id,
+                'status_id' => $archiving ? 5 : 1,
+                'action' => $archiving ? 'FORWARDED' : 'REGISTERED',
+                'remarks' => $archiving
+                    ? 'Taxpayer unresponsive. Document forwarded to '.$destName.' for archiving.'
+                    : 'Referral created and forwarded to '.$destName.'.',
+                'tracked_at' => now(),
+            ]);
+
             return $document->fresh();
         });
     }
@@ -646,24 +663,12 @@ class DocumentService
                 return $document;
             }
 
+            $archiving = (bool) ($data['archive'] ?? false);
+            $addressee = $data['addressee'] ?? ($document->addressee ?: 'Chief');
+
             $update = [
                 'concern' => $data['concern'],
-
-                /*
-                * Neither referred_for nor remarks is written here. Both are
-                * blocks on BIR Form 2309 that the RDO or a Chief fills in by
-                * hand on the hardcopy, so the slip prints them empty and no
-                * form asks. Their columns stay for referrals recorded before
-                * that was understood, and a stored value still prints.
-                */
-
-                /*
-                * Everything goes to the Chief. If the Chief is away somebody
-                * else receives it, and the movement trail records who - that
-                * is a fact about what happened, not a box on a form.
-                */
-                'addressee' => $document->addressee ?: 'Chief',
-
+                'addressee' => $addressee,
                 'details_completed_at' => now(),
                 'details_completed_by' => $employee->employee_id,
             ];
@@ -680,18 +685,40 @@ class DocumentService
             /*
             * Catching up a referral the draft flow left bare.
             */
-            foreach (['taxpayer_name', 'destination_section_id', 'addressee'] as $field) {
+            foreach (['taxpayer_name', 'destination_section_id'] as $field) {
                 if (blank($document->{$field}) && filled($data[$field] ?? null)) {
                     $update[$field] = $data[$field];
                 }
             }
 
-        $document->update($update);
+            // Kapag pinili ang Archive papuntang Admin
+            if ($archiving) {
+                $update['status_id'] = 5; // For Archiving
+                $update['archived_by'] = $employee->employee_id;
+            }
 
-        return $document->fresh();
+            $document->update($update);
+
+            // Gumawa ng TrackingHistory entry
+            $destinationId = $update['destination_section_id'] ?? $document->destination_section_id;
+            $destName = Section::find($destinationId)?->section_name ?? 'Admin';
+
+            \App\Models\TrackingHistory::create([
+                'document_id' => $document->document_id,
+                'from_section_id' => $employee->section_id,
+                'to_section_id' => $destinationId,
+                'employee_id' => $employee->employee_id,
+                'status_id' => $archiving ? 5 : 1,
+                'action' => $archiving ? 'FORWARDED' : 'REGISTERED',
+                'remarks' => $archiving
+                    ? 'Taxpayer unresponsive. Document forwarded to '.$destName.' for archiving.'
+                    : 'Referral created and forwarded to '.$destName.'.',
+                'tracked_at' => now(),
+            ]);
+
+            return $document->fresh();
         });
     }
-
     /**
      * One document with its full movement trail, for the detail view.
      *

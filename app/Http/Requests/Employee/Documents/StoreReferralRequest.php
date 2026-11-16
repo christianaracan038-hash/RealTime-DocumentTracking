@@ -51,6 +51,8 @@ class StoreReferralRequest extends FormRequest
 
             // What it is about - free text, not a tick list.
             'concern' => ['required', 'string', 'max:1000'],
+            'addressee' => ['nullable', 'string', 'max:100'],
+            'archive' => ['nullable', 'boolean'],
 
         ];
     }
