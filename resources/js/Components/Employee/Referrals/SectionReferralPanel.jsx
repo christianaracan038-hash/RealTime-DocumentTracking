@@ -10,6 +10,8 @@ const FIELD =
 
 const ADMIN_ACTIONS = ["Chief", "Archive"];
 
+const CONCERN_MAX = 256;
+
 function Field({ label, error, children }) {
     return (
         <div>
@@ -62,6 +64,10 @@ export default function SectionReferralPanel({
         archive: false,
     });
 
+    const concernLength = data.concern.length;
+    const concernAtLimit = concernLength >= CONCERN_MAX;
+    const concernTooLong = concernLength > CONCERN_MAX;
+
     const selectedSection = sections.find(
         (s) => String(s.section_id) === String(data.destination_section_id),
     );
@@ -95,6 +101,8 @@ export default function SectionReferralPanel({
 
     const submit = (event) => {
         event.preventDefault();
+
+        if (concernTooLong) return;
 
         const options = {
             preserveScroll: true,
@@ -216,14 +224,35 @@ export default function SectionReferralPanel({
                         </div>
                     )}
 
-                    <Field label="Description" error={errors.concern}>
+                    <Field
+                        label="Description"
+                        error={
+                            errors.concern ||
+                            (concernAtLimit
+                                ? `You have reached the ${CONCERN_MAX}-character limit.`
+                                : null)
+                        }
+                    >
                         <textarea
                             rows="4"
                             value={data.concern}
                             onChange={(e) => setData("concern", e.target.value)}
-                            placeholder="Details"
-                            className={`${FIELD} resize-none`}
+                            placeholder="Enter remarks (up to 256 characters)."
+                            maxLength={CONCERN_MAX}
+                            className={`${FIELD} resize-none ${
+                                concernAtLimit ? "border-stop-600" : ""
+                            }`}
                         />
+
+                        <p
+                            className={`mt-1.5 text-right text-sm ${
+                                concernAtLimit
+                                    ? "font-semibold text-stop-600"
+                                    : "text-muted"
+                            }`}
+                        >
+                            {concernLength}/{CONCERN_MAX}
+                        </p>
                     </Field>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-end">
@@ -243,6 +272,7 @@ export default function SectionReferralPanel({
                             size="lg"
                             disabled={
                                 processing ||
+                                concernTooLong ||
                                 (showAdminActions && !data.addressee)
                             }
                         >
