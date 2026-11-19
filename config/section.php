@@ -39,31 +39,31 @@ return [
     ],
 
 
-    'ASSESSMENT-GS-DORION' => [
+    'ASSESSMENT-GS DORION' => [
         'path' => '/gs-dorion-assessment/dashboard',
         'route' => 'gs-dorion-assessment.dashboard',
         'page' => 'GROUPSUPERVISORPAGE/GS-DORION/Dashboard',
     ],
 
-    'ASSESSMENT-GS-INSOY' => [
+    'ASSESSMENT-GS INSOY' => [
         'path' => '/gs-insoy/dashboard',
         'route' => 'gs-insoy.dashboard',
         'page' => 'GROUPSUPERVISORPAGE/GS-INSOY/Dashboard',
     ],
 
-    'ASSESSMENT-GS-NGO' => [
+    'ASSESSMENT-GS NGO' => [
         'path' => '/gs-ngo/dashboard',
         'route' => 'gs-ngo.dashboard',
         'page' => 'GROUPSUPERVISORPAGE/GS-NGO/Dashboard',
     ],
 
-    'ASSESSMENT-GS-GAWAEN' => [
+    'ASSESSMENT-GS GAWAEN' => [
         'path' => '/gs-gawaen/dashboard',
         'route' => 'gs-gawaen.dashboard',
         'page' => 'GROUPSUPERVISORPAGE/GS-GAWAEN/Dashboard',
     ],
 
-    'ASSESSMENT-GS-ORFIANO' => [
+    'ASSESSMENT-GS ORFIANO' => [
         'path' => '/gs-orfiano/dashboard',
         'route' => 'gs-orfiano.dashboard',
         'page' => 'GROUPSUPERVISORPAGE/GS-ORFIANO/Dashboard',
