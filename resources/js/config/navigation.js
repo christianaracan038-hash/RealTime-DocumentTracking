@@ -64,7 +64,7 @@ const navigation = {
     "ASSESSMENT-GS-NGO": sectionMenu("gs-ngo.dashboard"),
     "ASSESSMENT-GS-GAWAEN": sectionMenu("gs-gawaen.dashboard"),
     "ASSESSMENT-GS-ORFIANO": sectionMenu("gs-orfiano.dashboard"),
-    "ASSESSMENT-GS-DAVID": sectionMenu("gs-david.dashboard"),
+    "ASSESSMENT-GS DAVID": sectionMenu("gs-david.dashboard"),
     ONETT: sectionMenu("onett.dashboard"),
 };
 
