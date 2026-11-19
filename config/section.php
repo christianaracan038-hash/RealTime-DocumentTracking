@@ -69,7 +69,7 @@ return [
         'page' => 'GROUPSUPERVISORPAGE/GS-ORFIANO/Dashboard',
     ],
 
-    'ASSESSMENT-GS-DAVID' => [
+    'ASSESSMENT-GS DAVID' => [
         'path' => '/gs-david/dashboard',
         'route' => 'gs-david.dashboard',
         'page' => 'GROUPSUPERVISORPAGE/GS-DAVID/Dashboard',
