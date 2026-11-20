@@ -1,7 +1,5 @@
-/*
- * Small helpers shared by the referral form, the table and the printed
- * slip, so all three describe a referral the same way.
- */
+const titleCase = (text) =>
+    text.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
 /**
  * "Compliance Section", "Revenue District Office" - the section's
@@ -11,16 +9,20 @@
 export function sectionLabel(section) {
     if (!section) return "";
 
-    if (section.description) return section.description;
+    const name = (section.section_name ?? "").trim();
 
-    const name = section.section_name ?? "";
+    // Group supervisors: "ASSESSMENT-GS DORION" -> "Assessment - GS Dorion"
+    const gs = name.match(/^(.+?)\s*-\s*GS\s+(.+)$/i);
+    if (gs) {
+        return `${titleCase(gs[1])} - GS ${titleCase(gs[2])}`;
+    }
+
+    if (section.description) return section.description;
 
     // RDO stays RDO; ASSESSMENT becomes Assessment Section.
     if (name.length <= 3) return `${name} Section`;
 
-    return (
-        name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() + " Section"
-    );
+    return titleCase(name) + " Section";
 }
 
 /**
