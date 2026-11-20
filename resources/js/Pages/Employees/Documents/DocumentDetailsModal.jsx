@@ -126,9 +126,9 @@ export default function DocumentDetailsModal({ document, onClose }) {
                                         "No taxpayer on record"}
                                 </h2>
 
-                                <p className="mt-1 font-mono text-sm opacity-90">
+                                {/* <p className="mt-1 font-mono text-sm opacity-90">
                                     {document.tracking_number}
-                                </p>
+                                </p> */}
                             </div>
 
                             <button
